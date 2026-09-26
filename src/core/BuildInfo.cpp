@@ -9,7 +9,7 @@ std::string_view project_name() noexcept
 
 std::string_view current_phase() noexcept
 {
-    return "Phase 0 - Repository & Engineering Environment";
+    return "Phase 1 - Modern C++ Foundation";
 }
 
 std::string_view cpp_standard() noexcept
