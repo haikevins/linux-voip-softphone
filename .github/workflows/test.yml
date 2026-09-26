@@ -1,0 +1,23 @@
+name: Tests and Sanitizers
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y ninja-build libgtest-dev
+
+      - name: Configure sanitizer build
+        run: cmake --preset sanitizers
+
+      - name: Build
+        run: cmake --build --preset sanitizers -j 2
+
+      - name: Test
+        run: ctest --preset sanitizers

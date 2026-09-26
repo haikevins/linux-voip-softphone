@@ -1,0 +1,35 @@
+cmake_minimum_required(VERSION 3.22)
+
+project(
+    linux_voip_softphone
+    VERSION 0.1.0
+    DESCRIPTION "Linux VoIP softphone engineering portfolio"
+    LANGUAGES CXX
+)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
+option(ENABLE_CLANG_TIDY "Run clang-tidy during compilation" OFF)
+option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+include(CompilerWarnings)
+include(Sanitizers)
+include(StaticAnalysis)
+
+project_enable_clang_tidy()
+
+add_subdirectory(src)
+
+include(CTest)
+if(BUILD_TESTING)
+    include(Dependencies)
+    project_setup_test_dependencies()
+    add_subdirectory(tests)
+endif()

@@ -1,0 +1,27 @@
+# Build output
+/build/
+/cmake-build-*/
+
+# Generated files
+compile_commands.json
+CMakeUserPresets.json
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Debug/core files
+core
+core.*
+*.core
+
+# Logs
+*.log
+!evidence/**/*.log
+
+# OS metadata
+.DS_Store
+Thumbs.db
