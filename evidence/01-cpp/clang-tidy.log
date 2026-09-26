@@ -1,0 +1,27 @@
+Preset CMake variables:
+
+  CMAKE_BUILD_TYPE="Debug"
+  ENABLE_CLANG_TIDY="ON"
+
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/haikevins/Documents/linux-voip-softphone/build/clang-tidy
+[1/1] Cleaning all built files...
+Cleaning... 18 files.
+[1/17] Building CXX object src/CMakeFiles/voip_core.dir/core/CallState.cpp.o
+[2/17] Building CXX object src/CMakeFiles/voip_core.dir/core/BuildInfo.cpp.o
+[3/17] Building CXX object src/CMakeFiles/voip_core.dir/core/StateChangeSink.cpp.o
+[4/17] Building CXX object src/CMakeFiles/voip_core.dir/core/CallStateMachine.cpp.o
+[5/17] Linking CXX static library src/libvoip_core.a
+[6/17] Building CXX object labs/cpp/raii/CMakeFiles/lab_raii.dir/main.cpp.o
+[7/17] Linking CXX executable labs/cpp/raii/lab_raii
+[8/17] Building CXX object labs/cpp/smart-pointers/CMakeFiles/lab_smart_pointers.dir/main.cpp.o
+[9/17] Linking CXX executable labs/cpp/smart-pointers/lab_smart_pointers
+[10/17] Building CXX object src/CMakeFiles/linux-voip-softphone.dir/app/main.cpp.o
+[11/17] Linking CXX executable src/linux-voip-softphone
+[12/17] Building CXX object labs/cpp/move-semantics/CMakeFiles/lab_move_semantics.dir/main.cpp.o
+[13/17] Linking CXX executable labs/cpp/move-semantics/lab_move_semantics
+[14/17] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_build_info.cpp.o
+[15/17] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_call_state.cpp.o
+[16/17] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_call_state_machine.cpp.o
+[17/17] Linking CXX executable tests/unit_tests

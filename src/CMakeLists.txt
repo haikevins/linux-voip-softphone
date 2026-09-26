@@ -1,5 +1,8 @@
 add_library(voip_core
     core/BuildInfo.cpp
+    core/CallState.cpp
+    core/CallStateMachine.cpp
+    core/StateChangeSink.cpp
 )
 
 add_library(voip::core ALIAS voip_core)

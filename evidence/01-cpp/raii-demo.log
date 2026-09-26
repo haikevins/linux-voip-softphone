@@ -1,0 +1,4 @@
+first owns fd: true
+first after move: false
+second after move: true
+fd closed by destructor: true

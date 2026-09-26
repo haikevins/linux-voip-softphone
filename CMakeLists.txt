@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 project(
     linux_voip_softphone
-    VERSION 0.1.0
+    VERSION 0.2.0
     DESCRIPTION "Linux VoIP softphone engineering portfolio"
     LANGUAGES CXX
 )
@@ -26,6 +26,7 @@ include(StaticAnalysis)
 project_enable_clang_tidy()
 
 add_subdirectory(src)
+add_subdirectory(labs)
 
 include(CTest)
 if(BUILD_TESTING)

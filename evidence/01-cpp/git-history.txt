@@ -1,0 +1,7 @@
+* 1ff03bc (HEAD -> phase/1-modern-cpp) docs(cpp): document phase 1 design decisions
+* 692e249 build(quality): strengthen phase 1 verification gates
+* 0c132bd test(core): cover call state machine behavior
+* 6aade7e feat(core): implement event-driven call state machine
+* cf054b9 lab(cpp): add modern C++ ownership and move semantics labs
+* 8d8f65f (tag: v0.1-project-skeleton, origin/main, main) fix(ci): track core source files
+* 434baf6 chore: bootstrap C++20 project skeleton

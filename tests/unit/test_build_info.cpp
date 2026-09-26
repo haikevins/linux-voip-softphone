@@ -12,7 +12,7 @@ TEST(BuildInfoTest, ReportsCpp20)
     EXPECT_EQ(voip::cpp_standard(), "C++20");
 }
 
-TEST(BuildInfoTest, ReportsPhaseZero)
+TEST(BuildInfoTest, ReportsPhaseOne)
 {
-    EXPECT_NE(voip::current_phase().find("Phase 0"), std::string_view::npos);
+    EXPECT_EQ(voip::current_phase(), "Phase 1 - Modern C++ Foundation");
 }

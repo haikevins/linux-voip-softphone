@@ -7,6 +7,6 @@ Checks: >
   modernize-use-override,
   modernize-use-using,
   readability-const-return-type
-WarningsAsErrors: ''
+WarningsAsErrors: '*'
 HeaderFilterRegex: '^(src|tests)/.*'
 FormatStyle: file

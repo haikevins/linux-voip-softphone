@@ -5,129 +5,142 @@ Qt/QML, PJSIP, Linux system programming, networking, testing, and debugging tool
 
 ## Current milestone
 
-**Phase 0 — Repository & Engineering Environment**
+**Phase 1 — Modern C++ Foundation**
 
-Target status after you complete the phase on your machine:
+Phase 0 established the reproducible engineering environment. Phase 1 now adds the first
+production-oriented C++ core and focused learning labs for ownership and value semantics.
 
-```text
-Build: Passing
-Tests: Passing
-Compiler: GCC / Clang
-Standard: C++20
-Platform: Ubuntu
-```
-
-At this stage the repository intentionally does **not** implement VoIP features yet. The goal is
-to establish a reproducible engineering baseline first.
-
-## Phase 0 toolchain
+## Phase 1 learning scope
 
 ```text
-Git
-CMake
-C++20
-clang-format
-clang-tidy
-GoogleTest
-ASan
-UBSan
-GitHub Actions
-```
-
-Build pipeline:
-
-```text
-source
-   ↓
-CMake
-   ↓
-compile
-   ↓
-unit tests
-   ↓
-clang-tidy
-   ↓
-sanitizers
+RAII
+smart pointers
+move semantics
+const correctness
+enum class
+std::optional
+std::variant
+STL containers
+interfaces
+basic dependency injection
 ```
 
 ## Start here
 
-Follow the Phase 0 tutorial in:
+Read the package/application note first:
 
 ```text
-docs/phase0/README.md
+PHASE1_START_HERE.md
 ```
 
-The full project roadmap from the planning session is preserved in:
+Then follow the full Phase 1 tutorial:
+
+```text
+docs/phase1/README.md
+```
+
+The complete project roadmap is preserved in:
 
 ```text
 README_roadmap.md
 ```
 
-## Required roadmap build commands
+## Phase 1 source layout
 
-```bash
-cmake -S . -B build \
-    -DCMAKE_BUILD_TYPE=Debug
+```text
+labs/cpp/
+├── raii/
+├── smart-pointers/
+└── move-semantics/
 
-cmake --build build -j
+src/core/
+├── CallState.cpp
+├── CallState.hpp
+├── CallStateMachine.cpp
+├── CallStateMachine.hpp
+├── Event.hpp
+├── StateChangeSink.cpp
+├── StateChangeSink.hpp
+└── Types.hpp
 
-ctest --test-dir build
+tests/unit/
+├── test_build_info.cpp
+├── test_call_state.cpp
+└── test_call_state_machine.cpp
 ```
 
-A preset-based workflow is also available:
+## Build and test
 
 ```bash
 cmake --preset debug
 cmake --build --preset debug -j
-ctest --preset debug
+ctest --preset debug --output-on-failure
 ```
 
-Run the starter executable:
-
-```bash
-./build/src/linux-voip-softphone
-```
-
-or, when using presets:
+Run the production-core demo:
 
 ```bash
 ./build/debug/src/linux-voip-softphone
 ```
 
-## Useful scripts
+Run the C++ labs:
 
 ```bash
-./scripts/bootstrap.sh
-./scripts/build.sh
-./scripts/test.sh
-./scripts/run_clang_tidy.sh
-./scripts/run_sanitizers.sh
-./scripts/collect_phase0_evidence.sh
+./build/debug/labs/cpp/raii/lab_raii
+./build/debug/labs/cpp/smart-pointers/lab_smart_pointers
+./build/debug/labs/cpp/move-semantics/lab_move_semantics
 ```
 
-Read each script before running it. The scripts are conveniences, not substitutes for
-understanding the commands.
+## Quality gates
 
-## Phase 0 repository evidence
+```bash
+./scripts/verify_phase1.sh
+```
 
-A recruiter should be able to immediately find:
+The verification covers:
 
 ```text
-CMakeLists.txt
-.clang-format
-.clang-tidy
-tests/
-.github/workflows/
+clang-format
+debug build
+GoogleTest
+RAII/smart-pointer/move labs
+ASan + UBSan
+clang-tidy
 ```
 
-When the phase is genuinely complete, create the milestone tag:
+Collect evidence generated on your own Ubuntu machine:
 
 ```bash
-git tag -a v0.1-project-skeleton \
-    -m "Phase 0: repository and engineering environment"
+./scripts/collect_phase1_evidence.sh
 ```
 
-## Project status
+Evidence is written to:
 
-Phase 0 starter: **Ready for you to build and verify on Ubuntu.**
+```text
+evidence/01-cpp/
+```
+
+## Architecture artifact
+
+The Phase 1 roadmap requires:
+
+```text
+docs/architecture/call-state-machine.md
+tests/unit/test_call_state.cpp
+```
+
+The architecture document explains the state model, `enum class`, `std::variant`, `std::optional`,
+STL container choice, interface abstraction, and constructor dependency injection.
+
+## Milestone
+
+After local verification and all GitHub Actions are green, create:
+
+```bash
+git tag -a v0.2-cpp-core \
+    -m "Phase 1: Modern C++ foundation and call state core"
+
+git push origin v0.2-cpp-core
+```
+
+Do not create the tag before the Phase 1 Definition of Done is satisfied.
