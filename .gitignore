@@ -14,8 +14,8 @@ CMakeUserPresets.json
 *~
 
 # Debug/core files
-core
-core.*
+/core
+/core.*
 *.core
 
 # Logs
