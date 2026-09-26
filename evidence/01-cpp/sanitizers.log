@@ -1,0 +1,37 @@
+Preset CMake variables:
+
+  CMAKE_BUILD_TYPE="Debug"
+  ENABLE_ASAN="ON"
+  ENABLE_UBSAN="ON"
+
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/haikevins/Documents/linux-voip-softphone/build/sanitizers
+ninja: no work to do.
+Test project /home/haikevins/Documents/linux-voip-softphone/build/sanitizers
+      Start  1: BuildInfoTest.ReportsProjectName
+ 1/11 Test  #1: BuildInfoTest.ReportsProjectName ...............................   Passed    0.01 sec
+      Start  2: BuildInfoTest.ReportsCpp20
+ 2/11 Test  #2: BuildInfoTest.ReportsCpp20 .....................................   Passed    0.01 sec
+      Start  3: BuildInfoTest.ReportsPhaseOne
+ 3/11 Test  #3: BuildInfoTest.ReportsPhaseOne ..................................   Passed    0.01 sec
+      Start  4: CallStateTest.ConvertsStatesToReadableNames
+ 4/11 Test  #4: CallStateTest.ConvertsStatesToReadableNames ....................   Passed    0.01 sec
+      Start  5: CallStateTest.AcceptsExpectedRegistrationTransitions
+ 5/11 Test  #5: CallStateTest.AcceptsExpectedRegistrationTransitions ...........   Passed    0.01 sec
+      Start  6: CallStateTest.RejectsInvalidTransitions
+ 6/11 Test  #6: CallStateTest.RejectsInvalidTransitions ........................   Passed    0.01 sec
+      Start  7: CallStateMachineTest.StartsIdleWithoutPeerOrError
+ 7/11 Test  #7: CallStateMachineTest.StartsIdleWithoutPeerOrError ..............   Passed    0.01 sec
+      Start  8: CallStateMachineTest.HandlesOutgoingCallLifecycle
+ 8/11 Test  #8: CallStateMachineTest.HandlesOutgoingCallLifecycle ..............   Passed    0.01 sec
+      Start  9: CallStateMachineTest.RejectsInvalidEventWithoutChangingState
+ 9/11 Test  #9: CallStateMachineTest.RejectsInvalidEventWithoutChangingState ...   Passed    0.01 sec
+      Start 10: CallStateMachineTest.StoresFailureReasonAndCanReset
+10/11 Test #10: CallStateMachineTest.StoresFailureReasonAndCanReset ............   Passed    0.01 sec
+      Start 11: CallStateMachineTest.HandlesIncomingCallFromReadyState
+11/11 Test #11: CallStateMachineTest.HandlesIncomingCallFromReadyState .........   Passed    0.01 sec
+
+100% tests passed, 0 tests failed out of 11
+
+Total Test time (real) =   0.15 sec

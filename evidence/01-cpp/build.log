@@ -1,0 +1,8 @@
+Preset CMake variables:
+
+  CMAKE_BUILD_TYPE="Debug"
+
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/haikevins/Documents/linux-voip-softphone/build/debug
+ninja: no work to do.

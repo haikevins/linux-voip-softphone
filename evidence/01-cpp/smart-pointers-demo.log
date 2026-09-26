@@ -1,0 +1,8 @@
+exclusive audio buffer
+AudioDevice created: JBL TUNE115TWS
+shared owners during call: 2
+Call uses: JBL TUNE115TWS
+Monitor sees: JBL TUNE115TWS
+shared owners after call: 1
+AudioDevice destroyed: JBL TUNE115TWS
+Monitor: device already released
