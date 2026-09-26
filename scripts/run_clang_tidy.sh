@@ -2,4 +2,4 @@
 set -euo pipefail
 
 cmake --preset clang-tidy
-cmake --build --preset clang-tidy -j
+cmake --build --preset clang-tidy --clean-first -j

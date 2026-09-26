@@ -16,7 +16,7 @@ sudo apt install -y \
     ca-certificates
 
 echo
-echo "Phase 0 toolchain versions:"
+echo "Project toolchain versions:"
 git --version
 cmake --version | head -n 1
 c++ --version | head -n 1
