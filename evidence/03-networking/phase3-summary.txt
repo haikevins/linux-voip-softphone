@@ -1,0 +1,5 @@
+Phase 3: TCP/UDP networking
+Focused networking test target: IPv4 endpoint, TCP client/server, UDP socket, TCP/UDP integrations
+Expected current regression baseline before evidence commit: 60 tests
+Verification command: ./scripts/verify_phase3.sh
+Evidence collector: ./scripts/collect_phase3_evidence.sh

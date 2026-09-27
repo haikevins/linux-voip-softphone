@@ -1,0 +1,60 @@
+Preset CMake variables:
+
+  CMAKE_BUILD_TYPE="Debug"
+  ENABLE_CLANG_TIDY="ON"
+
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found GTest: /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfig.cmake (found version "1.14.0")  
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/haikevins/Documents/linux-voip-softphone/build/clang-tidy
+[1/1] Cleaning all built files...
+Cleaning... 0 files.
+[1/43] Building CXX object src/CMakeFiles/voip_core.dir/platform/linux/UniqueFd.cpp.o
+[2/43] Building CXX object src/CMakeFiles/voip_core.dir/core/StateChangeSink.cpp.o
+[3/43] Building CXX object src/CMakeFiles/voip_core.dir/core/BuildInfo.cpp.o
+[4/43] Building CXX object src/CMakeFiles/voip_core.dir/core/CallState.cpp.o
+[5/43] Building CXX object src/CMakeFiles/voip_core.dir/network/UdpSocket.cpp.o
+[6/43] Building CXX object src/CMakeFiles/voip_core.dir/network/TcpServerSocket.cpp.o
+[7/43] Building CXX object src/CMakeFiles/voip_core.dir/ipc/UnixDomainSocketServer.cpp.o
+[8/43] Building CXX object src/CMakeFiles/voip_core.dir/network/TcpClientSocket.cpp.o
+[9/43] Building CXX object src/CMakeFiles/voip_core.dir/ipc/UnixDomainSocketClient.cpp.o
+[10/43] Building CXX object labs/cpp/raii/CMakeFiles/lab_raii.dir/main.cpp.o
+[11/43] Linking CXX executable labs/cpp/raii/lab_raii
+[12/43] Building CXX object src/CMakeFiles/voip_core.dir/network/Ipv4Endpoint.cpp.o
+[13/43] Building CXX object src/CMakeFiles/voip_core.dir/core/CallStateMachine.cpp.o
+[14/43] Linking CXX static library src/libvoip_core.a
+[15/43] Building CXX object labs/linux/signal-handling/CMakeFiles/lab_signal_handling.dir/main.cpp.o
+[16/43] Linking CXX executable labs/linux/signal-handling/lab_signal_handling
+[17/43] Building CXX object src/CMakeFiles/linux-voip-softphone.dir/app/main.cpp.o
+[18/43] Linking CXX executable src/linux-voip-softphone
+[19/43] Building CXX object labs/linux/process-lifecycle/CMakeFiles/lab_process_lifecycle.dir/main.cpp.o
+[20/43] Linking CXX executable labs/linux/process-lifecycle/lab_process_lifecycle
+[21/43] Building CXX object labs/cpp/smart-pointers/CMakeFiles/lab_smart_pointers.dir/main.cpp.o
+[22/43] Linking CXX executable labs/cpp/smart-pointers/lab_smart_pointers
+[23/43] Building CXX object labs/linux/exec-child/CMakeFiles/lab_exec_child.dir/main.cpp.o
+[24/43] Linking CXX executable labs/linux/exec-child/lab_exec_child
+[25/43] Building CXX object labs/cpp/move-semantics/CMakeFiles/lab_move_semantics.dir/main.cpp.o
+[26/43] Linking CXX executable labs/cpp/move-semantics/lab_move_semantics
+[27/43] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_call_state.cpp.o
+[28/43] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_build_info.cpp.o
+[29/43] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_tcp_server_socket.cpp.o
+[30/43] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_ipv4_endpoint.cpp.o
+[31/43] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_unique_fd.cpp.o
+[32/43] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_call_state_machine.cpp.o
+[33/43] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_tcp_client_socket.cpp.o
+[34/43] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_udp_socket.cpp.o
+[35/43] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_unix_domain_socket_client.cpp.o
+[36/43] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_unix_domain_socket_server.cpp.o
+[37/43] Building CXX object tests/CMakeFiles/tcp_network_integration_tests.dir/integration/test_tcp_network.cpp.o
+[38/43] Linking CXX executable tests/tcp_network_integration_tests
+[39/43] Linking CXX executable tests/unit_tests
+[40/43] Building CXX object tests/CMakeFiles/ipc_integration_tests.dir/integration/test_unix_domain_socket_ipc.cpp.o
+[41/43] Building CXX object tests/CMakeFiles/udp_network_integration_tests.dir/integration/test_udp_network.cpp.o
+[42/43] Linking CXX executable tests/ipc_integration_tests
+[43/43] Linking CXX executable tests/udp_network_integration_tests

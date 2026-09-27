@@ -1,0 +1,28 @@
+* 2f03d72 (HEAD -> phase/3-networking, origin/phase/3-networking) docs(network): document TCP and UDP design
+* 9d5b0a4 test(network): add UDP datagram integration tests
+* 5fe3758 feat(network): add UDP socket abstraction
+* 61fc25d test(network): add TCP client-server integration tests
+* 53557d6 feat(network): add TCP client socket
+* e3b78f9 feat(network): add TCP server socket
+* f12a574 feat(network): add IPv4 endpoint abstraction
+*   1b0ddf9 (tag: v0.3-linux-system, origin/main, main) Merge pull request #2 from haikevins/phase/2-linux-system
+|\  
+| * 05626f5 fix(evidence): clean phase 2 verification artifacts
+| * b94de22 chore(evidence): record phase 2 verification artifacts
+| * 684144b docs(linux): document process and IPC design
+| * 6dad60c test(ipc): add Unix socket client-server integration tests
+| * 29267c6 style(ipc): format Unix domain socket client
+| * b3d6ddf feat(ipc): add Unix domain socket client
+| * db77d89 feat(ipc): add Unix domain socket server
+| * 8db5274 feat(linux): handle POSIX signals with sigaction
+| * af6e103 lab(linux): demonstrate exec and child replacement
+| * e3b3ecc lab(linux): demonstrate fork and process lifecycle
+| * 77c8f6f feat(linux): add RAII file descriptor wrapper
+|/  
+*   6807ffb (tag: v0.2-cpp-core) Merge pull request #1 from haikevins/phase/1-modern-cpp
+|\  
+| * c7637ab chore(evidence): record phase 1 verification artifacts
+| * 1ff03bc docs(cpp): document phase 1 design decisions
+| * 692e249 build(quality): strengthen phase 1 verification gates
+| * 0c132bd test(core): cover call state machine behavior
+| * 6aade7e feat(core): implement event-driven call state machine
