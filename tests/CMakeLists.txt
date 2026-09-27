@@ -28,3 +28,9 @@ add_test(
     COMMAND lab_exec_child --self-test
 )
 set_tests_properties(LinuxExecChildReplacementTest PROPERTIES LABELS "linux;process;exec")
+
+add_test(
+    NAME LinuxSignalHandlingTest
+    COMMAND lab_signal_handling --self-test
+)
+set_tests_properties(LinuxSignalHandlingTest PROPERTIES LABELS "linux;signal")
