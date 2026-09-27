@@ -3,6 +3,7 @@ add_executable(unit_tests
     unit/test_call_state.cpp
     unit/test_call_state_machine.cpp
     unit/test_unique_fd.cpp
+    unit/test_unix_domain_socket_server.cpp
 )
 
 target_link_libraries(unit_tests
