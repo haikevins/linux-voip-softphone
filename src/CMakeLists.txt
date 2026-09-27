@@ -5,6 +5,7 @@ add_library(voip_core
     core/StateChangeSink.cpp
     ipc/UnixDomainSocketClient.cpp
     ipc/UnixDomainSocketServer.cpp
+    network/Ipv4Endpoint.cpp
     platform/linux/UniqueFd.cpp
 )
 

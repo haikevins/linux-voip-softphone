@@ -2,6 +2,7 @@ add_executable(unit_tests
     unit/test_build_info.cpp
     unit/test_call_state.cpp
     unit/test_call_state_machine.cpp
+    unit/test_ipv4_endpoint.cpp
     unit/test_unique_fd.cpp
     unit/test_unix_domain_socket_client.cpp
     unit/test_unix_domain_socket_server.cpp
