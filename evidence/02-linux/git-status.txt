@@ -1,0 +1,4 @@
+## phase/2-linux-system...origin/phase/2-linux-system
+?? evidence/02-linux/
+?? scripts/collect_phase2_evidence.sh
+?? scripts/verify_phase2.sh

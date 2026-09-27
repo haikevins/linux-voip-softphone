@@ -1,0 +1,78 @@
+Running main() from ./googletest/src/gtest_main.cc
+[==========] Running 27 tests from 6 test suites.
+[----------] Global test environment set-up.
+[----------] 3 tests from BuildInfoTest
+[ RUN      ] BuildInfoTest.ReportsProjectName
+[       OK ] BuildInfoTest.ReportsProjectName (0 ms)
+[ RUN      ] BuildInfoTest.ReportsCpp20
+[       OK ] BuildInfoTest.ReportsCpp20 (0 ms)
+[ RUN      ] BuildInfoTest.ReportsPhaseOne
+[       OK ] BuildInfoTest.ReportsPhaseOne (0 ms)
+[----------] 3 tests from BuildInfoTest (0 ms total)
+
+[----------] 3 tests from CallStateTest
+[ RUN      ] CallStateTest.ConvertsStatesToReadableNames
+[       OK ] CallStateTest.ConvertsStatesToReadableNames (0 ms)
+[ RUN      ] CallStateTest.AcceptsExpectedRegistrationTransitions
+[       OK ] CallStateTest.AcceptsExpectedRegistrationTransitions (0 ms)
+[ RUN      ] CallStateTest.RejectsInvalidTransitions
+[       OK ] CallStateTest.RejectsInvalidTransitions (0 ms)
+[----------] 3 tests from CallStateTest (0 ms total)
+
+[----------] 5 tests from CallStateMachineTest
+[ RUN      ] CallStateMachineTest.StartsIdleWithoutPeerOrError
+[       OK ] CallStateMachineTest.StartsIdleWithoutPeerOrError (0 ms)
+[ RUN      ] CallStateMachineTest.HandlesOutgoingCallLifecycle
+[       OK ] CallStateMachineTest.HandlesOutgoingCallLifecycle (0 ms)
+[ RUN      ] CallStateMachineTest.RejectsInvalidEventWithoutChangingState
+[       OK ] CallStateMachineTest.RejectsInvalidEventWithoutChangingState (0 ms)
+[ RUN      ] CallStateMachineTest.StoresFailureReasonAndCanReset
+[       OK ] CallStateMachineTest.StoresFailureReasonAndCanReset (0 ms)
+[ RUN      ] CallStateMachineTest.HandlesIncomingCallFromReadyState
+[       OK ] CallStateMachineTest.HandlesIncomingCallFromReadyState (0 ms)
+[----------] 5 tests from CallStateMachineTest (0 ms total)
+
+[----------] 6 tests from UniqueFdTest
+[ RUN      ] UniqueFdTest.StartsInvalidByDefault
+[       OK ] UniqueFdTest.StartsInvalidByDefault (0 ms)
+[ RUN      ] UniqueFdTest.ClosesOwnedDescriptorOnDestruction
+[       OK ] UniqueFdTest.ClosesOwnedDescriptorOnDestruction (0 ms)
+[ RUN      ] UniqueFdTest.MoveConstructionTransfersOwnership
+[       OK ] UniqueFdTest.MoveConstructionTransfersOwnership (0 ms)
+[ RUN      ] UniqueFdTest.MoveAssignmentClosesPreviousDescriptor
+[       OK ] UniqueFdTest.MoveAssignmentClosesPreviousDescriptor (0 ms)
+[ RUN      ] UniqueFdTest.ReleaseReturnsDescriptorWithoutClosingIt
+[       OK ] UniqueFdTest.ReleaseReturnsDescriptorWithoutClosingIt (0 ms)
+[ RUN      ] UniqueFdTest.ResetClosesOldDescriptorAndOwnsNewDescriptor
+[       OK ] UniqueFdTest.ResetClosesOldDescriptorAndOwnsNewDescriptor (0 ms)
+[----------] 6 tests from UniqueFdTest (0 ms total)
+
+[----------] 5 tests from UnixDomainSocketClientTest
+[ RUN      ] UnixDomainSocketClientTest.StartsDisconnected
+[       OK ] UnixDomainSocketClientTest.StartsDisconnected (0 ms)
+[ RUN      ] UnixDomainSocketClientTest.ConnectsToListeningServer
+[       OK ] UnixDomainSocketClientTest.ConnectsToListeningServer (0 ms)
+[ RUN      ] UnixDomainSocketClientTest.DisconnectClosesConnection
+[       OK ] UnixDomainSocketClientTest.DisconnectClosesConnection (0 ms)
+[ RUN      ] UnixDomainSocketClientTest.RejectsOverlongSocketPath
+[       OK ] UnixDomainSocketClientTest.RejectsOverlongSocketPath (0 ms)
+[ RUN      ] UnixDomainSocketClientTest.ReportsMissingServer
+[       OK ] UnixDomainSocketClientTest.ReportsMissingServer (0 ms)
+[----------] 5 tests from UnixDomainSocketClientTest (0 ms total)
+
+[----------] 5 tests from UnixDomainSocketServerTest
+[ RUN      ] UnixDomainSocketServerTest.StartsAndCreatesSocketPath
+[       OK ] UnixDomainSocketServerTest.StartsAndCreatesSocketPath (0 ms)
+[ RUN      ] UnixDomainSocketServerTest.StopRemovesSocketPath
+[       OK ] UnixDomainSocketServerTest.StopRemovesSocketPath (0 ms)
+[ RUN      ] UnixDomainSocketServerTest.DestructorRemovesSocketPath
+[       OK ] UnixDomainSocketServerTest.DestructorRemovesSocketPath (0 ms)
+[ RUN      ] UnixDomainSocketServerTest.RejectsOverlongSocketPath
+[       OK ] UnixDomainSocketServerTest.RejectsOverlongSocketPath (0 ms)
+[ RUN      ] UnixDomainSocketServerTest.RefusesToReplaceRegularFile
+[       OK ] UnixDomainSocketServerTest.RefusesToReplaceRegularFile (0 ms)
+[----------] 5 tests from UnixDomainSocketServerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 27 tests from 6 test suites ran. (0 ms total)
+[  PASSED  ] 27 tests.

@@ -1,0 +1,76 @@
+Test project /home/haikevins/Documents/linux-voip-softphone/build/debug
+      Start  1: BuildInfoTest.ReportsProjectName
+ 1/32 Test  #1: BuildInfoTest.ReportsProjectName ........................................   Passed    0.00 sec
+      Start  2: BuildInfoTest.ReportsCpp20
+ 2/32 Test  #2: BuildInfoTest.ReportsCpp20 ..............................................   Passed    0.00 sec
+      Start  3: BuildInfoTest.ReportsPhaseOne
+ 3/32 Test  #3: BuildInfoTest.ReportsPhaseOne ...........................................   Passed    0.00 sec
+      Start  4: CallStateTest.ConvertsStatesToReadableNames
+ 4/32 Test  #4: CallStateTest.ConvertsStatesToReadableNames .............................   Passed    0.00 sec
+      Start  5: CallStateTest.AcceptsExpectedRegistrationTransitions
+ 5/32 Test  #5: CallStateTest.AcceptsExpectedRegistrationTransitions ....................   Passed    0.00 sec
+      Start  6: CallStateTest.RejectsInvalidTransitions
+ 6/32 Test  #6: CallStateTest.RejectsInvalidTransitions .................................   Passed    0.00 sec
+      Start  7: CallStateMachineTest.StartsIdleWithoutPeerOrError
+ 7/32 Test  #7: CallStateMachineTest.StartsIdleWithoutPeerOrError .......................   Passed    0.00 sec
+      Start  8: CallStateMachineTest.HandlesOutgoingCallLifecycle
+ 8/32 Test  #8: CallStateMachineTest.HandlesOutgoingCallLifecycle .......................   Passed    0.00 sec
+      Start  9: CallStateMachineTest.RejectsInvalidEventWithoutChangingState
+ 9/32 Test  #9: CallStateMachineTest.RejectsInvalidEventWithoutChangingState ............   Passed    0.00 sec
+      Start 10: CallStateMachineTest.StoresFailureReasonAndCanReset
+10/32 Test #10: CallStateMachineTest.StoresFailureReasonAndCanReset .....................   Passed    0.00 sec
+      Start 11: CallStateMachineTest.HandlesIncomingCallFromReadyState
+11/32 Test #11: CallStateMachineTest.HandlesIncomingCallFromReadyState ..................   Passed    0.00 sec
+      Start 12: UniqueFdTest.StartsInvalidByDefault
+12/32 Test #12: UniqueFdTest.StartsInvalidByDefault .....................................   Passed    0.00 sec
+      Start 13: UniqueFdTest.ClosesOwnedDescriptorOnDestruction
+13/32 Test #13: UniqueFdTest.ClosesOwnedDescriptorOnDestruction .........................   Passed    0.00 sec
+      Start 14: UniqueFdTest.MoveConstructionTransfersOwnership
+14/32 Test #14: UniqueFdTest.MoveConstructionTransfersOwnership .........................   Passed    0.00 sec
+      Start 15: UniqueFdTest.MoveAssignmentClosesPreviousDescriptor
+15/32 Test #15: UniqueFdTest.MoveAssignmentClosesPreviousDescriptor .....................   Passed    0.00 sec
+      Start 16: UniqueFdTest.ReleaseReturnsDescriptorWithoutClosingIt
+16/32 Test #16: UniqueFdTest.ReleaseReturnsDescriptorWithoutClosingIt ...................   Passed    0.00 sec
+      Start 17: UniqueFdTest.ResetClosesOldDescriptorAndOwnsNewDescriptor
+17/32 Test #17: UniqueFdTest.ResetClosesOldDescriptorAndOwnsNewDescriptor ...............   Passed    0.00 sec
+      Start 18: UnixDomainSocketClientTest.StartsDisconnected
+18/32 Test #18: UnixDomainSocketClientTest.StartsDisconnected ...........................   Passed    0.00 sec
+      Start 19: UnixDomainSocketClientTest.ConnectsToListeningServer
+19/32 Test #19: UnixDomainSocketClientTest.ConnectsToListeningServer ....................   Passed    0.00 sec
+      Start 20: UnixDomainSocketClientTest.DisconnectClosesConnection
+20/32 Test #20: UnixDomainSocketClientTest.DisconnectClosesConnection ...................   Passed    0.00 sec
+      Start 21: UnixDomainSocketClientTest.RejectsOverlongSocketPath
+21/32 Test #21: UnixDomainSocketClientTest.RejectsOverlongSocketPath ....................   Passed    0.00 sec
+      Start 22: UnixDomainSocketClientTest.ReportsMissingServer
+22/32 Test #22: UnixDomainSocketClientTest.ReportsMissingServer .........................   Passed    0.00 sec
+      Start 23: UnixDomainSocketServerTest.StartsAndCreatesSocketPath
+23/32 Test #23: UnixDomainSocketServerTest.StartsAndCreatesSocketPath ...................   Passed    0.00 sec
+      Start 24: UnixDomainSocketServerTest.StopRemovesSocketPath
+24/32 Test #24: UnixDomainSocketServerTest.StopRemovesSocketPath ........................   Passed    0.00 sec
+      Start 25: UnixDomainSocketServerTest.DestructorRemovesSocketPath
+25/32 Test #25: UnixDomainSocketServerTest.DestructorRemovesSocketPath ..................   Passed    0.00 sec
+      Start 26: UnixDomainSocketServerTest.RejectsOverlongSocketPath
+26/32 Test #26: UnixDomainSocketServerTest.RejectsOverlongSocketPath ....................   Passed    0.00 sec
+      Start 27: UnixDomainSocketServerTest.RefusesToReplaceRegularFile
+27/32 Test #27: UnixDomainSocketServerTest.RefusesToReplaceRegularFile ..................   Passed    0.00 sec
+      Start 28: UnixDomainSocketIpcIntegrationTest.RoundTripsRequestAndResponse
+28/32 Test #28: UnixDomainSocketIpcIntegrationTest.RoundTripsRequestAndResponse .........   Passed    0.00 sec
+      Start 29: UnixDomainSocketIpcIntegrationTest.AcceptsSequentialClientConnections
+29/32 Test #29: UnixDomainSocketIpcIntegrationTest.AcceptsSequentialClientConnections ...   Passed    0.00 sec
+      Start 30: LinuxProcessLifecycleTest
+30/32 Test #30: LinuxProcessLifecycleTest ...............................................   Passed    0.00 sec
+      Start 31: LinuxExecChildReplacementTest
+31/32 Test #31: LinuxExecChildReplacementTest ...........................................   Passed    0.00 sec
+      Start 32: LinuxSignalHandlingTest
+32/32 Test #32: LinuxSignalHandlingTest .................................................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 32
+
+Label Time Summary:
+exec       =   0.00 sec*proc (1 test)
+ipc        =   0.00 sec*proc (2 tests)
+linux      =   0.01 sec*proc (3 tests)
+process    =   0.01 sec*proc (2 tests)
+signal     =   0.00 sec*proc (1 test)
+
+Total Test time (real) =   0.08 sec
