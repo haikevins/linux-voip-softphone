@@ -57,3 +57,21 @@ gtest_discover_tests(ipc_integration_tests
     PROPERTIES
         LABELS "ipc;integration;linux"
 )
+
+add_executable(tcp_network_integration_tests
+    integration/test_tcp_network.cpp
+)
+
+target_link_libraries(tcp_network_integration_tests
+    PRIVATE
+        voip::core
+        GTest::gtest_main
+)
+
+project_set_warnings(tcp_network_integration_tests)
+project_enable_sanitizers(tcp_network_integration_tests)
+
+gtest_discover_tests(tcp_network_integration_tests
+    PROPERTIES
+        LABELS "network;tcp;integration;linux"
+)
