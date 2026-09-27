@@ -36,3 +36,21 @@ add_test(
     COMMAND lab_signal_handling --self-test
 )
 set_tests_properties(LinuxSignalHandlingTest PROPERTIES LABELS "linux;signal")
+
+add_executable(ipc_integration_tests
+    integration/test_unix_domain_socket_ipc.cpp
+)
+
+target_link_libraries(ipc_integration_tests
+    PRIVATE
+        voip::core
+        GTest::gtest_main
+)
+
+project_set_warnings(ipc_integration_tests)
+project_enable_sanitizers(ipc_integration_tests)
+
+gtest_discover_tests(ipc_integration_tests
+    PROPERTIES
+        LABELS "ipc;integration;linux"
+)
