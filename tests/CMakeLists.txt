@@ -22,3 +22,9 @@ add_test(
     COMMAND lab_process_lifecycle --self-test
 )
 set_tests_properties(LinuxProcessLifecycleTest PROPERTIES LABELS "linux;process")
+
+add_test(
+    NAME LinuxExecChildReplacementTest
+    COMMAND lab_exec_child --self-test
+)
+set_tests_properties(LinuxExecChildReplacementTest PROPERTIES LABELS "linux;process;exec")
