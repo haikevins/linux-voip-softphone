@@ -10,39 +10,39 @@ Preset CMake variables:
 [1/1] Cleaning all built files...
 Cleaning... 33 files.
 [1/31] Building CXX object src/CMakeFiles/voip_core.dir/platform/linux/UniqueFd.cpp.o
-[2/31] Building CXX object src/CMakeFiles/voip_core.dir/core/CallState.cpp.o
+[2/31] Building CXX object src/CMakeFiles/voip_core.dir/core/BuildInfo.cpp.o
 [3/31] Building CXX object src/CMakeFiles/voip_core.dir/core/StateChangeSink.cpp.o
-[4/31] Building CXX object src/CMakeFiles/voip_core.dir/core/BuildInfo.cpp.o
-[5/31] Building CXX object src/CMakeFiles/voip_core.dir/ipc/UnixDomainSocketClient.cpp.o
-[6/31] Building CXX object src/CMakeFiles/voip_core.dir/ipc/UnixDomainSocketServer.cpp.o
-[7/31] Building CXX object labs/linux/process-lifecycle/CMakeFiles/lab_process_lifecycle.dir/main.cpp.o
-[8/31] Building CXX object labs/linux/exec-child/CMakeFiles/lab_exec_child.dir/main.cpp.o
-[9/31] Building CXX object labs/cpp/raii/CMakeFiles/lab_raii.dir/main.cpp.o
+[4/31] Building CXX object src/CMakeFiles/voip_core.dir/core/CallState.cpp.o
+[5/31] Building CXX object labs/cpp/raii/CMakeFiles/lab_raii.dir/main.cpp.o
+[6/31] Building CXX object labs/linux/process-lifecycle/CMakeFiles/lab_process_lifecycle.dir/main.cpp.o
+[7/31] Building CXX object src/CMakeFiles/voip_core.dir/ipc/UnixDomainSocketClient.cpp.o
+[8/31] Building CXX object src/CMakeFiles/voip_core.dir/ipc/UnixDomainSocketServer.cpp.o
+[9/31] Linking CXX executable labs/cpp/raii/lab_raii
 [10/31] Building CXX object labs/linux/signal-handling/CMakeFiles/lab_signal_handling.dir/main.cpp.o
-[11/31] Linking CXX executable labs/cpp/raii/lab_raii
-[12/31] Linking CXX executable labs/linux/process-lifecycle/lab_process_lifecycle
-[13/31] Linking CXX executable labs/linux/exec-child/lab_exec_child
+[11/31] Linking CXX executable labs/linux/process-lifecycle/lab_process_lifecycle
+[12/31] Building CXX object labs/linux/exec-child/CMakeFiles/lab_exec_child.dir/main.cpp.o
+[13/31] Building CXX object labs/cpp/smart-pointers/CMakeFiles/lab_smart_pointers.dir/main.cpp.o
 [14/31] Linking CXX executable labs/linux/signal-handling/lab_signal_handling
-[15/31] Building CXX object labs/cpp/move-semantics/CMakeFiles/lab_move_semantics.dir/main.cpp.o
-[16/31] Linking CXX executable labs/cpp/move-semantics/lab_move_semantics
-[17/31] Building CXX object labs/cpp/smart-pointers/CMakeFiles/lab_smart_pointers.dir/main.cpp.o
-[18/31] Building CXX object src/CMakeFiles/voip_core.dir/core/CallStateMachine.cpp.o
-[19/31] Building CXX object src/CMakeFiles/linux-voip-softphone.dir/app/main.cpp.o
-[20/31] Linking CXX executable labs/cpp/smart-pointers/lab_smart_pointers
-[21/31] Linking CXX static library src/libvoip_core.a
+[15/31] Linking CXX executable labs/linux/exec-child/lab_exec_child
+[16/31] Building CXX object labs/cpp/move-semantics/CMakeFiles/lab_move_semantics.dir/main.cpp.o
+[17/31] Building CXX object src/CMakeFiles/voip_core.dir/core/CallStateMachine.cpp.o
+[18/31] Linking CXX executable labs/cpp/smart-pointers/lab_smart_pointers
+[19/31] Linking CXX static library src/libvoip_core.a
+[20/31] Linking CXX executable labs/cpp/move-semantics/lab_move_semantics
+[21/31] Building CXX object src/CMakeFiles/linux-voip-softphone.dir/app/main.cpp.o
 [22/31] Linking CXX executable src/linux-voip-softphone
-[23/31] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_call_state.cpp.o
-[24/31] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_build_info.cpp.o
+[23/31] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_build_info.cpp.o
+[24/31] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_call_state.cpp.o
 [25/31] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_unique_fd.cpp.o
-[26/31] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_unix_domain_socket_server.cpp.o
-[27/31] Building CXX object tests/CMakeFiles/ipc_integration_tests.dir/integration/test_unix_domain_socket_ipc.cpp.o
-[28/31] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_unix_domain_socket_client.cpp.o
-[29/31] Linking CXX executable tests/ipc_integration_tests
+[26/31] Building CXX object tests/CMakeFiles/ipc_integration_tests.dir/integration/test_unix_domain_socket_ipc.cpp.o
+[27/31] Linking CXX executable tests/ipc_integration_tests
+[28/31] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_unix_domain_socket_server.cpp.o
+[29/31] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_unix_domain_socket_client.cpp.o
 [30/31] Building CXX object tests/CMakeFiles/unit_tests.dir/unit/test_call_state_machine.cpp.o
 [31/31] Linking CXX executable tests/unit_tests
 Test project /home/haikevins/Documents/linux-voip-softphone/build/sanitizers
       Start  1: BuildInfoTest.ReportsProjectName
- 1/32 Test  #1: BuildInfoTest.ReportsProjectName ........................................   Passed    0.01 sec
+ 1/32 Test  #1: BuildInfoTest.ReportsProjectName ........................................   Passed    0.02 sec
       Start  2: BuildInfoTest.ReportsCpp20
  2/32 Test  #2: BuildInfoTest.ReportsCpp20 ..............................................   Passed    0.01 sec
       Start  3: BuildInfoTest.ReportsPhaseOne
@@ -70,9 +70,9 @@ Test project /home/haikevins/Documents/linux-voip-softphone/build/sanitizers
       Start 14: UniqueFdTest.MoveConstructionTransfersOwnership
 14/32 Test #14: UniqueFdTest.MoveConstructionTransfersOwnership .........................   Passed    0.01 sec
       Start 15: UniqueFdTest.MoveAssignmentClosesPreviousDescriptor
-15/32 Test #15: UniqueFdTest.MoveAssignmentClosesPreviousDescriptor .....................   Passed    0.01 sec
+15/32 Test #15: UniqueFdTest.MoveAssignmentClosesPreviousDescriptor .....................   Passed    0.02 sec
       Start 16: UniqueFdTest.ReleaseReturnsDescriptorWithoutClosingIt
-16/32 Test #16: UniqueFdTest.ReleaseReturnsDescriptorWithoutClosingIt ...................   Passed    0.01 sec
+16/32 Test #16: UniqueFdTest.ReleaseReturnsDescriptorWithoutClosingIt ...................   Passed    0.02 sec
       Start 17: UniqueFdTest.ResetClosesOldDescriptorAndOwnsNewDescriptor
 17/32 Test #17: UniqueFdTest.ResetClosesOldDescriptorAndOwnsNewDescriptor ...............   Passed    0.01 sec
       Start 18: UnixDomainSocketClientTest.StartsDisconnected
@@ -82,17 +82,17 @@ Test project /home/haikevins/Documents/linux-voip-softphone/build/sanitizers
       Start 20: UnixDomainSocketClientTest.DisconnectClosesConnection
 20/32 Test #20: UnixDomainSocketClientTest.DisconnectClosesConnection ...................   Passed    0.02 sec
       Start 21: UnixDomainSocketClientTest.RejectsOverlongSocketPath
-21/32 Test #21: UnixDomainSocketClientTest.RejectsOverlongSocketPath ....................   Passed    0.01 sec
+21/32 Test #21: UnixDomainSocketClientTest.RejectsOverlongSocketPath ....................   Passed    0.02 sec
       Start 22: UnixDomainSocketClientTest.ReportsMissingServer
 22/32 Test #22: UnixDomainSocketClientTest.ReportsMissingServer .........................   Passed    0.01 sec
       Start 23: UnixDomainSocketServerTest.StartsAndCreatesSocketPath
 23/32 Test #23: UnixDomainSocketServerTest.StartsAndCreatesSocketPath ...................   Passed    0.01 sec
       Start 24: UnixDomainSocketServerTest.StopRemovesSocketPath
-24/32 Test #24: UnixDomainSocketServerTest.StopRemovesSocketPath ........................   Passed    0.01 sec
+24/32 Test #24: UnixDomainSocketServerTest.StopRemovesSocketPath ........................   Passed    0.02 sec
       Start 25: UnixDomainSocketServerTest.DestructorRemovesSocketPath
-25/32 Test #25: UnixDomainSocketServerTest.DestructorRemovesSocketPath ..................   Passed    0.01 sec
+25/32 Test #25: UnixDomainSocketServerTest.DestructorRemovesSocketPath ..................   Passed    0.02 sec
       Start 26: UnixDomainSocketServerTest.RejectsOverlongSocketPath
-26/32 Test #26: UnixDomainSocketServerTest.RejectsOverlongSocketPath ....................   Passed    0.01 sec
+26/32 Test #26: UnixDomainSocketServerTest.RejectsOverlongSocketPath ....................   Passed    0.02 sec
       Start 27: UnixDomainSocketServerTest.RefusesToReplaceRegularFile
 27/32 Test #27: UnixDomainSocketServerTest.RefusesToReplaceRegularFile ..................   Passed    0.01 sec
       Start 28: UnixDomainSocketIpcIntegrationTest.RoundTripsRequestAndResponse
@@ -115,4 +115,4 @@ linux      =   0.04 sec*proc (3 tests)
 process    =   0.03 sec*proc (2 tests)
 signal     =   0.01 sec*proc (1 test)
 
-Total Test time (real) =   0.44 sec
+Total Test time (real) =   0.46 sec

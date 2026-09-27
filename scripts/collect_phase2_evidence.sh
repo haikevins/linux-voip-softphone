@@ -63,7 +63,7 @@ HEAD_SHA="$(git -C "${ROOT_DIR}" rev-parse --short HEAD 2>/dev/null || true)"
 
 (
     cd "${ROOT_DIR}"
-    ./build/debug/labs/linux/process-lifecycle/lab_process_lifecycle --self-test
+    ./build/debug/labs/linux/process-lifecycle/lab_process_lifecycle
 ) 2>&1 | tee "${EVIDENCE_DIR}/process-lifecycle-demo.log"
 
 (
@@ -97,7 +97,7 @@ HEAD_SHA="$(git -C "${ROOT_DIR}" rev-parse --short HEAD 2>/dev/null || true)"
 
 (
     cd "${ROOT_DIR}"
-    git log --oneline --decorate --graph -30
+    git log --oneline --decorate -30
 ) 2>&1 | tee "${EVIDENCE_DIR}/git-history.txt"
 
 (
@@ -110,7 +110,7 @@ cat > "${EVIDENCE_DIR}/README.md" <<EOF_README
 
 Collected at: ${COLLECTED_AT}
 
-Branch: \`${BRANCH:-unknown}\`  
+Branch: \`${BRANCH:-unknown}\`
 HEAD at collection time: \`${HEAD_SHA:-unknown}\`
 
 This directory is the reproducible evidence snapshot for Phase 2. The collector

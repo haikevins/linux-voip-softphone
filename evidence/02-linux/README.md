@@ -1,9 +1,9 @@
 # Phase 2 evidence — Linux system programming and IPC
 
-Collected at: 2026-09-27T18:04:09+07:00
+Collected at: 2026-09-27T18:08:02+07:00
 
-Branch: `phase/2-linux-system`  
-HEAD at collection time: `684144b`
+Branch: `phase/2-linux-system`
+HEAD at collection time: `b94de22`
 
 This directory is the reproducible evidence snapshot for Phase 2. The collector
 exits immediately if a build, test, sanitizer, clang-tidy, or clang-format gate

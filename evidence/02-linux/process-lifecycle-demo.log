@@ -1,0 +1,4 @@
+parent: pid=19246 creating child
+child: pid=19248 ppid=19246
+parent: observed child pid=19248 exit_status=42
+process lifecycle: PASS
