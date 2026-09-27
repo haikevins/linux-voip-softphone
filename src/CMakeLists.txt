@@ -3,6 +3,9 @@ add_library(voip_core
     core/CallState.cpp
     core/CallStateMachine.cpp
     core/StateChangeSink.cpp
+    ipc/UnixDomainSocketClient.cpp
+    ipc/UnixDomainSocketServer.cpp
+    platform/linux/UniqueFd.cpp
 )
 
 add_library(voip::core ALIAS voip_core)
