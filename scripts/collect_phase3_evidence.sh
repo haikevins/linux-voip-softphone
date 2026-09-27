@@ -73,4 +73,8 @@ mkdir -p "${EVIDENCE_DIR}"
     echo "Evidence collector: ./scripts/collect_phase3_evidence.sh"
 } | tee "${EVIDENCE_DIR}/phase3-summary.txt"
 
+find "${EVIDENCE_DIR}" -maxdepth 1 -type f \
+    \( -name '*.log' -o -name '*.txt' \) \
+    -exec sed -i 's/[[:space:]]\+$//' {} +
+
 echo "Evidence written to: ${EVIDENCE_DIR}"

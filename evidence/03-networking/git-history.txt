@@ -6,7 +6,7 @@
 * e3b78f9 feat(network): add TCP server socket
 * f12a574 feat(network): add IPv4 endpoint abstraction
 *   1b0ddf9 (tag: v0.3-linux-system, origin/main, main) Merge pull request #2 from haikevins/phase/2-linux-system
-|\  
+|\
 | * 05626f5 fix(evidence): clean phase 2 verification artifacts
 | * b94de22 chore(evidence): record phase 2 verification artifacts
 | * 684144b docs(linux): document process and IPC design
@@ -18,9 +18,9 @@
 | * af6e103 lab(linux): demonstrate exec and child replacement
 | * e3b3ecc lab(linux): demonstrate fork and process lifecycle
 | * 77c8f6f feat(linux): add RAII file descriptor wrapper
-|/  
+|/
 *   6807ffb (tag: v0.2-cpp-core) Merge pull request #1 from haikevins/phase/1-modern-cpp
-|\  
+|\
 | * c7637ab chore(evidence): record phase 1 verification artifacts
 | * 1ff03bc docs(cpp): document phase 1 design decisions
 | * 692e249 build(quality): strengthen phase 1 verification gates

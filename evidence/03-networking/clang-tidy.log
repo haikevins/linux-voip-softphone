@@ -9,7 +9,7 @@ Preset CMake variables:
 -- Check for working CXX compiler: /usr/bin/c++ - skipped
 -- Detecting CXX compile features
 -- Detecting CXX compile features - done
--- Found GTest: /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfig.cmake (found version "1.14.0")  
+-- Found GTest: /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfig.cmake (found version "1.14.0")
 -- Configuring done (0.2s)
 -- Generating done (0.0s)
 -- Build files have been written to: /home/haikevins/Documents/linux-voip-softphone/build/clang-tidy
