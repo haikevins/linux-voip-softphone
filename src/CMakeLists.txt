@@ -8,6 +8,7 @@ add_library(voip_core
     network/Ipv4Endpoint.cpp
     network/TcpClientSocket.cpp
     network/TcpServerSocket.cpp
+    network/UdpSocket.cpp
     platform/linux/UniqueFd.cpp
 )
 

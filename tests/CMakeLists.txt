@@ -5,6 +5,7 @@ add_executable(unit_tests
     unit/test_ipv4_endpoint.cpp
     unit/test_tcp_client_socket.cpp
     unit/test_tcp_server_socket.cpp
+    unit/test_udp_socket.cpp
     unit/test_unique_fd.cpp
     unit/test_unix_domain_socket_client.cpp
     unit/test_unix_domain_socket_server.cpp
