@@ -76,3 +76,21 @@ gtest_discover_tests(tcp_network_integration_tests
     PROPERTIES
         LABELS "network;tcp;integration;linux"
 )
+
+add_executable(udp_network_integration_tests
+    integration/test_udp_network.cpp
+)
+
+target_link_libraries(udp_network_integration_tests
+    PRIVATE
+        voip::core
+        GTest::gtest_main
+)
+
+project_set_warnings(udp_network_integration_tests)
+project_enable_sanitizers(udp_network_integration_tests)
+
+gtest_discover_tests(udp_network_integration_tests
+    PROPERTIES
+        LABELS "network;udp;integration;linux"
+)
