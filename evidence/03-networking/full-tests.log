@@ -1,0 +1,133 @@
+Test project /home/haikevins/Documents/linux-voip-softphone/build/debug
+      Start  1: BuildInfoTest.ReportsProjectName
+ 1/60 Test  #1: BuildInfoTest.ReportsProjectName ...........................................   Passed    0.00 sec
+      Start  2: BuildInfoTest.ReportsCpp20
+ 2/60 Test  #2: BuildInfoTest.ReportsCpp20 .................................................   Passed    0.00 sec
+      Start  3: BuildInfoTest.ReportsPhaseOne
+ 3/60 Test  #3: BuildInfoTest.ReportsPhaseOne ..............................................   Passed    0.00 sec
+      Start  4: CallStateTest.ConvertsStatesToReadableNames
+ 4/60 Test  #4: CallStateTest.ConvertsStatesToReadableNames ................................   Passed    0.00 sec
+      Start  5: CallStateTest.AcceptsExpectedRegistrationTransitions
+ 5/60 Test  #5: CallStateTest.AcceptsExpectedRegistrationTransitions .......................   Passed    0.00 sec
+      Start  6: CallStateTest.RejectsInvalidTransitions
+ 6/60 Test  #6: CallStateTest.RejectsInvalidTransitions ....................................   Passed    0.00 sec
+      Start  7: CallStateMachineTest.StartsIdleWithoutPeerOrError
+ 7/60 Test  #7: CallStateMachineTest.StartsIdleWithoutPeerOrError ..........................   Passed    0.00 sec
+      Start  8: CallStateMachineTest.HandlesOutgoingCallLifecycle
+ 8/60 Test  #8: CallStateMachineTest.HandlesOutgoingCallLifecycle ..........................   Passed    0.00 sec
+      Start  9: CallStateMachineTest.RejectsInvalidEventWithoutChangingState
+ 9/60 Test  #9: CallStateMachineTest.RejectsInvalidEventWithoutChangingState ...............   Passed    0.00 sec
+      Start 10: CallStateMachineTest.StoresFailureReasonAndCanReset
+10/60 Test #10: CallStateMachineTest.StoresFailureReasonAndCanReset ........................   Passed    0.00 sec
+      Start 11: CallStateMachineTest.HandlesIncomingCallFromReadyState
+11/60 Test #11: CallStateMachineTest.HandlesIncomingCallFromReadyState .....................   Passed    0.00 sec
+      Start 12: Ipv4EndpointTest.StoresAddressAndPort
+12/60 Test #12: Ipv4EndpointTest.StoresAddressAndPort ......................................   Passed    0.00 sec
+      Start 13: Ipv4EndpointTest.ConvertsToSockaddrUsingNetworkByteOrder
+13/60 Test #13: Ipv4EndpointTest.ConvertsToSockaddrUsingNetworkByteOrder ...................   Passed    0.00 sec
+      Start 14: Ipv4EndpointTest.SupportsWildcardAddress
+14/60 Test #14: Ipv4EndpointTest.SupportsWildcardAddress ...................................   Passed    0.00 sec
+      Start 15: Ipv4EndpointTest.RejectsEmptyAddress
+15/60 Test #15: Ipv4EndpointTest.RejectsEmptyAddress .......................................   Passed    0.00 sec
+      Start 16: Ipv4EndpointTest.RejectsMalformedIpv4Address
+16/60 Test #16: Ipv4EndpointTest.RejectsMalformedIpv4Address ...............................   Passed    0.00 sec
+      Start 17: Ipv4EndpointTest.RejectsNonIpv4Sockaddr
+17/60 Test #17: Ipv4EndpointTest.RejectsNonIpv4Sockaddr ....................................   Passed    0.00 sec
+      Start 18: TcpClientSocketTest.StartsDisconnected
+18/60 Test #18: TcpClientSocketTest.StartsDisconnected .....................................   Passed    0.00 sec
+      Start 19: TcpClientSocketTest.ConnectsToListeningServer
+19/60 Test #19: TcpClientSocketTest.ConnectsToListeningServer ..............................   Passed    0.00 sec
+      Start 20: TcpClientSocketTest.ConnectIsIdempotent
+20/60 Test #20: TcpClientSocketTest.ConnectIsIdempotent ....................................   Passed    0.00 sec
+      Start 21: TcpClientSocketTest.DisconnectClosesSocketAndClearsLocalEndpoint
+21/60 Test #21: TcpClientSocketTest.DisconnectClosesSocketAndClearsLocalEndpoint ...........   Passed    0.00 sec
+      Start 22: TcpClientSocketTest.CanReconnectAfterDisconnect
+22/60 Test #22: TcpClientSocketTest.CanReconnectAfterDisconnect ............................   Passed    0.00 sec
+      Start 23: TcpServerSocketTest.StartsStopped
+23/60 Test #23: TcpServerSocketTest.StartsStopped ..........................................   Passed    0.00 sec
+      Start 24: TcpServerSocketTest.BindsLoopbackWithEphemeralPort
+24/60 Test #24: TcpServerSocketTest.BindsLoopbackWithEphemeralPort .........................   Passed    0.00 sec
+      Start 25: TcpServerSocketTest.StartIsIdempotent
+25/60 Test #25: TcpServerSocketTest.StartIsIdempotent ......................................   Passed    0.00 sec
+      Start 26: TcpServerSocketTest.StopClosesListenerAndClearsLocalEndpoint
+26/60 Test #26: TcpServerSocketTest.StopClosesListenerAndClearsLocalEndpoint ...............   Passed    0.00 sec
+      Start 27: TcpServerSocketTest.AcceptRequiresListeningSocket
+27/60 Test #27: TcpServerSocketTest.AcceptRequiresListeningSocket ..........................   Passed    0.00 sec
+      Start 28: UdpSocketTest.StartsUnbound
+28/60 Test #28: UdpSocketTest.StartsUnbound ................................................   Passed    0.00 sec
+      Start 29: UdpSocketTest.BindsLoopbackWithEphemeralPort
+29/60 Test #29: UdpSocketTest.BindsLoopbackWithEphemeralPort ...............................   Passed    0.00 sec
+      Start 30: UdpSocketTest.BindIsIdempotent
+30/60 Test #30: UdpSocketTest.BindIsIdempotent .............................................   Passed    0.00 sec
+      Start 31: UdpSocketTest.CloseClosesSocketAndClearsLocalEndpoint
+31/60 Test #31: UdpSocketTest.CloseClosesSocketAndClearsLocalEndpoint ......................   Passed    0.00 sec
+      Start 32: UdpSocketTest.SendRequiresBoundSocket
+32/60 Test #32: UdpSocketTest.SendRequiresBoundSocket ......................................   Passed    0.00 sec
+      Start 33: UdpSocketTest.ReceiveRequiresBoundSocket
+33/60 Test #33: UdpSocketTest.ReceiveRequiresBoundSocket ...................................   Passed    0.00 sec
+      Start 34: UniqueFdTest.StartsInvalidByDefault
+34/60 Test #34: UniqueFdTest.StartsInvalidByDefault ........................................   Passed    0.00 sec
+      Start 35: UniqueFdTest.ClosesOwnedDescriptorOnDestruction
+35/60 Test #35: UniqueFdTest.ClosesOwnedDescriptorOnDestruction ............................   Passed    0.00 sec
+      Start 36: UniqueFdTest.MoveConstructionTransfersOwnership
+36/60 Test #36: UniqueFdTest.MoveConstructionTransfersOwnership ............................   Passed    0.00 sec
+      Start 37: UniqueFdTest.MoveAssignmentClosesPreviousDescriptor
+37/60 Test #37: UniqueFdTest.MoveAssignmentClosesPreviousDescriptor ........................   Passed    0.00 sec
+      Start 38: UniqueFdTest.ReleaseReturnsDescriptorWithoutClosingIt
+38/60 Test #38: UniqueFdTest.ReleaseReturnsDescriptorWithoutClosingIt ......................   Passed    0.00 sec
+      Start 39: UniqueFdTest.ResetClosesOldDescriptorAndOwnsNewDescriptor
+39/60 Test #39: UniqueFdTest.ResetClosesOldDescriptorAndOwnsNewDescriptor ..................   Passed    0.00 sec
+      Start 40: UnixDomainSocketClientTest.StartsDisconnected
+40/60 Test #40: UnixDomainSocketClientTest.StartsDisconnected ..............................   Passed    0.00 sec
+      Start 41: UnixDomainSocketClientTest.ConnectsToListeningServer
+41/60 Test #41: UnixDomainSocketClientTest.ConnectsToListeningServer .......................   Passed    0.00 sec
+      Start 42: UnixDomainSocketClientTest.DisconnectClosesConnection
+42/60 Test #42: UnixDomainSocketClientTest.DisconnectClosesConnection ......................   Passed    0.00 sec
+      Start 43: UnixDomainSocketClientTest.RejectsOverlongSocketPath
+43/60 Test #43: UnixDomainSocketClientTest.RejectsOverlongSocketPath .......................   Passed    0.00 sec
+      Start 44: UnixDomainSocketClientTest.ReportsMissingServer
+44/60 Test #44: UnixDomainSocketClientTest.ReportsMissingServer ............................   Passed    0.00 sec
+      Start 45: UnixDomainSocketServerTest.StartsAndCreatesSocketPath
+45/60 Test #45: UnixDomainSocketServerTest.StartsAndCreatesSocketPath ......................   Passed    0.00 sec
+      Start 46: UnixDomainSocketServerTest.StopRemovesSocketPath
+46/60 Test #46: UnixDomainSocketServerTest.StopRemovesSocketPath ...........................   Passed    0.00 sec
+      Start 47: UnixDomainSocketServerTest.DestructorRemovesSocketPath
+47/60 Test #47: UnixDomainSocketServerTest.DestructorRemovesSocketPath .....................   Passed    0.00 sec
+      Start 48: UnixDomainSocketServerTest.RejectsOverlongSocketPath
+48/60 Test #48: UnixDomainSocketServerTest.RejectsOverlongSocketPath .......................   Passed    0.00 sec
+      Start 49: UnixDomainSocketServerTest.RefusesToReplaceRegularFile
+49/60 Test #49: UnixDomainSocketServerTest.RefusesToReplaceRegularFile .....................   Passed    0.00 sec
+      Start 50: UnixDomainSocketIpcIntegrationTest.RoundTripsRequestAndResponse
+50/60 Test #50: UnixDomainSocketIpcIntegrationTest.RoundTripsRequestAndResponse ............   Passed    0.00 sec
+      Start 51: UnixDomainSocketIpcIntegrationTest.AcceptsSequentialClientConnections
+51/60 Test #51: UnixDomainSocketIpcIntegrationTest.AcceptsSequentialClientConnections ......   Passed    0.00 sec
+      Start 52: TcpNetworkIntegrationTest.RoundTripsPayload
+52/60 Test #52: TcpNetworkIntegrationTest.RoundTripsPayload ................................   Passed    0.00 sec
+      Start 53: TcpNetworkIntegrationTest.ReportsMatchingPeerAndLocalEndpoints
+53/60 Test #53: TcpNetworkIntegrationTest.ReportsMatchingPeerAndLocalEndpoints .............   Passed    0.00 sec
+      Start 54: TcpNetworkIntegrationTest.AcceptsSequentialClientConnections
+54/60 Test #54: TcpNetworkIntegrationTest.AcceptsSequentialClientConnections ...............   Passed    0.00 sec
+      Start 55: UdpNetworkIntegrationTest.RoundTripsDatagramsBidirectionally
+55/60 Test #55: UdpNetworkIntegrationTest.RoundTripsDatagramsBidirectionally ...............   Passed    0.00 sec
+      Start 56: UdpNetworkIntegrationTest.PreservesBinaryPayloadAndReportsSenderEndpoint
+56/60 Test #56: UdpNetworkIntegrationTest.PreservesBinaryPayloadAndReportsSenderEndpoint ...   Passed    0.00 sec
+      Start 57: UdpNetworkIntegrationTest.ReceivesSequentialDatagrams
+57/60 Test #57: UdpNetworkIntegrationTest.ReceivesSequentialDatagrams ......................   Passed    0.00 sec
+      Start 58: LinuxProcessLifecycleTest
+58/60 Test #58: LinuxProcessLifecycleTest ..................................................   Passed    0.00 sec
+      Start 59: LinuxExecChildReplacementTest
+59/60 Test #59: LinuxExecChildReplacementTest ..............................................   Passed    0.00 sec
+      Start 60: LinuxSignalHandlingTest
+60/60 Test #60: LinuxSignalHandlingTest ....................................................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 60
+
+Label Time Summary:
+exec       =   0.00 sec*proc (1 test)
+ipc        =   0.00 sec*proc (2 tests)
+linux      =   0.01 sec*proc (3 tests)
+network    =   0.01 sec*proc (6 tests)
+process    =   0.01 sec*proc (2 tests)
+signal     =   0.00 sec*proc (1 test)
+
+Total Test time (real) =   0.17 sec

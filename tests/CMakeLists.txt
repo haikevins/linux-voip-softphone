@@ -2,6 +2,10 @@ add_executable(unit_tests
     unit/test_build_info.cpp
     unit/test_call_state.cpp
     unit/test_call_state_machine.cpp
+    unit/test_ipv4_endpoint.cpp
+    unit/test_tcp_client_socket.cpp
+    unit/test_tcp_server_socket.cpp
+    unit/test_udp_socket.cpp
     unit/test_unique_fd.cpp
     unit/test_unix_domain_socket_client.cpp
     unit/test_unix_domain_socket_server.cpp
@@ -53,4 +57,40 @@ project_enable_sanitizers(ipc_integration_tests)
 gtest_discover_tests(ipc_integration_tests
     PROPERTIES
         LABELS "ipc;integration;linux"
+)
+
+add_executable(tcp_network_integration_tests
+    integration/test_tcp_network.cpp
+)
+
+target_link_libraries(tcp_network_integration_tests
+    PRIVATE
+        voip::core
+        GTest::gtest_main
+)
+
+project_set_warnings(tcp_network_integration_tests)
+project_enable_sanitizers(tcp_network_integration_tests)
+
+gtest_discover_tests(tcp_network_integration_tests
+    PROPERTIES
+        LABELS "network;tcp;integration;linux"
+)
+
+add_executable(udp_network_integration_tests
+    integration/test_udp_network.cpp
+)
+
+target_link_libraries(udp_network_integration_tests
+    PRIVATE
+        voip::core
+        GTest::gtest_main
+)
+
+project_set_warnings(udp_network_integration_tests)
+project_enable_sanitizers(udp_network_integration_tests)
+
+gtest_discover_tests(udp_network_integration_tests
+    PROPERTIES
+        LABELS "network;udp;integration;linux"
 )
