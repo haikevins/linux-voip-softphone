@@ -2,6 +2,7 @@ add_executable(unit_tests
     unit/test_build_info.cpp
     unit/test_call_state.cpp
     unit/test_call_state_machine.cpp
+    unit/test_unique_fd.cpp
 )
 
 target_link_libraries(unit_tests
