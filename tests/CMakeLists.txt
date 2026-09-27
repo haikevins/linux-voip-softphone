@@ -16,3 +16,9 @@ project_enable_sanitizers(unit_tests)
 
 include(GoogleTest)
 gtest_discover_tests(unit_tests)
+
+add_test(
+    NAME LinuxProcessLifecycleTest
+    COMMAND lab_process_lifecycle --self-test
+)
+set_tests_properties(LinuxProcessLifecycleTest PROPERTIES LABELS "linux;process")
