@@ -12,7 +12,7 @@
 namespace voip::ipc {
 namespace {
 
-sockaddr_un make_address(const std::string& path)
+sockaddr_un make_address(const std::string &path)
 {
     sockaddr_un address{};
     address.sun_family = AF_UNIX;
@@ -29,12 +29,11 @@ sockaddr_un make_address(const std::string& path)
     return address;
 }
 
-}  // namespace
+} // namespace
 
 UnixDomainSocketClient::UnixDomainSocketClient(std::string socket_path)
     : socket_path_(std::move(socket_path))
-{
-}
+{}
 
 void UnixDomainSocketClient::connect()
 {
@@ -50,7 +49,7 @@ void UnixDomainSocketClient::connect()
 
     int connect_result = -1;
     do {
-        connect_result = ::connect(socket.get(), reinterpret_cast<const sockaddr*>(&address),
+        connect_result = ::connect(socket.get(), reinterpret_cast<const sockaddr *>(&address),
                                    static_cast<socklen_t>(sizeof(address)));
     } while (connect_result == -1 && errno == EINTR);
 
@@ -76,9 +75,9 @@ int UnixDomainSocketClient::native_handle() const noexcept
     return socket_.get();
 }
 
-const std::string& UnixDomainSocketClient::path() const noexcept
+const std::string &UnixDomainSocketClient::path() const noexcept
 {
     return socket_path_;
 }
 
-}  // namespace voip::ipc
+} // namespace voip::ipc

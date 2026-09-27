@@ -81,11 +81,11 @@ TEST(UnixDomainSocketClientTest, ReportsMissingServer)
     try {
         client.connect();
         FAIL() << "expected connect() to fail when no server is listening";
-    } catch (const std::system_error& error) {
+    } catch (const std::system_error &error) {
         EXPECT_EQ(error.code().value(), ENOENT);
     }
 
     EXPECT_FALSE(client.is_connected());
 }
 
-}  // namespace
+} // namespace
