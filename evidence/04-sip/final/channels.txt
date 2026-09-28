@@ -1,0 +1,4 @@
+Channel                                                          Location                         State   Application(Data)
+0 active channels
+0 active calls
+3 calls processed

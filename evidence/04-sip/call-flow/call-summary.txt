@@ -1,0 +1,9 @@
+Phase 4 SIP call-flow evidence
+Captured at: 2026-09-29T00:48:13+07:00
+Branch: phase/4-sip-asterisk
+Commit: 617b602258313a3fb3fe61e0a188b64c84ec8b84
+Caller endpoint: 1001
+Callee endpoint: 1002
+Expected active channels: 2
+Expected active calls: 1
+Verification command: sudo ./scripts/verify_sip_call.sh --check

@@ -1,0 +1,6 @@
+Phase 4 SIP registration evidence
+Captured at: 2026-09-29T00:31:36+07:00
+Branch: phase/4-sip-asterisk
+Commit: f20b8c4f8d8110923c68d8b80b25be983f694e68
+Verified registered endpoints: 1001, 1002
+Verification command: sudo ./scripts/verify_sip_registration.sh --check
