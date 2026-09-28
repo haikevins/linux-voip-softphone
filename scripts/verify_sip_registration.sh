@@ -106,8 +106,16 @@ capture_evidence() {
         echo "Verification command: sudo ./scripts/verify_sip_registration.sh --check"
     } >"${EVIDENCE_DIR}/registration-summary.txt"
 
-    find "${EVIDENCE_DIR}" -maxdepth 1 -type f -name '*.txt' \
-        -exec sed -i 's/[[:space:]]\+$//' {} +
+    local evidence_file
+    local tmp_file
+    while IFS= read -r -d "" evidence_file; do
+        tmp_file="${evidence_file}.tmp"
+        sed "s/[[:space:]]\+$//" "${evidence_file}" |
+            tac |
+            sed "/./,\$!d" |
+            tac >"${tmp_file}"
+        mv "${tmp_file}" "${evidence_file}"
+    done < <(find "${EVIDENCE_DIR}" -maxdepth 1 -type f -name "*.txt" -print0)
 
     if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" ]]; then
         chown -R "${SUDO_UID}:${SUDO_GID}" "${EVIDENCE_DIR}"

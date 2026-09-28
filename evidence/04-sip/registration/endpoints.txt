@@ -13,15 +13,14 @@
  Endpoint:  1001                                                 Not in use    0 of inf
      InAuth:  auth1001/1001
         Aor:  1001                                               1
-      Contact:  1001/sip:1001@192.168.1.4:37749            dbdae3dd8c Avail       616.862
+      Contact:  1001/sip:1001@192.168.1.4:37749            dbdae3dd8c Avail        22.515
   Transport:  transport-udp             udp      0      0  0.0.0.0:5060
 
  Endpoint:  1002                                                 Not in use    0 of inf
      InAuth:  auth1002/1002
         Aor:  1002                                               1
-      Contact:  1002/sip:1002-0x58a5fd2f4610@127.0.0.1:506 9b03312347 Avail         0.217
+      Contact:  1002/sip:1002-0x58a5fd2f4610@127.0.0.1:506 9b03312347 Avail         0.763
   Transport:  transport-udp             udp      0      0  0.0.0.0:5060
 
 
 Objects found: 2
-
