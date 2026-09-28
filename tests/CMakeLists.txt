@@ -117,4 +117,17 @@ if(ENABLE_PJSIP)
         PROPERTIES
             LABELS "pjsip;unit"
     )
+
+    add_test(
+        NAME PjsipCliContractIntegrationTest
+        COMMAND
+            bash
+            ${CMAKE_CURRENT_SOURCE_DIR}/integration/test_pjsip_cli_contract.sh
+            $<TARGET_FILE:voip_sip_register>
+            $<TARGET_FILE:voip_sip_call>
+            $<TARGET_FILE:voip_sip_listen>
+    )
+    set_tests_properties(PjsipCliContractIntegrationTest PROPERTIES
+        LABELS "pjsip;integration;cli"
+    )
 endif()
