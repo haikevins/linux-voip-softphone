@@ -21,6 +21,14 @@
       }
     },
     {
+      "name": "pjsip-debug",
+      "inherits": "debug",
+      "displayName": "Debug + PJSIP",
+      "cacheVariables": {
+        "ENABLE_PJSIP": "ON"
+      }
+    },
+    {
       "name": "sanitizers",
       "inherits": "debug",
       "displayName": "Debug + ASan + UBSan",
@@ -42,6 +50,10 @@
     {
       "name": "debug",
       "configurePreset": "debug"
+    },
+    {
+      "name": "pjsip-debug",
+      "configurePreset": "pjsip-debug"
     },
     {
       "name": "sanitizers",
