@@ -1,0 +1,10 @@
+a5f0a9f (HEAD -> phase/4-sip-asterisk, origin/phase/4-sip-asterisk) docs(sip): document SIP call protocol flow
+064b696 test(sip): verify SIP call flow
+617b602 fix(evidence): clean SIP registration artifacts
+f20b8c4 test(sip): verify SIP endpoint registration
+c39653f chore(sip): add Asterisk lab environment
+37f82a1 (tag: v0.4-networking, origin/main, main) Merge pull request #3 from haikevins/phase/3-networking
+96927ec fix(evidence): clean phase 3 verification artifacts
+dc9f62b chore(evidence): record phase 3 verification artifacts
+2f03d72 docs(network): document TCP and UDP design
+9d5b0a4 test(network): add UDP datagram integration tests
