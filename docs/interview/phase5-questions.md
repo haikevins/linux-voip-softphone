@@ -164,7 +164,7 @@ raw SIP logger traces containing authentication material
 SDP keying material
 ```
 
-Instead, `evidence/05-pjsip/` stores sanitized result/state summaries for automated verification, registration, outgoing calls, and incoming calls.
+Instead, `evidence/phase5/` stores sanitized result/state summaries for automated verification, registration, outgoing calls, and incoming calls.
 
 ## Phase boundary
 
@@ -176,4 +176,4 @@ Phase 5 proves project-owned SIP signaling and call lifecycle control. A confirm
 - `docs/architecture/pjsip-cli.md`
 - `docs/phase5/dependencies.md`
 - `scripts/verify_phase5.sh`
-- `evidence/05-pjsip/`
+- `evidence/phase5/`

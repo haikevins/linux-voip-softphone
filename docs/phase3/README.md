@@ -103,7 +103,7 @@ Run:
 Committed evidence lives under:
 
 ```text
-evidence/03-networking/
+evidence/phase3/
 ```
 
 The evidence records network-focused tests plus the full project quality gates used to close the phase.
@@ -139,7 +139,7 @@ Phase 3 is complete when all of the following statements are true:
 
 - Architecture: `docs/architecture/networking.md`
 - Interview review: `docs/interview/phase3-questions.md`
-- Evidence: `evidence/03-networking/`
+- Evidence: `evidence/phase3/`
 
 ## Next phase
 

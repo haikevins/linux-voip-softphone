@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-EVIDENCE_DIR="${ROOT_DIR}/evidence/04-sip/call-flow"
+EVIDENCE_DIR="${ROOT_DIR}/evidence/phase4/call-flow"
 
 usage() {
     cat <<'USAGE'
@@ -13,7 +13,7 @@ Usage:
 --check     Verify that endpoints 1001 and 1002 are registered and that one
             established call has both PJSIP channels in state Up.
 --capture   Run the same verification and record selected non-secret Asterisk
-            state under evidence/04-sip/call-flow/.
+            state under evidence/phase4/call-flow/.
 USAGE
 }
 

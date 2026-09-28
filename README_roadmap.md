@@ -623,7 +623,7 @@ Ví dụ message:
 Lưu:
 
 ```text
-evidence/02-linux/
+evidence/phase2/
 ```
 
 với:
@@ -733,7 +733,7 @@ Không quan trọng con số chính xác. Quan trọng là bạn phải hiểu *
 ### Evidence
 
 ```text
-evidence/03-networking/
+evidence/phase3/
 ├── udp-demo.log
 ├── tcp-demo.log
 ├── packet-loss-demo.log
@@ -844,7 +844,7 @@ captures/sip-call.pcapng
 và:
 
 ```text
-evidence/04-sip/
+evidence/phase4/
 ├── register-flow.png
 ├── call-flow.png
 ├── wireshark-register.png

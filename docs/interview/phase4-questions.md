@@ -146,4 +146,4 @@ Phase 4 proves the external SIP/Asterisk environment with existing clients. The 
 - `docs/architecture/sip-asterisk.md`
 - `docs/protocols/sip.md`
 - `scripts/verify_phase4.sh`
-- `evidence/04-sip/`
+- `evidence/phase4/`

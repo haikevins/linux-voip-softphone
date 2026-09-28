@@ -104,7 +104,7 @@ Run:
 Committed evidence lives under:
 
 ```text
-evidence/02-linux/
+evidence/phase2/
 ```
 
 The evidence records build/test/analysis results together with process, exec, signal, and IPC demonstrations.
@@ -140,7 +140,7 @@ Phase 2 is complete when all of the following statements are true:
 
 - Architecture: `docs/architecture/linux-process-ipc.md`
 - Interview review: `docs/interview/phase2-questions.md`
-- Evidence: `evidence/02-linux/`
+- Evidence: `evidence/phase2/`
 
 ## Next phase
 

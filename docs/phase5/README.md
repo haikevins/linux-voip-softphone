@@ -134,7 +134,7 @@ The verifier covers:
 Committed Phase 5 evidence lives under:
 
 ```text
-evidence/05-pjsip/
+evidence/phase5/
 ```
 
 It records result/state summaries for:
@@ -182,7 +182,7 @@ Phase 5 is complete when all of the following statements are true:
 - Architecture: `docs/architecture/pjsip-cli.md`
 - Dependency provisioning: `docs/phase5/dependencies.md`
 - Interview review: `docs/interview/phase5-questions.md`
-- Evidence: `evidence/05-pjsip/`
+- Evidence: `evidence/phase5/`
 
 ## Next phase
 

@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FINAL_EVIDENCE_DIR="${ROOT_DIR}/evidence/04-sip/final"
-CALL_EVIDENCE_DIR="${ROOT_DIR}/evidence/04-sip/call-flow"
-PROTOCOL_EVIDENCE_DIR="${ROOT_DIR}/evidence/04-sip/protocol"
+FINAL_EVIDENCE_DIR="${ROOT_DIR}/evidence/phase4/final"
+CALL_EVIDENCE_DIR="${ROOT_DIR}/evidence/phase4/call-flow"
+PROTOCOL_EVIDENCE_DIR="${ROOT_DIR}/evidence/phase4/protocol"
 
 usage() {
     cat <<'USAGE'
@@ -14,7 +14,7 @@ Usage:
 
 --check     Verify the final Phase 4 runtime state and previously captured SIP evidence.
 --capture   Run the same verification and record selected non-secret final evidence under
-            evidence/04-sip/final/.
+            evidence/phase4/final/.
 USAGE
 }
 
@@ -130,7 +130,7 @@ verify_sensitive_material_absent() {
     matches="$(grep -RniE \
         'Authorization:[[:space:]]*Digest|Proxy-Authorization:|a=crypto:|inline:' \
         "${ROOT_DIR}/docs/phase4" \
-        "${ROOT_DIR}/evidence/04-sip" \
+        "${ROOT_DIR}/evidence/phase4" \
         --exclude='README.md' 2>/dev/null || true)"
 
     if [[ -n "${matches}" ]]; then

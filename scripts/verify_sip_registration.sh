@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-EVIDENCE_DIR="${ROOT_DIR}/evidence/04-sip/registration"
+EVIDENCE_DIR="${ROOT_DIR}/evidence/phase4/registration"
 
 usage() {
     cat <<'USAGE'
@@ -13,7 +13,7 @@ Usage:
 --check     Verify that Asterisk has registered contacts for SIP endpoints
             1001 and 1002, then print the current contact table.
 --capture   Run the same verification and record non-secret Asterisk state
-            under evidence/04-sip/registration/.
+            under evidence/phase4/registration/.
 USAGE
 }
 

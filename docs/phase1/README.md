@@ -115,7 +115,7 @@ The repository helper for the phase is:
 Committed evidence lives under:
 
 ```text
-evidence/01-cpp/
+evidence/phase1/
 ```
 
 It includes representative build/test/static-analysis/sanitizer output and lab execution results generated from the development environment.
@@ -151,7 +151,7 @@ Phase 1 is complete when all of the following statements are true:
 
 - Architecture: `docs/architecture/call-state-machine.md`
 - Interview review: `docs/interview/phase1-questions.md`
-- Evidence: `evidence/01-cpp/`
+- Evidence: `evidence/phase1/`
 
 ## Next phase
 

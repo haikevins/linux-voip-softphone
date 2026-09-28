@@ -2,10 +2,22 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-EVIDENCE_DIR="${ROOT_DIR}/evidence/03-networking"
+EVIDENCE_DIR="${ROOT_DIR}/evidence/phase3"
 NETWORK_TEST_REGEX='^(Ipv4EndpointTest|TcpClientSocketTest|TcpServerSocketTest|UdpSocketTest|TcpNetworkIntegrationTest|UdpNetworkIntegrationTest)\.'
 
 mkdir -p "${EVIDENCE_DIR}"
+
+# Remove only generated Phase 3 artifacts. README.md is maintained separately.
+# Obsolete VCS-bookkeeping artifacts are removed if an older collector left them.
+rm -f \
+    "${EVIDENCE_DIR}/toolchain.txt" \
+    "${EVIDENCE_DIR}/build.log" \
+    "${EVIDENCE_DIR}/network-tests.log" \
+    "${EVIDENCE_DIR}/full-tests.log" \
+    "${EVIDENCE_DIR}/sanitizers.log" \
+    "${EVIDENCE_DIR}/clang-tidy.log" \
+    "${EVIDENCE_DIR}/format-check.log" \
+    "${EVIDENCE_DIR}/phase3-summary.txt"
 
 {
     echo "Collected at: $(date --iso-8601=seconds)"
@@ -54,16 +66,12 @@ mkdir -p "${EVIDENCE_DIR}"
     echo "clang-format: PASS"
 ) 2>&1 | tee "${EVIDENCE_DIR}/format-check.log"
 
+# Keep git diff --check as a quality gate, but do not store VCS bookkeeping as
+# phase evidence.
 (
     cd "${ROOT_DIR}"
     git diff --check
-    echo "git diff --check: PASS"
-) 2>&1 | tee "${EVIDENCE_DIR}/git-diff-check.log"
-
-(
-    cd "${ROOT_DIR}"
-    git log --oneline --decorate --graph -25
-) 2>&1 | tee "${EVIDENCE_DIR}/git-history.txt"
+)
 
 {
     echo "Phase 3: TCP/UDP networking"

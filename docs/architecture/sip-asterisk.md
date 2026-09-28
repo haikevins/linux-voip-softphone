@@ -233,7 +233,7 @@ Raw SIP logger output is intentionally not committed. SIP traces can include Dig
 Committed evidence is restricted to selected non-secret runtime state and sanitized summaries under:
 
 ```text
-evidence/04-sip/
+evidence/phase4/
 ```
 
 The documentation explains protocol behavior without preserving reusable authentication material.

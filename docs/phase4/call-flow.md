@@ -99,7 +99,7 @@ Call-dialog lifetime and registration lifetime are independent; ending the call 
 
 ## Evidence and protocol boundary
 
-The active-call evidence belongs under `evidence/04-sip/call-flow/`. Protocol interpretation of REGISTER/INVITE responses, B2BUA dialog behavior, SDP negotiation, and BYE teardown belongs in `docs/protocols/sip.md`.
+The active-call evidence belongs under `evidence/phase4/call-flow/`. Protocol interpretation of REGISTER/INVITE responses, B2BUA dialog behavior, SDP negotiation, and BYE teardown belongs in `docs/protocols/sip.md`.
 
 Do not commit raw authentication-bearing SIP captures or media keying material.
 
@@ -112,4 +112,4 @@ The call lab is complete when the live call reaches the expected two-leg `Up` st
 - `docs/phase4/README.md`
 - `docs/architecture/sip-asterisk.md`
 - `docs/protocols/sip.md`
-- `evidence/04-sip/call-flow/`
+- `evidence/phase4/call-flow/`

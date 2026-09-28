@@ -119,7 +119,7 @@ sudo ./scripts/verify_sip_call.sh --check
 sudo ./scripts/verify_phase4.sh --check
 ```
 
-The final verification confirms the live registration state, idle Asterisk state after teardown, captured established-call evidence, protocol summary, and evidence-safety rules. `scripts/verify_phase4.sh` is the authoritative final verifier; a separate verification document is intentionally unnecessary because verification procedure belongs in this phase README and concrete results belong under `evidence/04-sip/`.
+The final verification confirms the live registration state, idle Asterisk state after teardown, captured established-call evidence, protocol summary, and evidence-safety rules. `scripts/verify_phase4.sh` is the authoritative final verifier; a separate verification document is intentionally unnecessary because verification procedure belongs in this phase README and concrete results belong under `evidence/phase4/`.
 
 After the final check passes, capture the selected idle-state evidence with:
 
@@ -132,7 +132,7 @@ sudo ./scripts/verify_phase4.sh --capture
 Committed evidence lives under:
 
 ```text
-evidence/04-sip/
+evidence/phase4/
 ```
 
 The repository stores selected non-secret Asterisk state and sanitized summaries. Raw SIP logger output is intentionally excluded because it can contain Digest authorization data and media keying attributes.
@@ -171,7 +171,7 @@ Phase 4 is complete when all of the following statements are true:
 - SIP protocol reference: `docs/protocols/sip.md`
 - Documentation taxonomy: `docs/README.md`
 - Interview review: `docs/interview/phase4-questions.md`
-- Evidence: `evidence/04-sip/`
+- Evidence: `evidence/phase4/`
 
 ## Next phase
 

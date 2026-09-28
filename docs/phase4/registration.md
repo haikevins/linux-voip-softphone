@@ -118,7 +118,7 @@ sudo ./scripts/verify_sip_registration.sh --capture
 The capture is written under:
 
 ```text
-evidence/04-sip/registration/
+evidence/phase4/registration/
 ```
 
 Review generated files before committing them. Contact URIs may contain local addresses and ephemeral ports even though SIP passwords are excluded.
@@ -174,4 +174,4 @@ The registration lab is complete when both identities are registered simultaneou
 - `docs/phase4/README.md`
 - `docs/architecture/sip-asterisk.md`
 - `docs/protocols/sip.md`
-- `evidence/04-sip/registration/`
+- `evidence/phase4/registration/`

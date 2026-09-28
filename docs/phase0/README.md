@@ -39,7 +39,7 @@ Deliberately excluded:
 | CI | Re-run project quality gates on GitHub | `.github/workflows/` |
 | Build helpers | Provide repeatable local commands | `scripts/build.sh`, `scripts/test.sh` |
 | Verification | Run the Phase 0 quality gates | Phase 0 scripts and CI workflows |
-| Evidence | Preserve verified toolchain/build/test output | `evidence/00-phase0/` |
+| Evidence | Preserve verified toolchain/build/test output | `evidence/phase0/` |
 
 ## Architecture and design
 
@@ -107,7 +107,7 @@ A clean Phase 0 repository should be able to regenerate its build directory from
 Committed evidence lives under:
 
 ```text
-evidence/00-phase0/
+evidence/phase0/
 ```
 
 The directory records the verified toolchain and representative build, test, static-analysis, and sanitizer output from the Phase 0 environment.
@@ -139,7 +139,7 @@ Phase 0 is complete when all of the following statements are true:
 
 - Root project overview: `README.md`
 - Project roadmap: `README_roadmap.md`
-- Evidence: `evidence/00-phase0/`
+- Evidence: `evidence/phase0/`
 
 ## Next phase
 
