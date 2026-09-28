@@ -99,6 +99,7 @@ if(ENABLE_PJSIP)
     add_executable(pjsip_config_tests
         unit/test_sip_account_config.cpp
         unit/test_sip_endpoint_config.cpp
+        unit/test_sip_outgoing_call_cli.cpp
         unit/test_sip_registration_cli.cpp
     )
 
