@@ -28,30 +28,28 @@ Useful inspection commands:
 pkg-config --modversion libpjproject
 pkg-config --cflags libpjproject
 pkg-config --libs libpjproject
-pkg-config --static --libs libpjproject
 ```
-
-The default PJPROJECT POSIX build produces static archives. Dependencies such as OpenSSL, ALSA,
-SRTP, and bundled codec libraries are recorded in `Libs.private` in `libpjproject.pc`; static
-consumers therefore must use pkg-config's `--static` metadata. The standalone verifier and the
-`PJSIP::PJSIP` CMake target both follow that rule.
 
 ## Ubuntu 24.04 note
 
-Ubuntu 24.04 does not provide the `pjproject` development package used by this Phase 5 baseline in
-the configured workstation repositories. The workstation therefore uses an upstream/local
-PJPROJECT installation that exports `libpjproject.pc`.
+Ubuntu 24.04 does not provide the `pjproject` source package in the standard Noble release archive.
+The Phase 5 workstation therefore needs an upstream/local PJPROJECT installation that exports
+`libpjproject.pc`.
 
-The project baseline for Phase 5 is PJSIP `2.17` or newer. For the versioned local installation used
-by this lab, make its pkg-config metadata visible before configuring the project:
+The project baseline for Phase 5 is PJSIP `2.17` or newer. If PJPROJECT is installed under a custom
+prefix, make its pkg-config metadata visible before configuring the project. For example:
 
 ```bash
-export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+export PKG_CONFIG_PATH="$HOME/.local/pjproject/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 ```
 
-A default static PJPROJECT installation does not require an `LD_LIBRARY_PATH` override. If a shared
-PJPROJECT build is used instead, ensure its runtime libraries are discoverable by the dynamic
-linker.
+If shared libraries were installed under the same private prefix, the runtime linker also needs to
+find them. Prefer configuring the system linker for a persistent installation; for a temporary lab
+session, an environment override can be used:
+
+```bash
+export LD_LIBRARY_PATH="$HOME/.local/pjproject/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+```
 
 ## Verify the dependency
 
@@ -66,7 +64,7 @@ It checks:
 - `pkg-config` is available;
 - `libpjproject >= 2.17` is discoverable;
 - the C++ compiler can include `<pjsua2.hpp>`;
-- a minimal PJSUA2 program links and runs successfully with the static transitive dependencies.
+- a minimal PJSUA2 program links and runs successfully.
 
 Expected final lines:
 
@@ -88,5 +86,18 @@ A successful configure prints a line similar to:
 -- PJSIP support enabled: libpjproject 2.17
 ```
 
-The normal `debug`, `sanitizers`, and `clang-tidy` presets remain unchanged in this commit. Later
-Phase 5 commits will add the PJSIP-backed CLI target and extend the quality presets around it.
+The normal `debug` preset remains a non-PJSIP regression path. Phase 5 enables PJSIP explicitly
+for sanitizer and clang-tidy verification when required:
+
+```bash
+cmake --preset sanitizers -DENABLE_PJSIP=ON
+cmake --build --preset sanitizers -j
+ctest --preset sanitizers --output-on-failure
+
+cmake --preset clang-tidy -DENABLE_PJSIP=ON
+cmake --build --preset clang-tidy -j
+```
+
+The completed Phase 5 workflow is available through `./scripts/verify_phase5.sh`. It verifies the
+PJSIP dependency, PJSIP-enabled build/tests, sanitizers, clang-tidy, CLI integration contract, and
+the non-PJSIP regression path.
