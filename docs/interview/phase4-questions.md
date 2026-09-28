@@ -81,7 +81,7 @@ In the successful call flow:
 - `200 OK` is the successful final response to the INVITE and carries the answering media description;
 - ACK completes the INVITE transaction/dialog establishment after the successful final response.
 
-The exact two-leg flow is documented in `docs/phase4/sip-protocol.md`.
+The protocol-level two-leg flow is documented in `docs/protocols/sip.md`.
 
 #### What is the difference between BYE and CANCEL?
 
@@ -134,7 +134,7 @@ The final verification combines current runtime checks with previously captured 
 - the final runtime can return to zero active channels/calls while registrations remain;
 - the committed documentation/evidence excludes sensitive raw authentication or keying material.
 
-Repository reference: `docs/phase4/verification.md`.
+Repository references: `docs/phase4/README.md` and `scripts/verify_phase4.sh`.
 
 ## Phase boundary
 
@@ -144,6 +144,6 @@ Phase 4 proves the external SIP/Asterisk environment with existing clients. The 
 
 - `docs/phase4/README.md`
 - `docs/architecture/sip-asterisk.md`
-- `docs/phase4/sip-protocol.md`
-- `docs/phase4/verification.md`
+- `docs/protocols/sip.md`
+- `scripts/verify_phase4.sh`
 - `evidence/04-sip/`

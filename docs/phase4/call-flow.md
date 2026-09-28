@@ -1,86 +1,67 @@
-# Phase 4 — SIP Call-Flow Experiment
+# Phase 4 — SIP Call Lab
 
-## Goal
+## Purpose
 
-Commit 3 proves that the two registered SIP endpoints can establish and tear down a real call
-through the Asterisk lab from Commit 1.
+Prove that the two registered SIP endpoints can establish and tear down a real call through the verified Asterisk lab.
 
 The runtime acceptance criteria are:
 
 - endpoint `1001` remains registered and reachable;
 - endpoint `1002` remains registered and reachable;
 - dialing extension `1002` from `1001` creates one active call;
-- Asterisk has one `PJSIP/1001-*` channel and one `PJSIP/1002-*` channel;
+- Asterisk exposes one `PJSIP/1001-*` channel and one `PJSIP/1002-*` channel;
 - both PJSIP channels reach state `Up` after endpoint `1002` answers;
-- after hangup, Asterisk returns to zero active channels and zero active calls.
+- after hangup, Asterisk returns to zero active channels and zero active calls while registrations remain.
 
-Protocol-level analysis of individual SIP messages belongs to the next Phase 4 commit. Raw SIP
-logger output is intentionally not committed because it can contain authentication material and
-media keying attributes.
+Protocol semantics for the observed SIP messages belong in `docs/protocols/sip.md`. Raw SIP logger output is intentionally not committed because it can contain authentication material and media keying attributes.
 
 ## Lab topology
 
 ```text
-Redmi 12 5G / Linphone Android / endpoint 1001
+Redmi / Linphone / endpoint 1001
                   |
-               Wi-Fi
+               Wi-Fi/LAN
                   |
                   v
 ThinkPad / Ubuntu / Asterisk
                   ^
                   |
-          loopback 127.0.0.1
+          local/LAN path
                   |
-ThinkPad / baresip / endpoint 1002
+ThinkPad SIP client / endpoint 1002
 ```
 
-Asterisk acts as the B2BUA between the two SIP user agents. `direct_media=no` keeps Asterisk in the
-call path, which makes the two call legs visible independently during the lab.
+Asterisk acts as the B2BUA between the two SIP user agents. `direct_media=no` keeps Asterisk in the media path, making the two call legs independently observable.
 
 ## Prerequisites
 
-The registration verifier from Commit 2 must pass before starting the call:
+Registration must pass before starting the call:
 
 ```bash
 sudo ./scripts/verify_sip_registration.sh --check
 ```
 
-Keep baresip running for endpoint `1002`:
-
-```bash
-baresip -v
-```
+Keep the endpoint `1002` SIP client running and available to answer an incoming call.
 
 ## Establish the call
 
-From Linphone Android on endpoint `1001`, dial extension `1002`.
+From endpoint `1001`, dial extension `1002` and answer the incoming call on endpoint `1002`.
 
-When baresip reports the incoming call, answer it with:
-
-```text
-a
-```
-
-Keep the call connected while running the call-flow verifier from another terminal:
+Keep the call connected while running the verifier from another terminal:
 
 ```bash
 sudo ./scripts/verify_sip_call.sh --check
-sudo ./scripts/verify_sip_call.sh --capture
 ```
 
-A successful check ends with:
+Expected final line:
 
 ```text
 SIP call verification: PASS
 ```
 
-The capture records only selected non-secret Asterisk state. It does not record raw SIP packets.
+## Verify the active call
 
-## Runtime state during the call
-
-Asterisk should report two active PJSIP channels and one active call. The exact channel suffixes,
-contact hashes, ports, bridge identifiers, timestamps, and RTT values are runtime-dependent and must
-not be hard-coded into tests.
+Asterisk should report two active PJSIP channels and one active call. Exact channel suffixes, contact hashes, ports, bridge identifiers, timestamps, and RTT values are runtime-dependent and must not be hard-coded into tests.
 
 Useful manual inspection commands are:
 
@@ -90,15 +71,17 @@ sudo asterisk -rx "pjsip show channels"
 sudo asterisk -rx "pjsip show contacts"
 ```
 
-## Tear down the call
+Capture the selected non-secret established-call state with:
 
-Hang up from baresip with:
-
-```text
-b
+```bash
+sudo ./scripts/verify_sip_call.sh --capture
 ```
 
-Then verify that Asterisk has no active call left while both endpoints remain registered:
+The capture records selected Asterisk state rather than raw SIP packets.
+
+## Tear down the call
+
+Hang up from either endpoint after verification, then confirm that Asterisk has no active call while both contacts remain registered:
 
 ```bash
 sudo asterisk -rx "core show channels"
@@ -112,4 +95,21 @@ Expected idle summary:
 0 active calls
 ```
 
-Both contacts should still be present and available after the call ends.
+Call-dialog lifetime and registration lifetime are independent; ending the call must not require removing the registered contacts.
+
+## Evidence and protocol boundary
+
+The active-call evidence belongs under `evidence/04-sip/call-flow/`. Protocol interpretation of REGISTER/INVITE responses, B2BUA dialog behavior, SDP negotiation, and BYE teardown belongs in `docs/protocols/sip.md`.
+
+Do not commit raw authentication-bearing SIP captures or media keying material.
+
+## Completion criteria
+
+The call lab is complete when the live call reaches the expected two-leg `Up` state, sanitized call evidence has been captured, teardown returns Asterisk to zero active calls/channels, and both endpoint registrations remain available.
+
+## References
+
+- `docs/phase4/README.md`
+- `docs/architecture/sip-asterisk.md`
+- `docs/protocols/sip.md`
+- `evidence/04-sip/call-flow/`

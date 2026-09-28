@@ -42,7 +42,7 @@ Deliberately excluded:
 | Call verification | Verify the established-call runtime state | `scripts/verify_sip_call.sh` |
 | Final verification | Close the phase against current/evidence state | `scripts/verify_phase4.sh` |
 | Architecture note | Explain Asterisk/B2BUA and signaling/media paths | `docs/architecture/sip-asterisk.md` |
-| Protocol notes | Record observed SIP behavior | `docs/phase4/sip-protocol.md` |
+| Protocol reference | Explain observed SIP wire/session behavior | `docs/protocols/sip.md` |
 | Interview review | Capture Phase 4 review questions | `docs/interview/phase4-questions.md` |
 
 ## Architecture and design
@@ -119,7 +119,13 @@ sudo ./scripts/verify_sip_call.sh --check
 sudo ./scripts/verify_phase4.sh --check
 ```
 
-The final verification confirms the live registration state, idle Asterisk state after teardown, captured established-call evidence, protocol summary, and evidence-safety rules.
+The final verification confirms the live registration state, idle Asterisk state after teardown, captured established-call evidence, protocol summary, and evidence-safety rules. `scripts/verify_phase4.sh` is the authoritative final verifier; a separate verification document is intentionally unnecessary because verification procedure belongs in this phase README and concrete results belong under `evidence/04-sip/`.
+
+After the final check passes, capture the selected idle-state evidence with:
+
+```bash
+sudo ./scripts/verify_phase4.sh --capture
+```
 
 ## Evidence
 
@@ -162,8 +168,8 @@ Phase 4 is complete when all of the following statements are true:
 - Architecture: `docs/architecture/sip-asterisk.md`
 - Registration experiment: `docs/phase4/registration.md`
 - Call-flow experiment: `docs/phase4/call-flow.md`
-- Protocol notes: `docs/phase4/sip-protocol.md`
-- Final verification: `docs/phase4/verification.md`
+- SIP protocol reference: `docs/protocols/sip.md`
+- Documentation taxonomy: `docs/README.md`
 - Interview review: `docs/interview/phase4-questions.md`
 - Evidence: `evidence/04-sip/`
 

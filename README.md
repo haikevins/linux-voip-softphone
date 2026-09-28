@@ -36,7 +36,7 @@ Phase 6 will add RTP/audio handling and real media-device routing. Qt/QML is int
 ```text
 cmake/          reusable CMake modules and quality configuration
 config/         example runtime configuration, including the Asterisk lab
-docs/           architecture notes and per-phase documentation
+docs/           documentation taxonomy, architecture, protocols, interviews, and phase guides
 evidence/       committed, scrubbed verification evidence by milestone
 labs/           focused learning/demo programs for core concepts
 scripts/        build, test, static-analysis, and phase verification helpers
@@ -138,12 +138,16 @@ Next planned milestone: **Phase 6 — RTP + Audio**.
 Useful entry points:
 
 ```text
-README_roadmap.md                   complete project roadmap
-docs/architecture/                 architecture decisions and subsystem notes
-docs/phase4/                       SIP/Asterisk protocol work
-docs/phase5/                       PJSIP dependency, usage, and verification notes
-evidence/05-pjsip/                 scrubbed Phase 5 completion evidence
+docs/README.md                     documentation taxonomy and required schemas
+README_roadmap.md                  complete project roadmap
+docs/architecture/                component/system architecture and design rationale
+docs/protocols/                   protocol wire/session behavior
+docs/interview/                   phase review questions and answers
+docs/phase*/README.md             primary phase entry points
+evidence/                         scrubbed verification evidence by milestone
 ```
+
+Architecture, protocol, interview, and primary phase README documents intentionally use category-specific common schemas. Run `./scripts/verify_docs_structure.sh` to verify those conventions.
 
 ## License
 

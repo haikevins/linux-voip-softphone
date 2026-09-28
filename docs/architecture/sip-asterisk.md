@@ -263,8 +263,8 @@ It does not implement the project's own SIP user agent. Phase 5 introduces PJSUA
 - `docs/phase4/README.md`
 - `docs/phase4/registration.md`
 - `docs/phase4/call-flow.md`
-- `docs/phase4/sip-protocol.md`
-- `docs/phase4/verification.md`
+- `docs/protocols/sip.md`
+- `docs/README.md`
 - `docs/interview/phase4-questions.md`
 - `config/asterisk/pjsip.conf.example`
 - `config/asterisk/extensions.conf.example`
