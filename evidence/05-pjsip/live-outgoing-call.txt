@@ -1,0 +1,31 @@
+Phase 5 live outgoing-call evidence (sanitized)
+
+Scenario
+--------
+Caller: PJSUA2 CLI account 1002 using voip-sip-call
+Callee: endpoint 1001
+Signaling path: 1002 -> Asterisk -> 1001
+Transport: UDP
+Application hold interval after connect: 3000 ms
+Credential source: environment variable (value not recorded)
+
+Observed result
+---------------
+Account registration completed with SIP status 200 (OK).
+The outgoing call reached CONFIRMED with SIP status 200.
+The call remained connected for the configured hold interval and then disconnected cleanly.
+Final teardown completed without forced account deletion and without PJ_EBUSY.
+
+Media observation
+-----------------
+PJSIP reported an audio stream using PCMU at 8 kHz with RTP packet counters in both directions.
+The successful RTP statistics demonstrate negotiated media packet flow, not application-level audible
+audio. Audio-device routing remains Phase 6 scope.
+
+Implementation note
+-------------------
+One live run emitted a temporary PJSIP_ETPNOTSUITABLE transport-selection warning before the stack
+retried and the call reached CONFIRMED. The final signaling result was successful.
+
+No SIP authorization header, Digest response, password, SDP keying material, or raw packet capture
+is stored here.

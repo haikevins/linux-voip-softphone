@@ -94,3 +94,40 @@ gtest_discover_tests(udp_network_integration_tests
     PROPERTIES
         LABELS "network;udp;integration;linux"
 )
+
+if(ENABLE_PJSIP)
+    add_executable(pjsip_config_tests
+        unit/test_sip_account_config.cpp
+        unit/test_sip_endpoint_config.cpp
+        unit/test_sip_incoming_call_cli.cpp
+        unit/test_sip_outgoing_call_cli.cpp
+        unit/test_sip_registration_cli.cpp
+    )
+
+    target_link_libraries(pjsip_config_tests
+        PRIVATE
+            voip::pjsip
+            GTest::gtest_main
+    )
+
+    project_set_warnings(pjsip_config_tests)
+    project_enable_sanitizers(pjsip_config_tests)
+
+    gtest_discover_tests(pjsip_config_tests
+        PROPERTIES
+            LABELS "pjsip;unit"
+    )
+
+    add_test(
+        NAME PjsipCliContractIntegrationTest
+        COMMAND
+            bash
+            ${CMAKE_CURRENT_SOURCE_DIR}/integration/test_pjsip_cli_contract.sh
+            $<TARGET_FILE:voip_sip_register>
+            $<TARGET_FILE:voip_sip_call>
+            $<TARGET_FILE:voip_sip_listen>
+    )
+    set_tests_properties(PjsipCliContractIntegrationTest PROPERTIES
+        LABELS "pjsip;integration;cli"
+    )
+endif()

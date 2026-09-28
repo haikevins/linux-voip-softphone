@@ -1,0 +1,31 @@
+Phase 5 live incoming-call evidence (sanitized)
+
+Scenario
+--------
+Caller: endpoint 1001
+Receiver: PJSUA2 CLI account 1002 using voip-sip-listen
+Signaling path: 1001 -> Asterisk -> 1002
+Transport: UDP
+Auto-answer delay: 500 ms
+Application hold interval after connect: 3000 ms
+Credential source: environment variable (value not recorded)
+
+Observed result
+---------------
+Account registration completed with SIP status 200 (OK).
+The listener received an incoming call from account 1001.
+The listener auto-answered after 500 ms and the call reached CONFIRMED with SIP status 200.
+The call remained connected for the configured hold interval and then disconnected cleanly.
+The final timer heap reported zero entries; no PJ_EBUSY or forced account-deletion warning was
+observed.
+
+Media observation
+-----------------
+PJSIP reported a sendrecv audio stream using PCMU at 8 kHz. The captured RTP statistics showed
+received and transmitted packets with zero packet loss in the sampled run.
+
+This demonstrates successful media negotiation and RTP packet flow only. Application-level audible
+audio remains Phase 6 scope.
+
+No SIP authorization header, Digest response, password, SDP keying material, or raw packet capture
+is stored here.
