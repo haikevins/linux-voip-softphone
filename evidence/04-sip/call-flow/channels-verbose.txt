@@ -1,0 +1,6 @@
+Channel                                                                          Context                  Extension                Prio State   Application  Data                      CallerID        Duration Accountcode PeerAccount BridgeID
+PJSIP/1002-00000005                                                              voip-lab                                             1 Up      AppDial      (Outgoing Line)           1002            00:00:57                         ed05b730-2a44-4b2c-9
+PJSIP/1001-00000004                                                              voip-lab                 1002                        2 Up      Dial         PJSIP/1002/sip:1002-0x5ef 1001            00:00:57                         ed05b730-2a44-4b2c-9
+2 active channels
+1 active call
+3 calls processed

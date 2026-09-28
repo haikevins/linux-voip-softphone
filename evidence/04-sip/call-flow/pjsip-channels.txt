@@ -1,0 +1,13 @@
+
+  Channel:  <ChannelId........................................>  <State.....>  <Time.....>
+      Exten: <DialedExten.............>  CLCID: <ConnectedLineCID.......>
+==========================================================================================
+
+  Channel: PJSIP/1001-00000004/Dial                              Up            00:00:57
+      Exten: 1002                        CLCID: "" <1002>
+
+  Channel: PJSIP/1002-00000005/AppDial                           Up            00:00:57
+      Exten:                             CLCID: "1001" <1001>
+
+
+Objects found: 2
