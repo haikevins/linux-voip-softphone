@@ -1,132 +1,103 @@
 # Phase 4 — SIP + Asterisk Lab
 
-## Goal
+## Status
 
-Phase 4 introduces SIP at the protocol/lab level before the project integrates PJSIP into C++.
-The first milestone is a reproducible local Asterisk environment with two SIP accounts that can
-register and call each other across the LAN.
+**Completed** — milestone tag `v0.5-sip-asterisk`.
 
-This phase deliberately starts with existing SIP clients. The project should prove that the server,
-accounts, dialplan, signaling path, SDP negotiation, and RTP path work before a custom softphone is
-added in Phase 5.
+Phase 4 proves the SIP/Asterisk lab independently of the custom C++ client and documents the signaling, SDP, call, and evidence model used by Phase 5.
 
-## Lab topology
+## Objective
 
-```text
-                       ThinkPad / Ubuntu
-                 +-------------------------+
-                 | Asterisk                |
-                 | UDP SIP :5060           |
-                 |                         |
-                 | endpoint 1001           |
-                 | endpoint 1002           |
-                 +------------+------------+
-                              |
-                         Wi-Fi router
-                       /              \
-                      /                \
-             SIP client 1001      SIP client 1002
-             ThinkPad/desktop      Redmi 12 5G
-```
+Build a known-good SIP environment with Asterisk and two external SIP endpoints, verify registration and a complete call lifecycle, and explain the observed protocol behavior before integrating PJSIP into the project.
 
-The repository configuration uses `direct_media=no`, so Asterisk remains in the media path. That
-makes later RTP capture and analysis easier to reason about.
+## Scope
 
-## Repository files
+Included in this phase:
 
-```text
-config/asterisk/pjsip.conf.example
-config/asterisk/extensions.conf.example
-scripts/verify_asterisk.sh
-```
+- local Asterisk PJSIP transport, endpoint, auth, AoR, and dialplan configuration;
+- two SIP identities (`1001` and `1002`);
+- SIP registration verification;
+- live call verification through Asterisk;
+- SIP digest challenge analysis;
+- INVITE/ringing/answer/ACK/BYE analysis;
+- SDP/media-negotiation observations;
+- sanitized Asterisk runtime evidence;
+- explicit secret-handling rules.
 
-`pjsip.conf.example` defines:
+Deliberately excluded:
 
-```text
-UDP transport on 0.0.0.0:5060
-endpoint/auth/AoR for 1001
-endpoint/auth/AoR for 1002
-G.711 u-law only
-voip-lab dialplan context
-```
+- custom PJSIP/PJSUA2 C++ clients;
+- production credential storage;
+- application-owned RTP/audio routing;
+- Qt/QML UI.
 
-`extensions.conf.example` lets 1001 and 1002 dial each other's registered PJSIP contacts.
+## Deliverables
 
-The committed passwords are example lab credentials, not production secrets:
+| Area | Purpose | Key files |
+|---|---|---|
+| Asterisk PJSIP sample | Define lab transport/endpoints/auth/AoRs | `config/asterisk/pjsip.conf.example` |
+| Dialplan sample | Route calls between the lab endpoints | `config/asterisk/extensions.conf.example` |
+| Asterisk verification | Validate sample/runtime configuration | `scripts/verify_asterisk.sh` |
+| Registration verification | Verify live contacts | `scripts/verify_sip_registration.sh` |
+| Call verification | Verify the established-call runtime state | `scripts/verify_sip_call.sh` |
+| Final verification | Close the phase against current/evidence state | `scripts/verify_phase4.sh` |
+| Architecture note | Explain Asterisk/B2BUA and signaling/media paths | `docs/architecture/sip-asterisk.md` |
+| Protocol notes | Record observed SIP behavior | `docs/phase4/sip-protocol.md` |
+| Interview review | Capture Phase 4 review questions | `docs/interview/phase4-questions.md` |
+
+## Architecture and design
+
+The final Phase 4 lab topology is:
 
 ```text
-1001 / voip-lab-1001
-1002 / voip-lab-1002
+Redmi / Linphone / 1001
+          |
+          | SIP + media
+          v
+Asterisk on Ubuntu
+PJSIP UDP :5060
+B2BUA, direct_media=no
+          |
+          | SIP + media
+          v
+ThinkPad SIP client / 1002
 ```
 
-Change them before using the configuration on a network you do not fully control.
+Asterisk is a back-to-back user agent. It terminates one SIP dialog and creates another dialog toward the destination contact; it is not acting as a transparent proxy.
 
-## 1. Install Asterisk
+With `direct_media=no`, Asterisk remains in the media path. This makes the two call legs and media negotiation easier to inspect during the lab.
 
-On Ubuntu:
+The observed successful call included:
 
-```bash
-sudo apt update
-sudo apt install -y asterisk
-
-asterisk -V
-sudo systemctl enable --now asterisk
-sudo systemctl status asterisk --no-pager
+```text
+REGISTER challenge/response -> 200 OK
+INVITE authentication challenge -> authenticated INVITE
+100 Trying
+180 Ringing
+200 OK
+ACK
+media negotiated
+BYE
+200 OK
 ```
 
-Before replacing any system configuration, save the current files:
+One client initially offered a secure media profile that the current lab configuration could not accept, producing `488 Not Acceptable Here`; the client then retried with a compatible RTP offer and the successful call negotiated `PCMU/8000`. The rejected offer and the final successful dialog must not be confused.
 
-```bash
-sudo cp -a /etc/asterisk/pjsip.conf \
-    /etc/asterisk/pjsip.conf.before-phase4
+## Build and run
 
-sudo cp -a /etc/asterisk/extensions.conf \
-    /etc/asterisk/extensions.conf.before-phase4
-```
-
-## 2. Validate the repository samples
-
-This check does not require a running Asterisk process:
+Validate the checked-in Asterisk samples:
 
 ```bash
 ./scripts/verify_asterisk.sh --samples
 ```
 
-Expected final line:
-
-```text
-Asterisk sample configuration: PASS
-```
-
-## 3. Install the lab configuration
-
-Copy the minimal lab files into Asterisk's configuration directory:
-
-```bash
-sudo install -o asterisk -g asterisk -m 0640 \
-    config/asterisk/pjsip.conf.example \
-    /etc/asterisk/pjsip.conf
-
-sudo install -o asterisk -g asterisk -m 0640 \
-    config/asterisk/extensions.conf.example \
-    /etc/asterisk/extensions.conf
-```
-
-Restart Asterisk rather than relying only on a module reload. The lab file defines the PJSIP
-transport, and transport changes are safest to apply with a full Asterisk restart.
-
-```bash
-sudo systemctl restart asterisk
-sudo systemctl status asterisk --no-pager
-```
-
-Then verify the live configuration:
+After installing the lab configuration into Asterisk, verify the runtime:
 
 ```bash
 sudo ./scripts/verify_asterisk.sh --runtime
 ```
 
-Useful manual CLI checks:
+Useful runtime inspection commands include:
 
 ```bash
 sudo asterisk -rx "pjsip show endpoints"
@@ -135,99 +106,67 @@ sudo asterisk -rx "pjsip show contacts"
 sudo asterisk -rx "dialplan show voip-lab"
 ```
 
-Before any client registers, the endpoints and AoRs should exist but the contact list can be empty.
+Registration and call experiments are documented separately so the phase README remains a high-level entry point.
 
-## 4. Find the Asterisk server's LAN address
+## Verification
 
-Use the ThinkPad's Wi-Fi/LAN IPv4 address as the SIP server address on both clients:
-
-```bash
-ip -brief -4 address
-```
-
-Do not use `127.0.0.1` from the Redmi. Loopback only refers to the device itself.
-
-If UFW is enabled, the local lab needs SIP signaling and RTP to reach Asterisk. Check the current
-firewall state before changing it:
+Run the progressively stronger checks:
 
 ```bash
-sudo ufw status
+sudo ./scripts/verify_asterisk.sh --runtime
+sudo ./scripts/verify_sip_registration.sh --check
+sudo ./scripts/verify_sip_call.sh --check
+sudo ./scripts/verify_phase4.sh --check
 ```
 
-For the default Asterisk UDP lab, the relevant traffic is SIP UDP/5060 and the Asterisk RTP UDP
-range configured by the installed `rtp.conf` (commonly 10000-20000). Keep the lab on the local LAN;
-do not expose these ports to the public Internet for this phase.
+The final verification confirms the live registration state, idle Asterisk state after teardown, captured established-call evidence, protocol summary, and evidence-safety rules.
 
-## 5. Configure two SIP clients
+## Evidence
 
-Client 1001:
+Committed evidence lives under:
 
 ```text
-username/auth user: 1001
-password:           voip-lab-1001
-server/domain:      <ThinkPad LAN IPv4>
-port:               5060
-transport:          UDP
+evidence/04-sip/
 ```
 
-Client 1002:
+The repository stores selected non-secret Asterisk state and sanitized summaries. Raw SIP logger output is intentionally excluded because it can contain Digest authorization data and media keying attributes.
 
-```text
-username/auth user: 1002
-password:           voip-lab-1002
-server/domain:      <ThinkPad LAN IPv4>
-port:               5060
-transport:          UDP
-```
+## Interview focus
 
-After both clients register:
+Use `docs/interview/phase4-questions.md` together with the architecture/protocol notes. Be ready to explain:
 
-```bash
-sudo asterisk -rx "pjsip show contacts"
-```
+- endpoint, auth, AoR, contact, transport, and dialplan roles;
+- why a `401 Unauthorized` challenge can be normal SIP Digest behavior;
+- Asterisk as a B2BUA versus a transparent proxy;
+- why `direct_media=no` keeps Asterisk in the media path;
+- INVITE, `100 Trying`, `180 Ringing`, `200 OK`, ACK, BYE, and CANCEL roles;
+- SDP negotiation and why an incompatible offer can produce `488`;
+- the difference between SIP signaling and RTP media;
+- why raw authentication-bearing traces are not committed.
 
-There should be a reachable contact for both 1001 and 1002.
+## Exit criteria
 
-## 6. First call test
+Phase 4 is complete when all of the following statements are true:
 
-Call 1002 from 1001, answer on 1002, verify two-way audio, then hang up. Repeat in the reverse
-direction.
+- both SIP identities can register to the local Asterisk server;
+- the call between the two endpoints can be established and torn down cleanly;
+- Asterisk shows the expected two-leg B2BUA behavior during the call;
+- the successful media negotiation is documented from observed behavior;
+- final Asterisk/SIP verification passes;
+- protocol and architecture documentation are present;
+- evidence is sanitized and committed;
+- milestone tag `v0.5-sip-asterisk` identifies the completed phase.
 
-At the signaling level, Phase 4 should eventually capture and explain the important sequence:
+## References
 
-```text
-REGISTER
-401 Unauthorized
-REGISTER with Authorization
-200 OK
+- Architecture: `docs/architecture/sip-asterisk.md`
+- Registration experiment: `docs/phase4/registration.md`
+- Call-flow experiment: `docs/phase4/call-flow.md`
+- Protocol notes: `docs/phase4/sip-protocol.md`
+- Final verification: `docs/phase4/verification.md`
+- Interview review: `docs/interview/phase4-questions.md`
+- Evidence: `evidence/04-sip/`
 
-INVITE
-100 Trying
-180 Ringing
-200 OK
-ACK
-RTP
-BYE
-200 OK
-```
+## Next phase
 
-Do not treat that sequence as a substitute for inspecting the actual packets. Later Phase 4 commits
-will add Wireshark captures/evidence and a project-authored `docs/protocols/sip.md` based on the
-observed messages.
-
-## Phase boundary
-
-Commit 1 is infrastructure only. It does not add PJSIP C++ code and does not claim that registration
-or calling has already been demonstrated on the real LAN.
-
-The expected progression is:
-
-```text
-Commit 1  Asterisk lab configuration and verification helper
-Commit 2  registration experiment and captured evidence
-Commit 3  call experiment and captured evidence
-Commit 4  SIP/SDP protocol notes based on observations
-Commit 5  Phase 4 verification/evidence and milestone preparation
-```
-
-Phase 5 will build the custom PJSIP CLI softphone on top of this known-good SIP lab.
+Phase 5 replaces the temporary desktop SIP endpoint with project-owned PJSUA2 command-line clients while reusing this known-good Asterisk lab.
