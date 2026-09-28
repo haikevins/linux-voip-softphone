@@ -1,4 +1,8 @@
-# PJSIP CLI Architecture — Phase 5
+# Phase 5 Architecture — PJSIP CLI Softphone
+
+## Status
+
+Completed — milestone `v0.6-pjsip-cli`.
 
 ## Purpose
 
@@ -28,7 +32,16 @@ src/app/
 They are compiled only when `ENABLE_PJSIP=ON`. The `voip_pjsip` library links to the imported
 `PJSIP::PJSIP` dependency target, and the three executables link to `voip::pjsip`.
 
-## Layering
+## Scope
+
+- Integrate PJPROJECT/PJSUA2 behind an optional build boundary.
+- Provide one-shot CLIs for registration, outgoing calls, and incoming calls.
+- Make callback synchronization, timeouts, account/call ownership, and teardown order explicit.
+- Verify signaling behavior without claiming Phase 6 two-way audio support.
+
+## Architecture model
+
+### Layering
 
 ```text
 command line
@@ -60,9 +73,9 @@ The parser/configuration layer contains deterministic argument validation. The c
 PJSUA2 objects and translates asynchronous callback state into results that the synchronous CLI can
 wait on.
 
-## Configuration objects
+### Configuration objects
 
-### `SipEndpointConfig`
+#### `SipEndpointConfig`
 
 `SipEndpointConfig` contains:
 
@@ -74,7 +87,7 @@ uint16_t listen_port     0 by default
 It maps directly to `pj::TransportConfig`. Port `0` delegates local port selection to PJSIP, which
 is useful when a fixed development port is already occupied.
 
-### `SipAccountConfig`
+#### `SipAccountConfig`
 
 `SipAccountConfig` contains:
 
@@ -101,7 +114,9 @@ PJSUA2's registration configuration.
 The password is not accepted as a CLI argument. The executable reads it from the environment only
 after argument parsing succeeds, then assigns it to `SipAccountConfig` in memory.
 
-## Common endpoint startup sequence
+## Runtime and lifecycle
+
+### Common endpoint startup sequence
 
 All three clients follow the same core PJSUA2 initialization sequence:
 
@@ -136,7 +151,7 @@ account uses the endpoint transport created for that client.
 The outgoing and incoming call clients call `audDevManager().setNullDev()` after `libStart()`. This
 keeps Phase 5 focused on signaling and lifecycle rather than connecting sound devices.
 
-## Registration client
+### Registration client
 
 `SipRegistrationClient` owns:
 
@@ -171,7 +186,7 @@ wait_for_registration() wakes
 
 This client is intentionally a registration verifier, not a persistent user agent.
 
-## Outgoing call client
+### Outgoing call client
 
 `SipOutgoingCallClient` adds two PJSUA2 subclasses:
 
@@ -226,7 +241,7 @@ sip:<target>@<server>:<server_port>;transport=<udp|tcp>
 The target parser intentionally rejects a preformatted URI. This keeps ownership of URI
 construction inside the project configuration layer.
 
-## Incoming call client
+### Incoming call client
 
 `SipIncomingCallClient` uses:
 
@@ -277,7 +292,7 @@ hangup + disconnect + teardown
 The current executable handles exactly one incoming call and then exits. Multi-call handling and a
 long-running UI event model are intentionally outside this CLI milestone.
 
-## Callback synchronization
+### Callback synchronization
 
 PJSUA2 callbacks are asynchronous relative to the CLI thread. The clients therefore protect shared
 results with mutexes and wake waiters with condition variables.
@@ -301,7 +316,7 @@ The outgoing and incoming clients also serialize callback access around the trac
 object during teardown. This prevents the main thread from destroying the C++ call wrapper while a
 call-state callback is still executing.
 
-## Teardown ordering
+### Teardown ordering
 
 Call teardown is more subtle than observing the `DISCONNECTED` state. PJSUA can report the state
 callback before the internal call slot has completed transaction cleanup.
@@ -338,7 +353,7 @@ state does not by itself prove that the PJSUA call slot is reusable. The Phase 5
 this distinction: destroying the account too early produced an active-call warning or `PJ_EBUSY`.
 The final lifecycle waits for PJSUA cleanup before shutting down the account.
 
-## Failure and timeout model
+### Failure and timeout model
 
 The CLI programs use two broad exit categories:
 
@@ -352,11 +367,13 @@ Registration/call timeouts produce explicit result paths rather than indefinite 
 outgoing or answered incoming call times out, the executable requests hangup and waits briefly for
 disconnection before exiting.
 
-## Test strategy
+## Verification strategy
+
+### Test strategy
 
 Phase 5 has three verification layers.
 
-### Unit/configuration tests
+#### Unit/configuration tests
 
 GoogleTest covers:
 
@@ -368,13 +385,13 @@ outgoing call CLI parsing and destination URI construction
 incoming call CLI parsing
 ```
 
-### Process-level CLI contract test
+#### Process-level CLI contract test
 
 `tests/integration/test_pjsip_cli_contract.sh` runs the built executables and checks their public
 command-line contract without depending on an Asterisk server. It verifies help behavior and the
 password-environment boundary for all three CLIs.
 
-### Live Asterisk tests
+#### Live Asterisk tests
 
 Manual lab verification covers behavior that requires real SIP peers:
 
@@ -387,7 +404,9 @@ Manual lab verification covers behavior that requires real SIP peers:
 Live results should be recorded as high-level evidence only. Raw SIP logs are intentionally excluded
 because authentication and media-security values may appear in signaling traces.
 
-## Why this is still a CLI architecture
+## Design rationale
+
+### Why this is still a CLI architecture
 
 The three clients are deliberately small, one-operation executables. That makes PJSUA2 ownership,
 callback synchronization, timeout behavior, and shutdown order observable before the project adds a
@@ -397,3 +416,18 @@ Phase 7 can place a UI above a stable signaling abstraction, and Phase 8 can int
 threading/event-dispatch policy without having to learn basic PJSUA2 lifetime rules at the same time.
 Phase 6 comes first and adds the media path while preserving the signaling lifecycle established
 here.
+
+## Phase boundary
+
+Phase 5 proves project-owned SIP registration and call lifecycle control through PJSUA2. Media is intentionally kept on the null-audio path for lifecycle verification; audible two-way RTP/audio-device work belongs to Phase 6.
+
+## References
+
+- `docs/phase5/README.md`
+- `docs/phase5/dependencies.md`
+- `docs/interview/phase5-questions.md`
+- `src/pjsip/SipRegistrationClient.hpp`
+- `src/pjsip/SipOutgoingCallClient.hpp`
+- `src/pjsip/SipIncomingCallClient.hpp`
+- `scripts/verify_phase5.sh`
+- `tests/integration/test_pjsip_cli_contract.sh`

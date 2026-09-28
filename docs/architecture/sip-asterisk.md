@@ -1,4 +1,8 @@
-# SIP + Asterisk Architecture — Phase 4
+# Phase 4 Architecture — SIP + Asterisk
+
+## Status
+
+Completed — milestone `v0.5-sip-asterisk`.
 
 ## Purpose
 
@@ -14,7 +18,15 @@ custom C++/PJSIP client correctness
 
 If registration and calling are already proven with external clients, later PJSIP failures can be investigated without first questioning the server, dialplan, or LAN topology.
 
-## Topology
+## Scope
+
+- Establish a known-good SIP/Asterisk lab before integrating the project-owned PJSIP client.
+- Verify registration, dialplan routing, B2BUA call behavior, SDP negotiation, RTP anchoring, and teardown.
+- Keep committed evidence useful while excluding SIP authentication secrets and sensitive media keying material.
+
+## Architecture model
+
+### Topology
 
 The final verified Phase 4 topology is:
 
@@ -43,7 +55,7 @@ endpoint 1002
 
 The specific client application used for an endpoint is a lab detail. The architectural contract is that both endpoints register to the same Asterisk instance and calls are routed through Asterisk.
 
-## Asterisk object model
+### Asterisk object model
 
 The lab configuration uses the PJSIP object model:
 
@@ -72,7 +84,9 @@ The responsibilities are distinct:
 
 The repository examples use one endpoint/auth/AoR set for `1001` and another for `1002`.
 
-## Registration path
+## Runtime and lifecycle
+
+### Registration path
 
 A typical registration flow in the lab is:
 
@@ -94,7 +108,7 @@ User agent                    Asterisk
 
 The initial `401 Unauthorized` is a challenge in SIP Digest authentication. It is not, by itself, evidence that registration failed. The relevant result is the authenticated follow-up transaction and the final registered contact state.
 
-## Call path and B2BUA behavior
+### Call path and B2BUA behavior
 
 Asterisk behaves as a back-to-back user agent rather than a transparent SIP proxy. The caller dialog terminates at Asterisk, and Asterisk creates a second dialog toward the callee.
 
@@ -125,13 +139,13 @@ Conceptually:
 
 Because the two dialogs are independent, identifiers such as Call-ID, tags, sequence numbers, local ports, and other transaction/dialog state do not have to be identical on the two sides.
 
-## Dialplan routing
+### Dialplan routing
 
 Both endpoints use the `voip-lab` context. The dialplan resolves the requested extension to the currently registered PJSIP contact rather than hard-coding a transient client address.
 
 That matters because SIP user agents can register from changing IP addresses or source ports. The AoR/contact state is the dynamic routing information; the dialed extension is the stable application-level identity.
 
-## Media path
+### Media path
 
 The lab uses:
 
@@ -159,7 +173,7 @@ failed media offer != failed final call
 
 A response from an earlier negotiation attempt must be interpreted in the context of the complete SIP dialog sequence.
 
-## Teardown
+### Teardown
 
 A successful teardown uses BYE on the established dialogs:
 
@@ -178,7 +192,9 @@ A successful teardown uses BYE on the established dialogs:
 
 After teardown, the call channels disappear while the SIP registrations can remain active. Registration lifetime and call-dialog lifetime are separate concerns.
 
-## Verification model
+## Verification strategy
+
+### Verification model
 
 Phase 4 uses progressively stronger verification:
 
@@ -210,7 +226,7 @@ scripts/verify_sip_call.sh
 scripts/verify_phase4.sh
 ```
 
-## Evidence and security boundary
+### Evidence and security boundary
 
 Raw SIP logger output is intentionally not committed. SIP traces can include Digest authorization fields and media keying attributes that should not be stored in the repository.
 
@@ -221,6 +237,10 @@ evidence/04-sip/
 ```
 
 The documentation explains protocol behavior without preserving reusable authentication material.
+
+## Design rationale
+
+The lab deliberately centralizes signaling through Asterisk and uses `direct_media=no` so call legs and RTP behavior remain observable at one controlled point. Dialplan routing resolves the current registered contact instead of hard-coding a transient client address. Raw SIP logger output is not a repository artifact because it can contain authentication fields or media keying material.
 
 ## Phase boundary
 
@@ -237,3 +257,14 @@ sanitized evidence
 ```
 
 It does not implement the project's own SIP user agent. Phase 5 introduces PJSUA2 clients and reuses this lab as the integration target.
+
+## References
+
+- `docs/phase4/README.md`
+- `docs/phase4/registration.md`
+- `docs/phase4/call-flow.md`
+- `docs/phase4/sip-protocol.md`
+- `docs/phase4/verification.md`
+- `docs/interview/phase4-questions.md`
+- `config/asterisk/pjsip.conf.example`
+- `config/asterisk/extensions.conf.example`
