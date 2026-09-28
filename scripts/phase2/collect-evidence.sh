@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 EVIDENCE_DIR="${ROOT_DIR}/evidence/phase2"
 mkdir -p "${EVIDENCE_DIR}"
 
@@ -83,7 +83,7 @@ HEAD_SHA="$(git -C "${ROOT_DIR}" rev-parse --short HEAD 2>/dev/null || true)"
 
 (
     cd "${ROOT_DIR}"
-    ./scripts/run_clang_tidy.sh
+    ./scripts/quality/clang-tidy.sh
 ) 2>&1 | tee "${EVIDENCE_DIR}/clang-tidy.log"
 
 (

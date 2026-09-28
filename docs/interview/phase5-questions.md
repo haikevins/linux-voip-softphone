@@ -175,5 +175,5 @@ Phase 5 proves project-owned SIP signaling and call lifecycle control. A confirm
 - `docs/phase5/README.md`
 - `docs/architecture/pjsip-cli.md`
 - `docs/phase5/dependencies.md`
-- `scripts/verify_phase5.sh`
+- `scripts/phase5/verify.sh`
 - `evidence/phase5/`

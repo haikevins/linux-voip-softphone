@@ -17,7 +17,7 @@ Historical toolchain snapshots retained in this directory are authoritative for 
 The Phase 1 verifier is:
 
 ```bash
-./scripts/verify_phase1.sh
+./scripts/phase1/verify.sh
 ```
 
 The recorded Phase 1 gate passed, including 11/11 tests in the normal test run and 11/11 under sanitizers, plus formatting and clang-tidy gates.
@@ -43,10 +43,10 @@ No SIP credentials or secret-bearing packet traces belong in this phase.
 Run:
 
 ```bash
-./scripts/verify_phase1.sh
+./scripts/phase1/verify.sh
 ```
 
-Use `scripts/collect_phase1_evidence.sh` only when intentionally refreshing Phase 1 evidence; its destination is `evidence/phase1/`.
+Use `scripts/phase1/collect-evidence.sh` only when intentionally refreshing Phase 1 evidence; its destination is `evidence/phase1/`.
 
 ## References
 

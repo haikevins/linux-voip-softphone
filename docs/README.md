@@ -123,7 +123,7 @@ Evidence is intentionally separate from explanatory documentation. Raw SIP trace
 Run:
 
 ```bash
-./scripts/verify_docs_structure.sh
+./scripts/quality/verify-docs-structure.sh
 ```
 
 The verifier checks the required H1/H2 conventions for architecture, protocol, interview, and phase README documents and rejects Markdown checkbox syntax that would reintroduce inconsistent completion-state formatting.

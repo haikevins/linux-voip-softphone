@@ -96,7 +96,7 @@ The phase verifier exercises:
 Run:
 
 ```bash
-./scripts/verify_phase2.sh
+./scripts/phase2/verify.sh
 ```
 
 ## Evidence

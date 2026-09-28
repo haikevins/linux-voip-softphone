@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT_DIR}"
 
 echo "== clang-format =="
@@ -19,9 +19,9 @@ echo "== Phase 1 labs =="
 ./build/debug/labs/cpp/move-semantics/lab_move_semantics
 
 echo "== sanitizers =="
-./scripts/run_sanitizers.sh
+./scripts/quality/sanitizers.sh
 
 echo "== clang-tidy =="
-./scripts/run_clang_tidy.sh
+./scripts/quality/clang-tidy.sh
 
 echo "Phase 1 verification passed."

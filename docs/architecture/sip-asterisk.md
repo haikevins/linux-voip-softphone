@@ -220,10 +220,10 @@ final idle-state verification
 The repository scripts are:
 
 ```text
-scripts/verify_asterisk.sh
-scripts/verify_sip_registration.sh
-scripts/verify_sip_call.sh
-scripts/verify_phase4.sh
+scripts/phase4/verify-asterisk.sh
+scripts/phase4/verify-registration.sh
+scripts/phase4/verify-call.sh
+scripts/phase4/verify.sh
 ```
 
 ### Evidence and security boundary

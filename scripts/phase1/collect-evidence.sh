@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 EVIDENCE_DIR="${ROOT_DIR}/evidence/phase1"
 mkdir -p "${EVIDENCE_DIR}"
 
@@ -64,7 +64,7 @@ rm -f \
 
 (
     cd "${ROOT_DIR}"
-    ./scripts/run_clang_tidy.sh
+    ./scripts/quality/clang-tidy.sh
 ) 2>&1 | tee "${EVIDENCE_DIR}/clang-tidy.log"
 
 (

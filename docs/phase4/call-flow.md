@@ -38,7 +38,7 @@ Asterisk acts as the B2BUA between the two SIP user agents. `direct_media=no` ke
 Registration must pass before starting the call:
 
 ```bash
-sudo ./scripts/verify_sip_registration.sh --check
+sudo ./scripts/phase4/verify-registration.sh --check
 ```
 
 Keep the endpoint `1002` SIP client running and available to answer an incoming call.
@@ -50,7 +50,7 @@ From endpoint `1001`, dial extension `1002` and answer the incoming call on endp
 Keep the call connected while running the verifier from another terminal:
 
 ```bash
-sudo ./scripts/verify_sip_call.sh --check
+sudo ./scripts/phase4/verify-call.sh --check
 ```
 
 Expected final line:
@@ -74,7 +74,7 @@ sudo asterisk -rx "pjsip show contacts"
 Capture the selected non-secret established-call state with:
 
 ```bash
-sudo ./scripts/verify_sip_call.sh --capture
+sudo ./scripts/phase4/verify-call.sh --capture
 ```
 
 The capture records selected Asterisk state rather than raw SIP packets.

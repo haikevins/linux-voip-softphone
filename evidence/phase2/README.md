@@ -17,7 +17,7 @@ Historical toolchain snapshots retained in this directory are authoritative for 
 The Phase 2 verifier is:
 
 ```bash
-./scripts/verify_phase2.sh
+./scripts/phase2/verify.sh
 ```
 
 The recorded final Phase 2 gate passed 32/32 tests, the 2/2 IPC integration subset, sanitizer verification, process/signal labs, formatting, and clang-tidy.
@@ -43,10 +43,10 @@ No SIP credentials or secret-bearing packet traces belong in this phase.
 Run:
 
 ```bash
-./scripts/verify_phase2.sh
+./scripts/phase2/verify.sh
 ```
 
-Use `scripts/collect_phase2_evidence.sh` only when intentionally refreshing Phase 2 evidence; its destination is `evidence/phase2/`.
+Use `scripts/phase2/collect-evidence.sh` only when intentionally refreshing Phase 2 evidence; its destination is `evidence/phase2/`.
 
 ## References
 

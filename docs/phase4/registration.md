@@ -11,7 +11,7 @@ Registration is intentionally verified before call establishment so reachability
 The Asterisk runtime check must pass first:
 
 ```bash
-sudo ./scripts/verify_asterisk.sh --runtime
+sudo ./scripts/phase4/verify-asterisk.sh --runtime
 ```
 
 Before clients register, `pjsip show contacts` can legitimately report no contacts. This lab adds two actual SIP user agents and verifies the resulting runtime bindings.
@@ -77,7 +77,7 @@ Use the credential configured for the corresponding active Asterisk auth object.
 After both clients report that they are registered, run:
 
 ```bash
-sudo ./scripts/verify_sip_registration.sh --check
+sudo ./scripts/phase4/verify-registration.sh --check
 ```
 
 The verifier checks that:
@@ -112,7 +112,7 @@ Exact addresses, source ports, contact hashes, status text, and RTT values are r
 Once `--check` passes, capture selected non-secret runtime state:
 
 ```bash
-sudo ./scripts/verify_sip_registration.sh --capture
+sudo ./scripts/phase4/verify-registration.sh --capture
 ```
 
 The capture is written under:

@@ -119,7 +119,7 @@ When a manual SIP verification is recorded, capture only sanitized outcomes need
 Run:
 
 ```bash
-./scripts/verify_evidence_structure.sh
+./scripts/quality/verify-evidence-structure.sh
 ```
 
 The verifier checks directory naming, README schema, legacy evidence paths, forbidden capture extensions, common secret-bearing SIP patterns, and Markdown checkbox syntax within the evidence tree.

@@ -17,7 +17,7 @@ Historical artifacts retained in this directory are authoritative for the origin
 The Phase 3 verifier is:
 
 ```bash
-./scripts/verify_phase3.sh
+./scripts/phase3/verify.sh
 ```
 
 The completed Phase 3 gates recorded 28/28 network-focused checks, 60/60 full tests, 60/60 sanitizer tests, and 43/43 clang-tidy build targets/checks, with the phase verifier passing.
@@ -43,7 +43,7 @@ Packet captures are not required for normal Phase 3 evidence and should not be c
 Run:
 
 ```bash
-./scripts/verify_phase3.sh
+./scripts/phase3/verify.sh
 ```
 
 Any evidence collector for this phase must write under `evidence/phase3/`.

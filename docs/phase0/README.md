@@ -37,7 +37,7 @@ Deliberately excluded:
 | Build system | Configure and build the C++20 project | `CMakeLists.txt`, `CMakePresets.json` |
 | CMake modules | Centralize warnings, sanitizers, and static analysis | `cmake/` |
 | CI | Re-run project quality gates on GitHub | `.github/workflows/` |
-| Build helpers | Provide repeatable local commands | `scripts/build.sh`, `scripts/test.sh` |
+| Build helpers | Provide repeatable local commands | `scripts/dev/build.sh`, `scripts/dev/test.sh` |
 | Verification | Run the Phase 0 quality gates | Phase 0 scripts and CI workflows |
 | Evidence | Preserve verified toolchain/build/test output | `evidence/phase0/` |
 

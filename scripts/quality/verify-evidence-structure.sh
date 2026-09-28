@@ -45,7 +45,7 @@ for f in evidence/phase4/registration/README.md evidence/phase4/call-flow/README
 done
 
 legacy_re='evidence/(00-phase0|01-cpp|02-linux|03-networking|04-sip|05-pjsip)(/|$)'
-if git grep -nE "$legacy_re" -- . ':!scripts/verify_evidence_structure.sh' >/tmp/voip-evidence-legacy.$$ 2>/dev/null; then
+if git grep -nE "$legacy_re" -- . ':!scripts/quality/verify-evidence-structure.sh' >/tmp/voip-evidence-legacy.$$ 2>/dev/null; then
     cat /tmp/voip-evidence-legacy.$$ >&2
     error "legacy evidence path references remain"
 fi
@@ -71,7 +71,7 @@ done
 
 # Ensure evidence collectors cannot silently recreate the removed bookkeeping.
 if git grep -nE 'git-history\.txt|git-status\.txt|git-diff-check\.log|git-log\.txt' \
-    -- 'scripts/collect_phase*_evidence.sh' >/tmp/voip-evidence-producers.$$ 2>/dev/null; then
+    -- 'scripts/phase*/collect-evidence.sh' >/tmp/voip-evidence-producers.$$ 2>/dev/null; then
     cat /tmp/voip-evidence-producers.$$ >&2
     error "evidence collector still produces obsolete VCS bookkeeping"
 fi

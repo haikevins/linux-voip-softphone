@@ -43,7 +43,7 @@ Deliberately excluded:
 | Registration CLI | Register one account and report final state | `voip-sip-register` sources |
 | Outgoing-call CLI | Register, call, hold, hang up, exit | `voip-sip-call` sources |
 | Incoming-call CLI | Register, ring, auto-answer, hold, hang up, exit | `voip-sip-listen` sources |
-| Verification | Exercise dependency, tests, sanitizers, tidy, regressions | `scripts/verify_phase5.sh` |
+| Verification | Exercise dependency, tests, sanitizers, tidy, regressions | `scripts/phase5/verify.sh` |
 | Architecture note | Explain PJSUA2 lifecycle/callback/teardown design | `docs/architecture/pjsip-cli.md` |
 | Interview review | Capture Phase 5 review questions | `docs/interview/phase5-questions.md` |
 
@@ -92,7 +92,7 @@ export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PA
 Verify the dependency and build the PJSIP preset:
 
 ```bash
-./scripts/verify_pjsip_dependency.sh
+./scripts/phase5/verify-pjsip-dependency.sh
 cmake --preset pjsip-debug
 cmake --build --preset pjsip-debug -j
 ```
@@ -112,7 +112,7 @@ Use each program's `--help` output for the authoritative CLI contract. Password 
 Run the complete automated Phase 5 verifier:
 
 ```bash
-./scripts/verify_phase5.sh
+./scripts/phase5/verify.sh
 ```
 
 The verifier covers:

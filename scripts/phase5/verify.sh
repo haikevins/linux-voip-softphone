@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT_DIR}"
 
 fail() {
@@ -19,8 +19,8 @@ require_command ctest
 require_command clang-format
 require_command pkg-config
 
-[[ -f scripts/verify_pjsip_dependency.sh ]] || \
-    fail "scripts/verify_pjsip_dependency.sh is missing"
+[[ -f scripts/phase5/verify-pjsip-dependency.sh ]] || \
+    fail "scripts/phase5/verify-pjsip-dependency.sh is missing"
 
 echo "== repository scope =="
 git diff --check
@@ -30,7 +30,7 @@ find src tests labs -type f \( -name '*.cpp' -o -name '*.hpp' \) \
     -print0 | xargs -0 clang-format --dry-run --Werror
 
 echo "== PJSIP dependency =="
-bash ./scripts/verify_pjsip_dependency.sh
+bash ./scripts/phase5/verify-pjsip-dependency.sh
 
 echo "== PJSIP debug build =="
 cmake --preset pjsip-debug

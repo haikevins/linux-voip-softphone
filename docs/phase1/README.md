@@ -107,7 +107,7 @@ The phase verification includes:
 The repository helper for the phase is:
 
 ```bash
-./scripts/verify_phase1.sh
+./scripts/phase1/verify.sh
 ```
 
 ## Evidence

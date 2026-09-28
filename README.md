@@ -74,13 +74,13 @@ cmake --build --preset pjsip-debug -j
 Verify the dependency independently:
 
 ```bash
-./scripts/verify_pjsip_dependency.sh
+./scripts/phase5/verify-pjsip-dependency.sh
 ```
 
 Run the complete Phase 5 automated verification suite:
 
 ```bash
-./scripts/verify_phase5.sh
+./scripts/phase5/verify.sh
 ```
 
 ## PJSIP CLI applications
@@ -147,7 +147,7 @@ docs/phase*/README.md             primary phase entry points
 evidence/                         scrubbed verification evidence by milestone
 ```
 
-Architecture, protocol, interview, and primary phase README documents intentionally use category-specific common schemas. Run `./scripts/verify_docs_structure.sh` to verify those conventions.
+Architecture, protocol, interview, and primary phase README documents intentionally use category-specific common schemas. Run `./scripts/quality/verify-docs-structure.sh` to verify those conventions.
 
 ## License
 

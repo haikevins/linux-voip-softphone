@@ -17,7 +17,7 @@ The completed Phase 5 environment uses PJPROJECT/PJSIP 2.17 and Asterisk 20 on U
 The Phase 5 verifier is:
 
 ```bash
-./scripts/verify_phase5.sh
+./scripts/phase5/verify.sh
 ```
 
 The final automated gates passed: 33/33 PJSIP-focused tests, 93/93 full tests, 93/93 sanitizer tests, 64/64 clang-tidy build/check targets, and the 60/60 non-PJSIP regression subset.
@@ -44,7 +44,7 @@ Automated gate:
 
 ```bash
 export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-./scripts/verify_phase5.sh
+./scripts/phase5/verify.sh
 ```
 
 Live Asterisk checks remain manual and must use runtime credentials without recording secrets.

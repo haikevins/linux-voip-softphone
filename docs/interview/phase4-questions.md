@@ -134,7 +134,7 @@ The final verification combines current runtime checks with previously captured 
 - the final runtime can return to zero active channels/calls while registrations remain;
 - the committed documentation/evidence excludes sensitive raw authentication or keying material.
 
-Repository references: `docs/phase4/README.md` and `scripts/verify_phase4.sh`.
+Repository references: `docs/phase4/README.md` and `scripts/phase4/verify.sh`.
 
 ## Phase boundary
 
@@ -145,5 +145,5 @@ Phase 4 proves the external SIP/Asterisk environment with existing clients. The 
 - `docs/phase4/README.md`
 - `docs/architecture/sip-asterisk.md`
 - `docs/protocols/sip.md`
-- `scripts/verify_phase4.sh`
+- `scripts/phase4/verify.sh`
 - `evidence/phase4/`

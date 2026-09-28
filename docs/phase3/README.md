@@ -95,7 +95,7 @@ Phase 3 verification covers:
 Run:
 
 ```bash
-./scripts/verify_phase3.sh
+./scripts/phase3/verify.sh
 ```
 
 ## Evidence

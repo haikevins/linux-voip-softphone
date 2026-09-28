@@ -48,7 +48,7 @@ If a future installation uses shared libraries under a non-system prefix, config
 Run the standalone dependency verifier first:
 
 ```bash
-./scripts/verify_pjsip_dependency.sh
+./scripts/phase5/verify-pjsip-dependency.sh
 ```
 
 It checks that:
@@ -79,7 +79,7 @@ A successful configure reports the discovered PJPROJECT version and enables the 
 Phase 5 also verifies PJSIP-enabled sanitizer and static-analysis paths while preserving the normal non-PJSIP regression path. The completed workflow is orchestrated by:
 
 ```bash
-./scripts/verify_phase5.sh
+./scripts/phase5/verify.sh
 ```
 
 ## Phase boundary
@@ -90,5 +90,5 @@ This document owns dependency discovery/provisioning details only. PJSUA2 object
 
 - `docs/phase5/README.md`
 - `docs/architecture/pjsip-cli.md`
-- `scripts/verify_pjsip_dependency.sh`
-- `scripts/verify_phase5.sh`
+- `scripts/phase5/verify-pjsip-dependency.sh`
+- `scripts/phase5/verify.sh`

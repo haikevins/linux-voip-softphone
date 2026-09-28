@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-EVIDENCE_DIR="${ROOT_DIR}/evidence/00-phase0"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+EVIDENCE_DIR="${ROOT_DIR}/evidence/phase0"
 mkdir -p "${EVIDENCE_DIR}"
 
 {

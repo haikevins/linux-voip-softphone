@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 EVIDENCE_DIR="${ROOT_DIR}/evidence/phase4/call-flow"
 
 usage() {
     cat <<'USAGE'
 Usage:
-  sudo ./scripts/verify_sip_call.sh --check
-  sudo ./scripts/verify_sip_call.sh --capture
+  sudo ./scripts/phase4/verify-call.sh --check
+  sudo ./scripts/phase4/verify-call.sh --capture
 
 --check     Verify that endpoints 1001 and 1002 are registered and that one
             established call has both PJSIP channels in state Up.
@@ -131,7 +131,7 @@ capture_evidence() {
         echo "Callee endpoint: 1002"
         echo "Expected active channels: 2"
         echo "Expected active calls: 1"
-        echo "Verification command: sudo ./scripts/verify_sip_call.sh --check"
+        echo "Verification command: sudo ./scripts/phase4/verify-call.sh --check"
     } >"${EVIDENCE_DIR}/call-summary.txt"
 
     clean_evidence_files

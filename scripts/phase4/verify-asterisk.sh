@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PJSIP_SAMPLE="${ROOT_DIR}/config/asterisk/pjsip.conf.example"
 DIALPLAN_SAMPLE="${ROOT_DIR}/config/asterisk/extensions.conf.example"
 
 usage() {
     cat <<'USAGE'
 Usage:
-  ./scripts/verify_asterisk.sh --samples
-  sudo ./scripts/verify_asterisk.sh --runtime
+  ./scripts/phase4/verify-asterisk.sh --samples
+  sudo ./scripts/phase4/verify-asterisk.sh --runtime
 
 --samples   Validate the repository's Asterisk example configuration.
 --runtime   Validate samples, then query a running Asterisk instance for

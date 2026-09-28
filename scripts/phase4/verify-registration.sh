@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 EVIDENCE_DIR="${ROOT_DIR}/evidence/phase4/registration"
 
 usage() {
     cat <<'USAGE'
 Usage:
-  sudo ./scripts/verify_sip_registration.sh --check
-  sudo ./scripts/verify_sip_registration.sh --capture
+  sudo ./scripts/phase4/verify-registration.sh --check
+  sudo ./scripts/phase4/verify-registration.sh --capture
 
 --check     Verify that Asterisk has registered contacts for SIP endpoints
             1001 and 1002, then print the current contact table.
@@ -103,7 +103,7 @@ capture_evidence() {
         echo "Branch: ${branch:-unknown}"
         echo "Commit: ${commit:-unknown}"
         echo "Verified registered endpoints: 1001, 1002"
-        echo "Verification command: sudo ./scripts/verify_sip_registration.sh --check"
+        echo "Verification command: sudo ./scripts/phase4/verify-registration.sh --check"
     } >"${EVIDENCE_DIR}/registration-summary.txt"
 
     local evidence_file

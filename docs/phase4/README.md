@@ -37,10 +37,10 @@ Deliberately excluded:
 |---|---|---|
 | Asterisk PJSIP sample | Define lab transport/endpoints/auth/AoRs | `config/asterisk/pjsip.conf.example` |
 | Dialplan sample | Route calls between the lab endpoints | `config/asterisk/extensions.conf.example` |
-| Asterisk verification | Validate sample/runtime configuration | `scripts/verify_asterisk.sh` |
-| Registration verification | Verify live contacts | `scripts/verify_sip_registration.sh` |
-| Call verification | Verify the established-call runtime state | `scripts/verify_sip_call.sh` |
-| Final verification | Close the phase against current/evidence state | `scripts/verify_phase4.sh` |
+| Asterisk verification | Validate sample/runtime configuration | `scripts/phase4/verify-asterisk.sh` |
+| Registration verification | Verify live contacts | `scripts/phase4/verify-registration.sh` |
+| Call verification | Verify the established-call runtime state | `scripts/phase4/verify-call.sh` |
+| Final verification | Close the phase against current/evidence state | `scripts/phase4/verify.sh` |
 | Architecture note | Explain Asterisk/B2BUA and signaling/media paths | `docs/architecture/sip-asterisk.md` |
 | Protocol reference | Explain observed SIP wire/session behavior | `docs/protocols/sip.md` |
 | Interview review | Capture Phase 4 review questions | `docs/interview/phase4-questions.md` |
@@ -88,13 +88,13 @@ One client initially offered a secure media profile that the current lab configu
 Validate the checked-in Asterisk samples:
 
 ```bash
-./scripts/verify_asterisk.sh --samples
+./scripts/phase4/verify-asterisk.sh --samples
 ```
 
 After installing the lab configuration into Asterisk, verify the runtime:
 
 ```bash
-sudo ./scripts/verify_asterisk.sh --runtime
+sudo ./scripts/phase4/verify-asterisk.sh --runtime
 ```
 
 Useful runtime inspection commands include:
@@ -113,18 +113,19 @@ Registration and call experiments are documented separately so the phase README 
 Run the progressively stronger checks:
 
 ```bash
-sudo ./scripts/verify_asterisk.sh --runtime
-sudo ./scripts/verify_sip_registration.sh --check
-sudo ./scripts/verify_sip_call.sh --check
-sudo ./scripts/verify_phase4.sh --check
+sudo ./scripts/phase4/verify-asterisk.sh --runtime
+sudo ./scripts/phase4/verify-registration.sh --check
+sudo ./scripts/phase4/verify-call.sh --check
+sudo ./scripts/phase4/verify.sh --check
 ```
 
-The final verification confirms the live registration state, idle Asterisk state after teardown, captured established-call evidence, protocol summary, and evidence-safety rules. `scripts/verify_phase4.sh` is the authoritative final verifier; a separate verification document is intentionally unnecessary because verification procedure belongs in this phase README and concrete results belong under `evidence/phase4/`.
+The final verification confirms the live registration state, idle Asterisk state after teardown, previously captured established-call evidence, and evidence-safety rules. `scripts/phase4/verify.sh` is the authoritative final verifier; protocol explanation belongs under `docs/protocols/`, while concrete runtime observations belong under `evidence/phase4/`.
 
-After the final check passes, capture the selected idle-state evidence with:
+Evidence capture is scenario-specific rather than aggregate. Capture registration state while the endpoints are registered, and capture call-flow state while the call is established:
 
 ```bash
-sudo ./scripts/verify_phase4.sh --capture
+sudo ./scripts/phase4/verify-registration.sh --capture
+sudo ./scripts/phase4/verify-call.sh --capture
 ```
 
 ## Evidence

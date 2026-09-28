@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT_DIR}"
 
 echo "== clang-format =="
@@ -29,6 +29,6 @@ cmake --build --preset sanitizers --clean-first -j
 ctest --preset sanitizers --output-on-failure
 
 echo "== clang-tidy (clean rebuild) =="
-./scripts/run_clang_tidy.sh
+./scripts/quality/clang-tidy.sh
 
 echo "Phase 2 verification passed."

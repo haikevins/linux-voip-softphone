@@ -429,5 +429,5 @@ Phase 5 proves project-owned SIP registration and call lifecycle control through
 - `src/pjsip/SipRegistrationClient.hpp`
 - `src/pjsip/SipOutgoingCallClient.hpp`
 - `src/pjsip/SipIncomingCallClient.hpp`
-- `scripts/verify_phase5.sh`
+- `scripts/phase5/verify.sh`
 - `tests/integration/test_pjsip_cli_contract.sh`
