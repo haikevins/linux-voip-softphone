@@ -1,0 +1,18 @@
+; Phase 4 local Asterisk lab dialplan.
+; Endpoints 1001 and 1002 can call each other inside the voip-lab context.
+
+[general]
+static=yes
+writeprotect=no
+clearglobalvars=no
+
+[globals]
+
+[voip-lab]
+exten => 1001,1,NoOp(Phase 4 lab call to endpoint 1001)
+ same => n,Dial(${PJSIP_DIAL_CONTACTS(1001)},30)
+ same => n,Hangup()
+
+exten => 1002,1,NoOp(Phase 4 lab call to endpoint 1002)
+ same => n,Dial(${PJSIP_DIAL_CONTACTS(1002)},30)
+ same => n,Hangup()
