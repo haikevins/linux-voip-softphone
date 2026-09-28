@@ -38,6 +38,8 @@ if(ENABLE_PJSIP)
     add_library(voip_pjsip
         pjsip/SipAccountConfig.cpp
         pjsip/SipEndpointConfig.cpp
+        pjsip/SipRegistrationCli.cpp
+        pjsip/SipRegistrationClient.cpp
     )
 
     add_library(voip::pjsip ALIAS voip_pjsip)
@@ -54,4 +56,18 @@ if(ENABLE_PJSIP)
 
     project_set_warnings(voip_pjsip)
     project_enable_sanitizers(voip_pjsip)
+
+    add_executable(voip_sip_register
+        app/sip_register_main.cpp
+    )
+
+    set_target_properties(voip_sip_register PROPERTIES OUTPUT_NAME "voip-sip-register")
+
+    target_link_libraries(voip_sip_register
+        PRIVATE
+            voip::pjsip
+    )
+
+    project_set_warnings(voip_sip_register)
+    project_enable_sanitizers(voip_sip_register)
 endif()
