@@ -1,0 +1,21 @@
+Phase 5 live SIP registration evidence (sanitized)
+
+Scenario
+--------
+Client: voip-sip-register
+Account: 1002
+Registrar: Asterisk lab on UDP/5060
+Credential source: environment variable (value not recorded)
+
+Observed result
+---------------
+REGISTER completed successfully with SIP status 200 (OK).
+Registration callback reported active=yes.
+The one-shot client completed its registration lifecycle and shut down cleanly.
+
+Notes
+-----
+The PJPROJECT media subsystem may print JACK backend probe warnings on this workstation. Those
+warnings were non-fatal and did not prevent SIP registration.
+
+No SIP authorization header, Digest response, password, or raw packet capture is stored here.

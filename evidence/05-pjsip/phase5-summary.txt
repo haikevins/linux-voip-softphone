@@ -1,0 +1,39 @@
+Phase 5 — PJSIP CLI final summary
+
+Base milestone
+--------------
+a1b7c29  v0.5-sip-asterisk / Phase 4 merge
+
+Phase 5 commit chain before evidence commit
+-------------------------------------------
+3cdae1d  build(pjsip): add PJSIP dependency detection
+d69a3de  feat(pjsip): add endpoint account configuration
+4336de3  feat(pjsip): implement SIP registration CLI
+2f5c7cd  feat(pjsip): implement outgoing call CLI
+507835d  feat(pjsip): handle incoming call lifecycle
+65d6e87  test(pjsip): add integration verification
+1d70dea  docs(pjsip): document PJSIP architecture and usage
+
+Acceptance evidence
+-------------------
+PJSIP dependency / PJSUA2 smoke test: PASS
+PJSIP-labelled tests: 33/33 PASS
+Full PJSIP test suite: 93/93 PASS
+ASan + UBSan with PJSIP enabled: 93/93 PASS
+clang-tidy with PJSIP enabled: 64/64 build PASS
+Non-PJSIP regression: 60/60 PASS
+Live registration: PASS (SIP 200 OK)
+Live outgoing call lifecycle: PASS (CONFIRMED -> clean disconnect)
+Live incoming call lifecycle: PASS (incoming -> auto-answer -> CONFIRMED -> clean disconnect)
+
+Phase boundary
+--------------
+Phase 5 proves PJSUA2 dependency integration, account/endpoint configuration, registration,
+outgoing call lifecycle, incoming call lifecycle, CLI contract verification, and clean resource
+teardown.
+
+RTP/PCMU packet flow was observed during live calls, but Phase 5 does not claim complete audible
+audio-device handling. Audio capture/playback, device selection, routing, and media-focused work are
+reserved for Phase 6.
+
+Final Phase 5 result: PASS

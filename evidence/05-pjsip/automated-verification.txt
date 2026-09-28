@@ -1,0 +1,28 @@
+Phase 5 automated verification evidence
+
+Dependency
+----------
+PJPROJECT / libpjproject: 2.17
+PJSUA2 compile/link smoke test: PASS
+PJSIP dependency verification: PASS
+
+PJSIP debug verification
+------------------------
+PJSIP-labelled tests: 33/33 PASS
+Full pjsip-debug test suite: 93/93 PASS
+PjsipCliContractIntegrationTest: PASS
+
+Quality gates
+-------------
+ASan + UBSan with ENABLE_PJSIP=ON: 93/93 PASS
+clang-tidy with ENABLE_PJSIP=ON: build 64/64 PASS
+Non-PJSIP debug regression: 60/60 PASS
+
+Final automated result
+----------------------
+Phase 5 automated verification: PASS
+
+Verification command:
+./scripts/verify_phase5.sh
+
+The automated verifier intentionally excludes live Asterisk credentials and raw SIP signaling.
