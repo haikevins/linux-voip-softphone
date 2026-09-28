@@ -94,3 +94,24 @@ gtest_discover_tests(udp_network_integration_tests
     PROPERTIES
         LABELS "network;udp;integration;linux"
 )
+
+if(ENABLE_PJSIP)
+    add_executable(pjsip_config_tests
+        unit/test_sip_account_config.cpp
+        unit/test_sip_endpoint_config.cpp
+    )
+
+    target_link_libraries(pjsip_config_tests
+        PRIVATE
+            voip::pjsip
+            GTest::gtest_main
+    )
+
+    project_set_warnings(pjsip_config_tests)
+    project_enable_sanitizers(pjsip_config_tests)
+
+    gtest_discover_tests(pjsip_config_tests
+        PROPERTIES
+            LABELS "pjsip;unit"
+    )
+endif()

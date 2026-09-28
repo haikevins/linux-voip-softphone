@@ -33,3 +33,25 @@ target_link_libraries(linux-voip-softphone
 
 project_set_warnings(linux-voip-softphone)
 project_enable_sanitizers(linux-voip-softphone)
+
+if(ENABLE_PJSIP)
+    add_library(voip_pjsip
+        pjsip/SipAccountConfig.cpp
+        pjsip/SipEndpointConfig.cpp
+    )
+
+    add_library(voip::pjsip ALIAS voip_pjsip)
+
+    target_include_directories(voip_pjsip
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
+    target_link_libraries(voip_pjsip
+        PUBLIC
+            PJSIP::PJSIP
+    )
+
+    project_set_warnings(voip_pjsip)
+    project_enable_sanitizers(voip_pjsip)
+endif()
