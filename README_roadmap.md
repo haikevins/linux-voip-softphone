@@ -855,7 +855,7 @@ evidence/04-sip/
 Git tag:
 
 ```text
-v0.5-sip-lab
+v0.5-sip-asterisk
 ```
 
 ---
@@ -960,7 +960,7 @@ hangup
 Git tag:
 
 ```text
-v0.6-sip-cli
+v0.6-pjsip-cli
 ```
 
 ---
@@ -1567,8 +1567,8 @@ v0.1-project-skeleton
 v0.2-cpp-core
 v0.3-linux-system
 v0.4-networking
-v0.5-sip-lab
-v0.6-sip-cli
+v0.5-sip-asterisk
+v0.6-pjsip-cli
 v0.7-qt-gui
 v0.8-diagnostics
 v0.9-rtsp-lab
@@ -1883,35 +1883,36 @@ Bạn nói:
 
 ---
 
-## Điểm xuất phát của bạn bây giờ
+## Tiến độ hiện tại
 
-Bạn đã có Ubuntu và toolchain, nên **chưa cần chạm tới Asterisk/PJSIP ngay**.
+Repository hiện đã hoàn thành **Phase 0 đến Phase 5**. Milestone mới nhất là:
 
-Bắt đầu đúng thứ tự:
+```text
+v0.6-pjsip-cli
+```
+
+Chuỗi milestone đã hoàn thành:
 
 ```text
 Phase 0
-Repository + CMake + tests
-
+Repository + engineering environment
         ↓
-
 Phase 1
-Modern C++
-
+Modern C++ foundation
         ↓
-
 Phase 2
-Linux / threads / IPC
-
+Linux system programming + IPC
         ↓
-
 Phase 3
-TCP / UDP
-
+TCP/UDP networking
         ↓
-
-Phase 4+
-SIP / RTP / PJSIP / Qt
+Phase 4
+SIP + Asterisk lab
+        ↓
+Phase 5
+PJSIP CLI softphone
 ```
+
+Bước tiếp theo là **Phase 6 — RTP + Audio**. Phase này tập trung vào media path thực tế, audio device handling, two-way audio và RTP diagnostics trước khi chuyển sang Qt/QML ở Phase 7.
 
 Mục tiêu không phải hoàn thành softphone càng nhanh càng tốt. Mục tiêu là đến cuối project, **mỗi dòng quan trọng trong JD đều có một artifact trong GitHub để bạn chỉ thẳng cho interviewer xem**.
