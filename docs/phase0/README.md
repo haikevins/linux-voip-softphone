@@ -1,305 +1,146 @@
 # Phase 0 — Repository & Engineering Environment
 
-Phase 0 is complete only when the project builds, unit tests pass, clang-tidy passes,
-ASan/UBSan pass, Git history is clean, and GitHub Actions is green.
+## Status
 
-## What you are proving
+**Completed** — milestone tag `v0.1-project-skeleton`.
 
-You are not proving VoIP knowledge yet. You are proving that you can create a professional
-C++ engineering environment before feature development starts.
+Phase 0 establishes the repository, build system, test framework, static analysis, sanitizers, CI, and evidence workflow used by every later phase.
 
-The required Phase 0 stack is:
+## Objective
 
-- Git
-- CMake
-- C++20
-- clang-format
-- clang-tidy
-- GoogleTest
-- AddressSanitizer (ASan)
-- UndefinedBehaviorSanitizer (UBSan)
-- GitHub Actions
+Create a reproducible C++20 engineering baseline before adding product features. The phase proves that the project can be configured, built, tested, analyzed, and verified consistently on Ubuntu.
 
-## Step 1 — Inspect the repository before running anything
+## Scope
 
-Read these files in this order:
+Included in this phase:
 
-1. `CMakeLists.txt`
-2. `src/CMakeLists.txt`
-3. `tests/CMakeLists.txt`
-4. `cmake/CompilerWarnings.cmake`
-5. `cmake/Sanitizers.cmake`
-6. `cmake/StaticAnalysis.cmake`
-7. `cmake/Dependencies.cmake`
-8. `.clang-format`
-9. `.clang-tidy`
-10. `.github/workflows/*.yml`
+- C++20 project configuration with CMake;
+- reusable compiler-warning, sanitizer, and static-analysis modules;
+- CMake presets for repeatable local builds;
+- GoogleTest integration;
+- `clang-format` and `clang-tidy` quality gates;
+- AddressSanitizer and UndefinedBehaviorSanitizer;
+- GitHub Actions for build, test, and static analysis;
+- scripts for local build/test/verification;
+- Phase 0 evidence collection.
 
-You should be able to explain what each file contributes to the build pipeline.
+Deliberately excluded:
 
-## Step 2 — Verify/install the toolchain
+- Linux process/IPC features;
+- TCP/UDP networking;
+- SIP, RTP, PJSIP, audio, or Qt/QML.
 
-If you already installed the tools, first check them manually:
+## Deliverables
 
-```bash
-git --version
-cmake --version
-g++ --version
-clang --version
-clang-format --version
-clang-tidy --version
-gdb --version
-ninja --version
-```
+| Area | Purpose | Key files |
+|---|---|---|
+| Build system | Configure and build the C++20 project | `CMakeLists.txt`, `CMakePresets.json` |
+| CMake modules | Centralize warnings, sanitizers, and static analysis | `cmake/` |
+| CI | Re-run project quality gates on GitHub | `.github/workflows/` |
+| Build helpers | Provide repeatable local commands | `scripts/dev/build.sh`, `scripts/dev/test.sh` |
+| Verification | Run the Phase 0 quality gates | Phase 0 scripts and CI workflows |
+| Evidence | Preserve verified toolchain/build/test output | `evidence/phase0/` |
 
-If one is missing, run:
+## Architecture and design
 
-```bash
-./scripts/bootstrap.sh
-```
-
-Do not treat the bootstrap script as a black box. Open it and understand every package it
-installs.
-
-## Step 3 — Build using the exact commands from the roadmap
-
-From the repository root:
-
-```bash
-cmake -S . -B build \
-    -DCMAKE_BUILD_TYPE=Debug
-
-cmake --build build -j
-
-ctest --test-dir build
-```
-
-Expected result: configuration succeeds, compilation succeeds, and all unit tests pass.
-
-GoogleTest is provided by the Ubuntu `libgtest-dev` package installed by `scripts/bootstrap.sh`.
-
-Run the executable:
-
-```bash
-./build/src/linux-voip-softphone
-```
-
-Expected output contains:
+The engineering pipeline established in this phase is:
 
 ```text
-linux-voip-softphone
-Phase 0 - Repository & Engineering Environment
-Standard: C++20
-Status: project skeleton is ready
+source
+  |
+  v
+CMake configuration
+  |
+  +--> compiler warnings
+  +--> clang-format
+  +--> clang-tidy
+  +--> ASan / UBSan
+  |
+  v
+build
+  |
+  v
+GoogleTest
+  |
+  v
+CI + evidence
 ```
 
-## Step 4 — Repeat the build using CMake Presets
+The important design rule is that quality checks are part of the project from the beginning instead of being added after the application becomes large.
 
-Presets make developer and CI builds reproducible:
+## Build and run
+
+A direct CMake build is supported:
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build -j
+ctest --test-dir build --output-on-failure
+```
+
+The preferred development workflow uses the checked-in presets:
 
 ```bash
 cmake --preset debug
 cmake --build --preset debug -j
-ctest --preset debug
-```
-
-Understand the relationship among `CMakePresets.json`, the generated build directory, and the
-root `CMakeLists.txt`.
-
-## Step 5 — Learn and verify clang-format
-
-Check formatting without changing files:
-
-```bash
-find src tests -type f \( -name '*.cpp' -o -name '*.hpp' \) \
-    -print0 | xargs -0 clang-format --dry-run --Werror
-```
-
-Then intentionally change indentation in one `.cpp` file and run:
-
-```bash
-clang-format -i src/app/main.cpp
-```
-
-Inspect the diff:
-
-```bash
-git diff
-```
-
-The point is to understand that formatting is deterministic and tool-enforced.
-
-## Step 6 — Run clang-tidy
-
-```bash
-./scripts/run_clang_tidy.sh
-```
-
-`ENABLE_CLANG_TIDY=ON` causes CMake to run clang-tidy as part of compilation.
-
-You should understand the difference:
-
-- compiler warnings: diagnostics from the compiler
-- clang-format: source-code formatting
-- clang-tidy: static analysis and modernization checks
-
-## Step 7 — Run ASan and UBSan
-
-```bash
-./scripts/run_sanitizers.sh
-```
-
-This configures a separate build with:
-
-```text
--fsanitize=address,undefined
--fno-omit-frame-pointer
-```
-
-Phase 0 should finish with no sanitizer report.
-
-You should know what the tools are intended to detect:
-
-- ASan: invalid memory access, use-after-free, buffer overflows, related memory errors
-- UBSan: selected forms of undefined behavior
-
-## Step 8 — Understand GoogleTest
-
-Open:
-
-```text
-tests/unit/test_build_info.cpp
-```
-
-Then run:
-
-```bash
 ctest --preset debug --output-on-failure
 ```
 
-Also list discovered tests:
+Project helper scripts provide the same workflow through repository-owned commands.
 
-```bash
-ctest --test-dir build/debug -N
-```
+## Verification
 
-You should be able to explain why tests are separate targets and why application code is placed
-in the `voip_core` library instead of testing `main()` directly.
+Phase 0 verification covers:
 
-## Step 9 — Collect recruiter evidence
+- CMake configure and build;
+- unit tests;
+- formatting checks;
+- `clang-tidy`;
+- ASan and UBSan;
+- GitHub Actions build/test/static-analysis workflows;
+- `git diff --check` before committing changes.
 
-Run:
+A clean Phase 0 repository should be able to regenerate its build directory from source without relying on committed generated files.
 
-```bash
-./scripts/collect_phase0_evidence.sh
-```
+## Evidence
 
-It generates files under:
-
-```text
-evidence/00-phase0/
-```
-
-Keep useful evidence such as:
+Committed evidence lives under:
 
 ```text
-toolchain.txt
-build.log
-test.log
-sanitizers.log
-clang-tidy.log
+evidence/phase0/
 ```
 
-Before committing evidence, inspect it for machine-specific paths or information you do not want
-in a public repository.
+The directory records the verified toolchain and representative build, test, static-analysis, and sanitizer output from the Phase 0 environment.
 
-## Step 10 — Initialize Git and create the Phase 0 milestone
+## Interview focus
 
-If this directory is not already a Git repository:
+Be ready to explain:
 
-```bash
-git init
-git branch -M main
-```
+- why CMake presets improve reproducibility;
+- the difference between compiler warnings, static analysis, and sanitizers;
+- what ASan and UBSan detect;
+- why tests and quality gates belong in CI;
+- why generated build artifacts are excluded from Git;
+- how the project can be rebuilt from a clean working tree.
 
-Inspect before committing:
+## Exit criteria
 
-```bash
-git status
-git diff
-```
+Phase 0 is complete when all of the following statements are true:
 
-Create the initial engineering commit:
+- the repository configures and builds from a clean source tree;
+- unit tests pass locally and in CI;
+- formatting and static analysis pass;
+- sanitizer builds/tests pass;
+- generated build output is not tracked;
+- Phase 0 evidence has been collected and reviewed;
+- milestone tag `v0.1-project-skeleton` points to the completed Phase 0 state.
 
-```bash
-git add .
-git commit -m "chore: bootstrap C++20 project skeleton"
-```
+## References
 
-Only after build, tests, clang-tidy, and sanitizers are passing, create the roadmap tag:
+- Root project overview: `README.md`
+- Project roadmap: `README_roadmap.md`
+- Evidence: `evidence/phase0/`
 
-```bash
-git tag -a v0.1-project-skeleton \
-    -m "Phase 0: repository and engineering environment"
-```
+## Next phase
 
-Verify:
-
-```bash
-git log --oneline --decorate --graph --all
-git tag --list
-```
-
-## Step 11 — Push to GitHub and verify CI
-
-Create an empty GitHub repository named `linux-voip-softphone`, then add it as your remote and
-push `main` plus the milestone tag.
-
-After pushing, verify that these workflows are green:
-
-```text
-Build
-Tests and Sanitizers
-Static Analysis
-```
-
-Do not claim Phase 0 complete while CI is red.
-
-## Step 12 — Update the root README status
-
-When everything above is genuinely passing, the root README should truthfully show:
-
-```text
-Build: Passing
-Tests: Passing
-Compiler: GCC / Clang
-Standard: C++20
-Platform: Ubuntu
-```
-
-## Phase 0 Definition of Done
-
-- [ ] `cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug` succeeds
-- [ ] `cmake --build build -j` succeeds
-- [ ] `ctest --test-dir build` passes
-- [ ] Debug preset passes
-- [ ] clang-format check passes
-- [ ] clang-tidy passes
-- [ ] ASan + UBSan tests pass
-- [ ] Git repository has a meaningful initial commit
-- [ ] Git tag `v0.1-project-skeleton` exists
-- [ ] GitHub Actions Build is green
-- [ ] GitHub Actions Tests and Sanitizers is green
-- [ ] GitHub Actions Static Analysis is green
-- [ ] Phase 0 evidence has been inspected and saved
-- [ ] You can explain every tool in the Phase 0 toolchain without reading the README
-
-## Interview proof
-
-A concise explanation you should eventually be able to give in your own words:
-
-> Tôi thiết lập project với CMake, compiler warnings, static analysis và sanitizer ngay từ đầu để
-> phát hiện lỗi sớm thay vì chỉ debug khi runtime.
-
-Do not memorize that sentence mechanically. Be prepared to open the repository and demonstrate
-which files implement each part of that statement.
+Phase 1 applies the engineering baseline to Modern C++ ownership, value semantics, state modeling, interfaces, and unit-tested production code.

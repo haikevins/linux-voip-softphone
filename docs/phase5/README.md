@@ -1,307 +1,189 @@
 # Phase 5 — PJSIP CLI Softphone
 
-## Goal
+## Status
 
-Phase 5 replaces the temporary command-line SIP endpoint used in the Asterisk lab with project-owned
-C++20/PJSUA2 clients. The phase covers PJSIP dependency integration, SIP account configuration,
-registration, one-shot outgoing calls, one-shot incoming calls, lifecycle cleanup, and repeatable
-automated verification.
+**Completed** — milestone tag `v0.6-pjsip-cli`.
 
-Media is deliberately not an application feature in this phase. The call clients select PJSUA2's
-null audio device so SIP call signaling can be exercised without designing capture, playback,
-RTP/media routing, or device selection. Those topics belong to Phase 6.
+Phase 5 introduces project-owned PJSUA2 command-line clients for registration, outgoing calls, and incoming calls while deliberately keeping real audio-device handling out of scope.
 
-## Build prerequisites
+## Objective
 
-The project expects PJPROJECT/PJSIP 2.17 or newer to expose the `libpjproject` pkg-config module.
-The Phase 5 workstation installation uses:
+Integrate PJPROJECT/PJSIP with the C++20 project, implement deterministic SIP account/call lifecycles, validate them against the Phase 4 Asterisk lab, and automate as much verification as possible without committing credentials or sensitive SIP traces.
+
+## Scope
+
+Included in this phase:
+
+- PJPROJECT/PJSIP dependency detection through `pkg-config`;
+- PJSUA2 build integration behind `ENABLE_PJSIP`;
+- endpoint and account configuration abstractions;
+- SIP registration CLI;
+- one-shot outgoing call CLI;
+- one-shot incoming call/auto-answer CLI;
+- callback synchronization and bounded waits;
+- deterministic call/account/endpoint teardown;
+- process-level CLI contract verification;
+- live Asterisk registration/call checks;
+- scrubbed Phase 5 evidence.
+
+Deliberately excluded:
+
+- real capture/playback device routing;
+- application-owned media connections;
+- RTP statistics and audio diagnostics;
+- Qt/QML.
+
+## Deliverables
+
+| Area | Purpose | Key files |
+|---|---|---|
+| Dependency integration | Detect/link PJPROJECT 2.17+ | `cmake/Dependencies.cmake`, `CMakePresets.json` |
+| Endpoint config | Map transport/listen settings to PJSUA2 | `src/pjsip/SipEndpointConfig.*` |
+| Account config | Build identity/registrar/auth configuration | `src/pjsip/SipAccountConfig.*` |
+| Registration CLI | Register one account and report final state | `voip-sip-register` sources |
+| Outgoing-call CLI | Register, call, hold, hang up, exit | `voip-sip-call` sources |
+| Incoming-call CLI | Register, ring, auto-answer, hold, hang up, exit | `voip-sip-listen` sources |
+| Verification | Exercise dependency, tests, sanitizers, tidy, regressions | `scripts/phase5/verify.sh` |
+| Architecture note | Explain PJSUA2 lifecycle/callback/teardown design | `docs/architecture/pjsip-cli.md` |
+| Interview review | Capture Phase 5 review questions | `docs/interview/phase5-questions.md` |
+
+## Architecture and design
+
+The PJSIP-enabled path is intentionally layered:
 
 ```text
-source:  ~/.local/src/pjproject-2.17
-prefix:  ~/.local/pjproject-2.17
-module:  ~/.local/pjproject-2.17/lib/pkgconfig/libpjproject.pc
+CLI argument parsing
+        |
+        v
+SipEndpointConfig + SipAccountConfig
+        |
+        v
+registration / outgoing / incoming client
+        |
+        v
+PJSUA2 Endpoint + Account + Call
+        |
+        v
+Asterisk lab
 ```
 
-Make the pkg-config metadata visible before configuring:
+The common endpoint lifecycle is based on PJSUA2 initialization, transport creation, library startup, account creation, asynchronous callbacks, and explicit shutdown ordering.
+
+Important design rules:
+
+- SIP passwords come from an environment variable, not command-line arguments;
+- callback-updated state is synchronized before the CLI thread reads it;
+- timeout paths are bounded instead of waiting forever;
+- call objects are allowed to reach a disconnected state before account shutdown;
+- account shutdown is performed before destroying the endpoint/library;
+- client teardown avoids forced object deletion and PJSUA2 busy-state errors;
+- the call clients use the null audio device so Phase 5 proves signaling/lifecycle without claiming finished media support.
+
+See `docs/architecture/pjsip-cli.md` for the full callback and lifetime model.
+
+## Build and run
+
+The Phase 5 workstation uses PJPROJECT 2.17 installed under a user-local prefix. Expose its pkg-config metadata before configuring:
 
 ```bash
 export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 ```
 
-Verify the dependency and build the PJSIP-enabled configuration:
+Verify the dependency and build the PJSIP preset:
 
 ```bash
-./scripts/verify_pjsip_dependency.sh
+./scripts/phase5/verify-pjsip-dependency.sh
 cmake --preset pjsip-debug
 cmake --build --preset pjsip-debug -j
 ```
 
-The dedicated preset sets `ENABLE_PJSIP=ON`. Normal non-PJSIP builds remain supported.
-
-## Produced CLI programs
-
-The PJSIP-enabled build produces three small executables under `build/pjsip-debug/src/`:
+The build produces:
 
 ```text
-voip-sip-register   register one SIP account and report the result
-voip-sip-call       register, place one outgoing call, hang up, and exit
-voip-sip-listen     register, handle one incoming call, hang up, and exit
+voip-sip-register
+voip-sip-call
+voip-sip-listen
 ```
 
-All three intentionally read the SIP password from an environment variable rather than a command
-line argument. The default variable is `VOIP_SIP_PASSWORD`, and `--password-env` can select another
-name.
+Use each program's `--help` output for the authoritative CLI contract. Password values must be provided through the configured environment variable and must not be copied into documentation or evidence.
 
-Do not put the password in shell history, source files, test fixtures, evidence files, or committed
-SIP traces.
+## Verification
 
-## Registration CLI
-
-Usage:
-
-```text
-voip-sip-register --username USER --server HOST [options]
-```
-
-Important options:
-
-```text
---server-port PORT     registrar port, default 5060
---listen-port PORT     local SIP port, default 0 (PJSIP chooses)
---transport udp|tcp    signaling transport, default udp
---realm REALM          Digest realm, default *
---timeout-ms MS        registration timeout, default 10000
---password-env NAME    password environment variable
-```
-
-Example for the Asterisk lab account `1002`:
+Run the complete automated Phase 5 verifier:
 
 ```bash
-export VOIP_SIP_PASSWORD='<configured password for auth1002>'
-
-./build/pjsip-debug/src/voip-sip-register \
-    --username 1002 \
-    --server 192.168.1.13 \
-    --server-port 5060 \
-    --listen-port 0 \
-    --transport udp \
-    --timeout-ms 10000
-
-unset VOIP_SIP_PASSWORD
+./scripts/phase5/verify.sh
 ```
 
-A successful registration ends with output similar to:
+The verifier covers:
+
+- repository/diff scope checks;
+- formatting;
+- PJPROJECT/PJSIP dependency compile/link smoke test;
+- PJSIP debug build;
+- PJSIP-labeled tests;
+- full PJSIP regression;
+- ASan and UBSan with PJSIP enabled;
+- `clang-tidy` with PJSIP enabled;
+- non-PJSIP regression.
+
+`PjsipCliContractIntegrationTest` verifies the three executable interfaces without a live SIP server. Live registration/outgoing/incoming tests remain explicit manual lab checks because they depend on Asterisk, LAN endpoints, and credentials.
+
+## Evidence
+
+Committed Phase 5 evidence lives under:
 
 ```text
-[REGISTER] status=200 active=yes reason="OK"
+evidence/phase5/
 ```
 
-The registration executable is intentionally one-shot. It validates that the account can register,
-then lets the client shut down cleanly rather than acting as a long-running phone.
+It records result/state summaries for:
 
-## Outgoing call CLI
+- automated verification;
+- live registration;
+- live outgoing call;
+- live incoming call;
+- phase completion.
 
-Usage:
+Raw SIP logger output, Digest authorization fields, SIP passwords, and SDP keying material are intentionally excluded.
 
-```text
-voip-sip-call --username USER --server HOST --target USER [options]
-```
+## Interview focus
 
-The `--target` value is a SIP user or extension, not a preformatted SIP URI. The CLI constructs the
-destination from the target, server, server port, and selected transport.
+Use `docs/interview/phase5-questions.md` with the implementation. Be ready to explain:
 
-Additional call options:
+- why PJSUA2 is integrated behind an explicit CMake option;
+- `pkg-config` and static-link dependency propagation;
+- endpoint, account, and call object responsibilities;
+- synchronous CLI orchestration around asynchronous PJSUA2 callbacks;
+- registration and call state callbacks;
+- incoming-call object creation from a PJSUA2 call ID;
+- why teardown order matters;
+- why the CLI reads credentials from an environment variable;
+- the difference between process-level contract tests and live SIP integration;
+- why negotiated RTP does not yet prove audible two-way application audio.
 
-```text
---registration-timeout-ms MS   registration timeout, default 10000
---call-timeout-ms MS           wait for answer/failure, default 30000
---hold-ms MS                   connected hold duration before BYE, default 2000
-```
+## Exit criteria
 
-Example: account `1002` on the ThinkPad calls Linphone extension `1001` through Asterisk:
+Phase 5 is complete when all of the following statements are true:
 
-```bash
-export VOIP_SIP_PASSWORD='<configured password for auth1002>'
+- PJPROJECT/PJSIP dependency verification passes;
+- registration works against the Phase 4 Asterisk lab;
+- outgoing calls reach confirmed/disconnected states cleanly;
+- incoming calls can ring, answer, confirm, and disconnect cleanly;
+- automated PJSIP and non-PJSIP regressions pass;
+- sanitizer and static-analysis gates pass;
+- teardown completes without forced account deletion or busy-state cleanup failures;
+- architecture, usage, interview, and evidence documentation are present;
+- committed evidence contains no SIP credentials or sensitive raw traces;
+- milestone tag `v0.6-pjsip-cli` identifies the completed phase.
 
-./build/pjsip-debug/src/voip-sip-call \
-    --username 1002 \
-    --server 192.168.1.13 \
-    --server-port 5060 \
-    --listen-port 5062 \
-    --transport udp \
-    --target 1001 \
-    --registration-timeout-ms 10000 \
-    --call-timeout-ms 30000 \
-    --hold-ms 3000
+## References
 
-unset VOIP_SIP_PASSWORD
-```
+- Architecture: `docs/architecture/pjsip-cli.md`
+- Dependency provisioning: `docs/phase5/dependencies.md`
+- Interview review: `docs/interview/phase5-questions.md`
+- Evidence: `evidence/phase5/`
 
-The successful live Phase 5 flow is:
+## Next phase
 
-```text
-REGISTER -> 200 OK
-INVITE -> ringing/answer through Asterisk
-call state -> CONFIRMED
-hold for the requested interval
-BYE / disconnect
-clean PJSUA2 teardown
-```
-
-A successful run includes:
-
-```text
-[REGISTER] status=200 active=yes reason="OK"
-[CALL] state=CONFIRMED status=200 connected=yes disconnected=no
-[CALL] disconnected=yes
-```
-
-## Incoming call CLI
-
-Usage:
-
-```text
-voip-sip-listen --username USER --server HOST [options]
-```
-
-Additional incoming-call options:
-
-```text
---registration-timeout-ms MS   registration timeout, default 10000
---incoming-timeout-ms MS       wait for an INVITE, default 30000
---call-timeout-ms MS           wait for CONFIRMED after answer, default 10000
---answer-delay-ms MS           delay before automatic 200 OK, default 0
---hold-ms MS                   connected hold duration before hangup, default 2000
-```
-
-Example: register account `1002`, then call extension `1002` from Linphone account `1001`:
-
-```bash
-export VOIP_SIP_PASSWORD='<configured password for auth1002>'
-
-./build/pjsip-debug/src/voip-sip-listen \
-    --username 1002 \
-    --server 192.168.1.13 \
-    --server-port 5060 \
-    --listen-port 5062 \
-    --transport udp \
-    --registration-timeout-ms 10000 \
-    --incoming-timeout-ms 30000 \
-    --call-timeout-ms 10000 \
-    --answer-delay-ms 500 \
-    --hold-ms 3000
-
-unset VOIP_SIP_PASSWORD
-```
-
-The listener handles one incoming call. It creates a tracked `pj::Call` from the PJSUA2 call ID,
-sends ringing, auto-answers with `200 OK`, waits for `CONFIRMED`, holds the call, hangs up, and exits.
-
-Expected high-level output:
-
-```text
-[REGISTER] status=200 active=yes reason="OK"
-[INCOMING] state=INCOMING ... received=yes ...
-[INCOMING] state=CONFIRMED status=200 received=yes connected=yes disconnected=no ...
-[INCOMING] disconnected=yes
-```
-
-## Asterisk lab workflow
-
-The Phase 5 live topology is:
-
-```text
-Linphone / extension 1001
-          |
-          | SIP
-          v
-Asterisk 20 / UDP 5060
-          |
-          | SIP
-          v
-PJSUA2 CLI / extension 1002
-```
-
-Before a test, ensure an older endpoint is not holding the chosen local port. For example:
-
-```bash
-sudo ss -lunp | grep ':5062' || true
-pgrep -af 'baresip|voip-sip-register|voip-sip-call|voip-sip-listen' || true
-```
-
-Using `--listen-port 0` is also valid and lets PJSIP select an available local port.
-
-The account password should match the currently configured Asterisk auth object. Do not assume a
-password value from documentation; use the lab configuration as the source of truth.
-
-## Automated verification
-
-Commit 6 adds the Phase 5 verifier:
-
-```bash
-./scripts/verify_phase5.sh
-```
-
-It runs these gates:
-
-```text
-git diff --check
-clang-format --dry-run --Werror
-PJSIP dependency compile/link smoke test
-PJSIP debug build
-PJSIP-labeled tests
-full PJSIP regression
-ASan + UBSan with ENABLE_PJSIP=ON
-clang-tidy with ENABLE_PJSIP=ON
-non-PJSIP debug regression
-```
-
-The integration test `PjsipCliContractIntegrationTest` exercises the three executable interfaces at
-the process boundary without requiring a live Asterisk server. Live registration and call-flow
-verification remains manual because it depends on the lab network/endpoints and must not capture SIP
-credentials into repository artifacts.
-
-## Security and evidence rules
-
-Keep evidence at the result/state level, for example:
-
-```text
-registration status code
-registered yes/no
-call state
-connected/disconnected result
-selected transport
-verification test totals
-```
-
-Do not commit raw SIP logger output. SIP traces may contain Digest `Authorization` values and media
-security attributes. Likewise, never commit `VOIP_SIP_PASSWORD` or shell output that prints it.
-
-## Phase boundary
-
-Phase 5 proves signaling and lifecycle behavior. It does not claim a finished media path.
-
-```text
-Phase 5
-  PJSIP/PJSUA2 dependency
-  SIP account/transport configuration
-  REGISTER
-  outgoing INVITE lifecycle
-  incoming INVITE lifecycle
-  deterministic teardown
-  CLI/integration verification
-
-Phase 6
-  RTP/media behavior
-  audio capture/playback
-  device selection
-  PJSUA2 media callbacks/connections
-  codec/media validation
-  one-way/no-audio diagnosis
-```
-
-The Phase 5 call clients use the PJSUA2 null audio device specifically to keep that boundary clear.
-
-For implementation details and callback/lifetime design, see
-`docs/architecture/pjsip-cli.md`. Dependency provisioning is documented in
-`docs/phase5/dependencies.md`.
+Phase 6 adds the real RTP/audio path: capture/playback devices, PJSUA2 media connections, codec/media verification, and diagnosis of one-way or missing audio.

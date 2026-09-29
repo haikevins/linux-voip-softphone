@@ -17,6 +17,21 @@ CMakeUserPresets.json
 /core
 /core.*
 *.core
+.gdb_history
+
+# Runtime/network capture artifacts
+*.pcap
+*.pcapng
+*.trace
+*.pcm
+*.raw
+
+# Generic temporary/cache files
+.cache/
+*.tmp
+*.bak
+*.orig
+*.rej
 
 # Logs
 *.log

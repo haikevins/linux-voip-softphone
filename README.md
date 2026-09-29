@@ -1,75 +1,52 @@
 # Linux VoIP Softphone
 
-A Linux desktop SIP softphone engineering portfolio developed progressively with C++20,
-Qt/QML, PJSIP, Linux system programming, networking, testing, and debugging tooling.
+A Linux SIP softphone engineering portfolio developed incrementally in C++20 with Linux system programming, TCP/UDP networking, Asterisk, PJSIP/PJSUA2, testing, sanitizers, static analysis, and protocol-focused verification.
 
-## Current milestone
+The repository is intentionally phase-driven: each milestone adds production code, tests, documentation, and verification evidence before moving to the next subsystem.
 
-**Phase 1 — Modern C++ Foundation**
+## Current status
 
-Phase 0 established the reproducible engineering environment. Phase 1 now adds the first
-production-oriented C++ core and focused learning labs for ownership and value semantics.
+Completed through **Phase 5 — PJSIP CLI Softphone**.
 
-## Phase 1 learning scope
+Current milestone tag:
 
 ```text
-RAII
-smart pointers
-move semantics
-const correctness
-enum class
-std::optional
-std::variant
-STL containers
-interfaces
-basic dependency injection
+v0.6-pjsip-cli
 ```
 
-## Start here
+Implemented so far:
 
-Read the package/application note first:
+- C++20 project/toolchain foundation with CMake, GoogleTest, clang-format, clang-tidy, ASan, and UBSan.
+- Modern C++ call-state core and focused ownership/value-semantics labs.
+- Linux process, signal, file-descriptor RAII, and Unix-domain-socket IPC work.
+- IPv4 endpoint, TCP client/server, and UDP socket abstractions with integration tests.
+- Local Asterisk SIP lab with two endpoints and documented REGISTER/call flows.
+- PJPROJECT 2.17 / PJSUA2 integration behind `ENABLE_PJSIP`.
+- PJSIP account and endpoint configuration abstractions.
+- CLI registration client.
+- CLI outgoing-call lifecycle.
+- CLI incoming-call lifecycle with ringing and auto-answer support.
+- Automated PJSIP contract, regression, sanitizer, and static-analysis verification.
+- Scrubbed runtime evidence that excludes SIP credentials and keying material.
+
+Phase 6 will add RTP/audio handling and real media-device routing. Qt/QML is intentionally deferred until the media path is stable.
+
+## Repository layout
 
 ```text
-PHASE1_START_HERE.md
+cmake/          reusable CMake modules and quality configuration
+config/         example runtime configuration, including the Asterisk lab
+docs/           documentation taxonomy, architecture, protocols, interviews, and phase guides
+evidence/       committed, scrubbed verification evidence by milestone
+labs/           focused learning/demo programs for core concepts
+scripts/        build, test, static-analysis, and phase verification helpers
+src/            production C++ code
+tests/          unit and integration tests
 ```
 
-Then follow the full Phase 1 tutorial:
+Detailed historical and future planning lives in [`README_roadmap.md`](README_roadmap.md).
 
-```text
-docs/phase1/README.md
-```
-
-The complete project roadmap is preserved in:
-
-```text
-README_roadmap.md
-```
-
-## Phase 1 source layout
-
-```text
-labs/cpp/
-├── raii/
-├── smart-pointers/
-└── move-semantics/
-
-src/core/
-├── CallState.cpp
-├── CallState.hpp
-├── CallStateMachine.cpp
-├── CallStateMachine.hpp
-├── Event.hpp
-├── StateChangeSink.cpp
-├── StateChangeSink.hpp
-└── Types.hpp
-
-tests/unit/
-├── test_build_info.cpp
-├── test_call_state.cpp
-└── test_call_state_machine.cpp
-```
-
-## Build and test
+## Build the non-PJSIP targets
 
 ```bash
 cmake --preset debug
@@ -77,70 +54,101 @@ cmake --build --preset debug -j
 ctest --preset debug --output-on-failure
 ```
 
-Run the production-core demo:
+The base build does not require PJPROJECT.
+
+## Build with PJSIP
+
+PJPROJECT 2.17 is installed locally in the development environment. Point `pkg-config` at the installation first:
 
 ```bash
-./build/debug/src/linux-voip-softphone
+export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 ```
 
-Run the C++ labs:
+Then configure and build the PJSIP preset:
 
 ```bash
-./build/debug/labs/cpp/raii/lab_raii
-./build/debug/labs/cpp/smart-pointers/lab_smart_pointers
-./build/debug/labs/cpp/move-semantics/lab_move_semantics
+cmake --preset pjsip-debug
+cmake --build --preset pjsip-debug -j
 ```
 
-## Quality gates
+Verify the dependency independently:
 
 ```bash
-./scripts/verify_phase1.sh
+./scripts/phase5/verify-pjsip-dependency.sh
 ```
 
-The verification covers:
+Run the complete Phase 5 automated verification suite:
+
+```bash
+./scripts/phase5/verify.sh
+```
+
+## PJSIP CLI applications
+
+When `ENABLE_PJSIP=ON`, the project builds three CLI applications:
 
 ```text
-clang-format
-debug build
-GoogleTest
-RAII/smart-pointer/move labs
-ASan + UBSan
-clang-tidy
+voip-sip-register   one-shot SIP registration verification
+voip-sip-call       register and place one outgoing call
+voip-sip-listen     register and handle one incoming call lifecycle
 ```
 
-Collect evidence generated on your own Ubuntu machine:
-
-```bash
-./scripts/collect_phase1_evidence.sh
-```
-
-Evidence is written to:
+Usage and architecture details are documented in:
 
 ```text
-evidence/01-cpp/
+docs/phase5/README.md
+docs/architecture/pjsip-cli.md
 ```
 
-## Architecture artifact
+SIP passwords are supplied through an environment variable rather than command-line arguments. Do not commit credentials, raw Digest Authorization headers, or SDP keying material.
 
-The Phase 1 roadmap requires:
+## Verification philosophy
+
+A phase is complete only when the repository contains all four layers:
 
 ```text
-docs/architecture/call-state-machine.md
-tests/unit/test_call_state.cpp
+source code
+    ↓
+automated tests
+    ↓
+runtime evidence
+    ↓
+written explanation
 ```
 
-The architecture document explains the state model, `enum class`, `std::variant`, `std::optional`,
-STL container choice, interface abstraction, and constructor dependency injection.
+The current repository therefore keeps historical `docs/`, `labs/`, `scripts/`, and `evidence/` artifacts on purpose. They are part of the engineering record, not generated build output.
 
-## Milestone
+Generated build trees are excluded from Git and can be recreated at any time.
 
-After local verification and all GitHub Actions are green, create:
+## Milestones
 
-```bash
-git tag -a v0.2-cpp-core \
-    -m "Phase 1: Modern C++ foundation and call state core"
-
-git push origin v0.2-cpp-core
+```text
+v0.1-project-skeleton  Phase 0 — repository and engineering environment
+v0.2-cpp-core          Phase 1 — modern C++ foundation
+v0.3-linux-system      Phase 2 — Linux system programming and IPC
+v0.4-networking        Phase 3 — TCP/UDP networking
+v0.5-sip-asterisk      Phase 4 — SIP + Asterisk lab
+v0.6-pjsip-cli         Phase 5 — PJSIP CLI softphone
 ```
 
-Do not create the tag before the Phase 1 Definition of Done is satisfied.
+Next planned milestone: **Phase 6 — RTP + Audio**.
+
+## Documentation
+
+Useful entry points:
+
+```text
+docs/README.md                     documentation taxonomy and required schemas
+README_roadmap.md                  complete project roadmap
+docs/architecture/                component/system architecture and design rationale
+docs/protocols/                   protocol wire/session behavior
+docs/interview/                   phase review questions and answers
+docs/phase*/README.md             primary phase entry points
+evidence/                         scrubbed verification evidence by milestone
+```
+
+Architecture, protocol, interview, and primary phase README documents intentionally use category-specific common schemas. Run `./scripts/quality/verify-docs-structure.sh` to verify those conventions.
+
+## License
+
+See [`LICENSE`](LICENSE).

@@ -1,4 +1,8 @@
-# Networking Architecture — Phase 3
+# Phase 3 Architecture — TCP/UDP Networking
+
+## Status
+
+Completed — milestone `v0.4-networking`.
 
 ## Purpose
 
@@ -23,7 +27,16 @@ src/network/
 All socket file descriptors are owned through `voip::platform::UniqueFd`, so descriptor lifetime is
 controlled by RAII instead of manual cleanup at every return path.
 
-## Component model
+## Scope
+
+- Represent IPv4 address/port values explicitly at the C++ boundary.
+- Own TCP and UDP sockets with RAII and clear lifecycle transitions.
+- Exercise real loopback TCP stream and UDP datagram behavior.
+- Keep Phase 3 independent from SIP, RTP, PJSIP, and Qt.
+
+## Architecture model
+
+### Component model
 
 ```text
                          +------------------+
@@ -56,7 +69,7 @@ controlled by RAII instead of manual cleanup at every return path.
                               UDP datagram
 ```
 
-## `Ipv4Endpoint`
+### `Ipv4Endpoint`
 
 `Ipv4Endpoint` is the value object used at the networking boundary. It stores an IPv4 address and a
 host-order `std::uint16_t` port.
@@ -83,7 +96,9 @@ Port `0` is useful for tests and local tools. When a socket is bound with port `
 ephemeral port. The socket classes call `getsockname()` afterward and expose the actual bound
 endpoint.
 
-## TCP server lifecycle
+## Runtime and lifecycle
+
+### TCP server lifecycle
 
 `TcpServerSocket` owns the listening descriptor.
 
@@ -124,7 +139,7 @@ The current server abstraction intentionally exposes one blocking `accept()` ope
 multithreading/event-loop phase can build concurrency around this boundary without changing the
 basic ownership model.
 
-## TCP client lifecycle
+### TCP client lifecycle
 
 `TcpClientSocket` stores the intended remote endpoint and owns one connected socket descriptor.
 
@@ -155,7 +170,7 @@ The Phase 3 class exposes `native_handle()` so integration tests and later proto
 standard stream operations without prematurely designing a message-framing abstraction. TCP is a
 byte stream, so callers must not assume one `send()` maps to one `recv()`.
 
-## TCP stream semantics in the integration tests
+### TCP stream semantics in the integration tests
 
 `tests/integration/test_tcp_network.cpp` deliberately contains helpers that loop until an entire
 payload is transferred.
@@ -188,7 +203,7 @@ This demonstrates the important distinction between a TCP connection and an appl
 message boundaries must be defined by the application protocol, not inferred from individual
 `send()`/`recv()` calls.
 
-## UDP lifecycle
+### UDP lifecycle
 
 `UdpSocket` owns one datagram socket. It is explicitly bound before use.
 
@@ -226,7 +241,7 @@ The payload API uses `std::span<const std::byte>` and `std::span<std::byte>`. Th
 layer binary-safe and avoids treating network payloads as null-terminated text. That is a useful
 foundation for later RTP packets.
 
-## UDP datagram semantics
+### UDP datagram semantics
 
 UDP preserves datagram boundaries. A successful `send_to()` sends one datagram, and one
 `receive_from()` consumes one datagram from the socket receive queue.
@@ -244,7 +259,7 @@ The current abstraction returns the byte count reported by `recvfrom()`. It does
 header, reliability, retransmission, ordering, duplicate suppression, or fragmentation policy.
 Those concerns belong above this socket layer when a protocol requires them.
 
-## Blocking I/O and `EINTR`
+### Blocking I/O and `EINTR`
 
 The Phase 3 sockets are blocking sockets. There is no `O_NONBLOCK`, `poll`, `select`, or `epoll`
 integration yet.
@@ -263,7 +278,7 @@ TCP integration-test send/recv helpers
 Other failures are surfaced as `std::system_error` with the current `errno` and a contextual message.
 Calls that violate object state, such as receiving on an unbound UDP socket, use `std::logic_error`.
 
-## Ownership and exception safety
+### Ownership and exception safety
 
 Temporary descriptors are first stored in local `UniqueFd` objects. The member descriptor receives
 ownership only after socket setup succeeds.
@@ -286,7 +301,9 @@ This is the central RAII property carried forward from Phase 2.
 The socket wrapper classes themselves are non-copyable and non-movable in Phase 3. The accepted TCP
 connection is transferable because `accept_one()` returns the movable `UniqueFd` directly.
 
-## Test strategy
+## Verification strategy
+
+### Test strategy
 
 Unit tests focus on object state and local syscall behavior:
 
@@ -307,7 +324,9 @@ tests/integration/test_udp_network.cpp
 Loopback (`127.0.0.1`) and ephemeral ports keep tests self-contained. They do not depend on an
 external server, internet access, or a fixed port that could already be in use.
 
-## TCP and UDP comparison in this repository
+## Design rationale
+
+### TCP and UDP comparison in this repository
 
 | Property | TCP path | UDP path |
 | --- | --- | --- |
@@ -323,7 +342,7 @@ external server, internet access, or a fixed port that could already be in use.
 The final row describes project direction, not a claim that SIP is always TCP or that RTP is always
 UDP. Later phases will choose transports according to their concrete protocol requirements.
 
-## Boundaries intentionally deferred
+## Phase boundary
 
 Phase 3 does not attempt to solve:
 
@@ -343,3 +362,14 @@ Qt event-loop integration
 
 Keeping these concerns out of the socket wrappers makes the Phase 3 layer small enough to test and
 reason about before the project introduces protocol and concurrency complexity.
+
+## References
+
+- `docs/phase3/README.md`
+- `docs/interview/phase3-questions.md`
+- `src/network/Ipv4Endpoint.hpp`
+- `src/network/TcpServerSocket.hpp`
+- `src/network/TcpClientSocket.hpp`
+- `src/network/UdpSocket.hpp`
+- `tests/integration/test_tcp_network.cpp`
+- `tests/integration/test_udp_network.cpp`

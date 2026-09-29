@@ -1,191 +1,146 @@
 # Phase 3 — TCP/UDP Networking Foundation
 
-## Goal
+## Status
 
-Phase 3 builds and verifies the Linux IPv4 socket foundation required by later VoIP protocol work.
-It deliberately stops below SIP and RTP: this phase is about endpoint representation, descriptor
-ownership, TCP lifecycle, UDP datagrams, error handling, and repeatable loopback tests.
+**Completed** — milestone tag `v0.4-networking`.
 
-## Implemented components
+Phase 3 establishes protocol-neutral IPv4 socket primitives and real loopback integration tests before SIP and RTP are introduced.
+
+## Objective
+
+Implement and verify TCP/UDP behavior directly on Linux sockets so later VoIP work is built on understood transport semantics rather than hidden behind a SIP library.
+
+## Scope
+
+Included in this phase:
+
+- IPv4 endpoint parsing and `sockaddr_in` conversion;
+- host/network byte-order handling;
+- TCP server lifecycle;
+- TCP client lifecycle;
+- UDP bind/send/receive lifecycle;
+- binary-safe datagrams;
+- real loopback TCP/UDP integration tests;
+- explicit `EINTR` handling where required.
+
+Deliberately excluded:
+
+- DNS and IPv6;
+- TLS;
+- non-blocking I/O, `epoll`, or event loops;
+- reusable TCP message framing;
+- SIP transactions or RTP headers/media.
+
+## Deliverables
+
+| Area | Purpose | Key files |
+|---|---|---|
+| IPv4 endpoint | Centralize address/port conversion | `src/network/Ipv4Endpoint.*` |
+| TCP server | Own bind/listen/accept lifecycle | `src/network/TcpServerSocket.*` |
+| TCP client | Own connect/disconnect lifecycle | `src/network/TcpClientSocket.*` |
+| UDP socket | Own bind/send/receive lifecycle | `src/network/UdpSocket.*` |
+| Unit tests | Verify state and validation behavior | `tests/unit/test_*socket.cpp`, `test_ipv4_endpoint.cpp` |
+| Integration tests | Exercise real kernel TCP/UDP paths | `tests/integration/test_tcp_network.cpp`, `test_udp_network.cpp` |
+| Architecture note | Explain networking design and boundaries | `docs/architecture/networking.md` |
+| Interview review | Capture Phase 3 review questions | `docs/interview/phase3-questions.md` |
+
+## Architecture and design
+
+The Phase 3 networking layer is intentionally synchronous and small:
 
 ```text
 Ipv4Endpoint
-TcpServerSocket
-TcpClientSocket
-UdpSocket
+     |
+     +--> TcpServerSocket --> accepted UniqueFd
+     +--> TcpClientSocket
+     +--> UdpSocket
+
+all owned descriptors --> platform::UniqueFd
 ```
 
-The implementation uses Linux/POSIX networking calls including:
+Key decisions:
 
-```text
-socket
-setsockopt
-bind
-listen
-accept
-connect
-getsockname
-sendto
-recvfrom
-inet_pton
-inet_ntop
-htons
-ntohs
-```
+- one endpoint type owns address parsing/formatting and byte-order conversion;
+- every owned descriptor is managed through RAII;
+- tests bind to port `0` so Linux chooses an available ephemeral port;
+- `getsockname()` discovers the actual local endpoint;
+- TCP tests loop around `send()`/`recv()` because TCP is a byte stream;
+- UDP uses `std::span<std::byte>` so payloads are binary-safe;
+- blocking I/O is deliberate so transport fundamentals remain isolated from later concurrency work.
 
-The TCP integration tests additionally exercise `send`, `recv`, and `getpeername` through native
-file descriptors.
+## Build and run
 
-## Design decisions
-
-### One endpoint value type
-
-`Ipv4Endpoint` centralizes parsing, formatting, `sockaddr_in` conversion, and port byte order. Socket
-classes therefore operate on the same C++ endpoint type rather than duplicating address conversion.
-
-### RAII for every owned descriptor
-
-Socket wrappers reuse `platform::UniqueFd`. A descriptor either belongs to one RAII object or is
-invalid. Setup is performed with temporary `UniqueFd` instances so failures close descriptors
-automatically.
-
-### Ephemeral ports for tests
-
-Tests bind `127.0.0.1:0`. Linux chooses an available port, and `getsockname()` reports the actual
-endpoint. This avoids hard-coded test ports and makes repeated local runs more reliable.
-
-### Blocking I/O first
-
-The Phase 3 layer is intentionally synchronous and blocking. This isolates basic socket semantics
-before the later multithreading/event-loop work introduces concurrency and cancellation concerns.
-
-### Binary-safe UDP payloads
-
-UDP uses `std::span<std::byte>` rather than strings. The integration tests include zero and
-high-bit bytes to verify that payload handling is not text-specific.
-
-## Verification coverage
-
-### IPv4 endpoint
-
-```text
-stores address and port
-converts to sockaddr_in using network byte order
-supports wildcard address
-rejects empty/malformed addresses
-rejects non-IPv4 sockaddr values
-```
-
-### TCP server
-
-```text
-starts stopped
-binds loopback with an ephemeral port
-start is idempotent
-stop closes listener and clears endpoint
-accept requires a listening socket
-```
-
-### TCP client
-
-```text
-starts disconnected
-connects to a listening server
-connect is idempotent
-disconnect closes socket and clears endpoint
-can reconnect after disconnect
-```
-
-### TCP integration
-
-```text
-request/response payload round-trip
-matching client/server local and peer endpoints
-sequential client connections on one listener
-```
-
-### UDP socket
-
-```text
-starts unbound
-binds loopback with an ephemeral port
-bind is idempotent
-close clears socket state
-send requires a bound socket
-receive requires a bound socket
-```
-
-### UDP integration
-
-```text
-bidirectional datagram round-trip
-binary payload preservation
-sender endpoint reporting
-sequential datagram receive
-```
-
-At the end of Commit 6, the repository test suite contains 60 tests on the development branch. The
-phase evidence commit should record the final verification results rather than relying only on this
-documented checkpoint.
-
-## Quality gates
-
-Run the same gates before the Phase 3 evidence commit:
+Build and run the debug suite:
 
 ```bash
-find src tests labs -type f \
-    \( -name '*.cpp' -o -name '*.hpp' \) \
-    -print0 | xargs -0 clang-format --dry-run --Werror
-
 cmake --preset debug
 cmake --build --preset debug -j
 ctest --preset debug --output-on-failure
-
-./scripts/run_sanitizers.sh
-
-rm -rf build/clang-tidy
-./scripts/run_clang_tidy.sh
-
-git diff --check
 ```
 
-## Relationship to later VoIP phases
+Focused network tests can be selected through CTest labels/names in the generated build tree.
 
-The networking layer is intentionally protocol-neutral.
+## Verification
+
+Phase 3 verification covers:
+
+- IPv4 endpoint validation and byte-order conversion;
+- TCP bind/listen/accept/connect/disconnect behavior;
+- TCP payload round trips and endpoint relationships;
+- UDP bind/send/receive behavior;
+- binary datagram preservation and sender reporting;
+- sequential client/datagram scenarios;
+- formatting, full tests, sanitizers, static analysis, and `git diff --check`.
+
+Run:
+
+```bash
+./scripts/phase3/verify.sh
+```
+
+## Evidence
+
+Committed evidence lives under:
 
 ```text
-Phase 3 socket primitives
-        |
-        +--> later SIP/PJSIP signaling work
-        |
-        +--> later RTP/media work
-        |
-        +--> later threading/event-loop integration
+evidence/phase3/
 ```
 
-`UdpSocket` already accepts binary buffers and returns the sender endpoint, which maps naturally to
-future RTP transport experiments. TCP support provides a tested stream transport and reinforces
-stream-framing concepts useful when working with signaling or control protocols.
+The evidence records network-focused tests plus the full project quality gates used to close the phase.
 
-No SIP message grammar, RTP header, codec, jitter buffer, or audio-device behavior belongs to
-Phase 3.
+## Interview focus
 
-## Review checklist
+Use `docs/interview/phase3-questions.md` together with the implementation. Be ready to explain:
 
-Before considering the networking phase complete, be able to explain without reading a definition:
+- TCP versus UDP semantics;
+- host versus network byte order;
+- `htons()`, `ntohs()`, `inet_pton()`, and `inet_ntop()`;
+- why tests use ephemeral ports;
+- why TCP does not preserve application message boundaries;
+- what `accept()` returns and who owns the accepted descriptor;
+- why UDP receive reports the sender endpoint;
+- `SO_REUSEADDR` and `EINTR` in the implemented scope;
+- why loopback integration tests are useful but not equivalent to real-network testing.
 
-```text
-host byte order vs network byte order
-why port 0 is useful in tests
-why TCP send/recv need loops
-why TCP does not preserve application message boundaries
-why UDP receive returns a sender endpoint
-what EINTR means for the current blocking calls
-how UniqueFd prevents descriptor leaks
-why getsockname is used after binding/connecting
-why loopback integration tests are valuable
-what Phase 3 intentionally defers to later phases
-```
+## Exit criteria
 
-See `docs/architecture/networking.md` for the detailed design and
-`docs/interview/phase3-networking-questions.md` for interview-oriented review prompts.
+Phase 3 is complete when all of the following statements are true:
+
+- endpoint parsing and byte-order conversion are covered by tests;
+- TCP client/server round trips pass using real kernel sockets;
+- UDP bidirectional and binary-payload tests pass;
+- descriptor ownership remains leak-safe through `UniqueFd`;
+- formatting, static analysis, sanitizers, and regressions pass;
+- architecture and interview documentation are present;
+- Phase 3 evidence is committed;
+- milestone tag `v0.4-networking` identifies the completed phase.
+
+## References
+
+- Architecture: `docs/architecture/networking.md`
+- Interview review: `docs/interview/phase3-questions.md`
+- Evidence: `evidence/phase3/`
+
+## Next phase
+
+Phase 4 introduces SIP and Asterisk on a real LAN lab while keeping the custom C++ client out of scope until the signaling environment is proven.

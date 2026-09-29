@@ -1,136 +1,147 @@
 # Phase 2 — Linux System Programming
 
-Phase 2 builds the Linux systems foundation used by the VoIP softphone before higher-level SIP, RTP, and UI work begins.
+## Status
 
-## Goals
+**Completed** — milestone tag `v0.3-linux-system`.
 
-This phase demonstrates practical Linux programming with C++20:
+Phase 2 applies the Modern C++ ownership model to Linux process, signal, file-descriptor, and local IPC primitives.
 
-- deterministic file-descriptor ownership with RAII,
-- process creation with `fork()`,
-- process-image replacement with `execv()`,
-- parent/child lifecycle management with `waitpid()`,
-- signal handling with `sigaction()`,
-- signal-safe state using `volatile sig_atomic_t`,
-- race-aware waiting with `sigprocmask()` and `sigsuspend()`,
-- local IPC with Unix Domain Sockets,
-- end-to-end client/server integration tests.
+## Objective
 
-## Implemented milestones
+Build a reusable Linux systems foundation before introducing Internet sockets and VoIP protocols. The phase demonstrates direct POSIX APIs while keeping resource lifetime explicit through C++ RAII.
 
-### 1. RAII file-descriptor ownership
+## Scope
 
-`voip::platform::UniqueFd` owns one POSIX file descriptor and closes it automatically on destruction.
+Included in this phase:
 
-Important semantics:
+- move-only file-descriptor ownership;
+- `fork()` process creation;
+- `execv()` process-image replacement;
+- `waitpid()` parent/child lifecycle handling;
+- `sigaction()` signal installation;
+- signal-safe `volatile sig_atomic_t` state;
+- `sigprocmask()` and `sigsuspend()` for race-aware waiting;
+- Unix Domain Socket server/client abstractions;
+- real IPC integration tests.
 
-- copy construction and copy assignment are disabled,
-- move construction and move assignment transfer ownership,
-- `release()` gives ownership back to the caller without closing,
-- `reset()` closes the currently owned descriptor before adopting a new one.
+Deliberately excluded:
 
-This type is reused by the Unix Domain Socket implementation so resource lifetime is explicit and exception-safe.
+- IPv4 TCP/UDP networking;
+- SIP/RTP protocols;
+- background worker-thread architecture.
 
-### 2. Process lifecycle lab
+## Deliverables
 
-The process lifecycle lab demonstrates:
+| Area | Purpose | Key files |
+|---|---|---|
+| File-descriptor RAII | Own one POSIX descriptor and close exactly once | `src/platform/linux/UniqueFd.*` |
+| Process lifecycle lab | Demonstrate `fork()` and `waitpid()` | `labs/linux/process-lifecycle/` |
+| Exec lab | Demonstrate process-image replacement | `labs/linux/exec-child/` |
+| Signal lab | Demonstrate safe signal setup and waiting | `labs/linux/signal-handling/` |
+| IPC server | Local `AF_UNIX` / `SOCK_STREAM` listener | `src/ipc/UnixDomainSocketServer.*` |
+| IPC client | Matching local client abstraction | `src/ipc/UnixDomainSocketClient.*` |
+| Integration tests | Exercise real client/server round trips | `tests/integration/test_unix_domain_socket_ipc.cpp` |
+| Architecture note | Explain process, signal, FD, and IPC design | `docs/architecture/linux-process-ipc.md` |
+| Interview review | Capture Phase 2 review questions | `docs/interview/phase2-questions.md` |
 
-1. a parent process calling `fork()`,
-2. the child observing its PID and parent PID,
-3. the child exiting with a known status,
-4. the parent using `waitpid()` to reap the child,
-5. `WIFEXITED()` and `WEXITSTATUS()` to interpret termination.
+## Architecture and design
 
-The `waitpid()` path retries when interrupted by `EINTR`.
+The reusable ownership model is:
 
-### 3. `exec()` process replacement lab
+```text
+POSIX descriptor
+      |
+      v
+UniqueFd
+      |
+      +--> UnixDomainSocketServer
+      +--> UnixDomainSocketClient
+```
 
-The exec lab demonstrates the distinction between creating a process and replacing a process image.
+Important design decisions:
 
-The child created by `fork()` calls `execv()` on `/proc/self/exe`. The replacement process verifies that its PID is preserved across `exec()` and exits with a known code for the parent to collect.
+- `UniqueFd` is move-only, preventing accidental duplicate ownership;
+- `release()` transfers the raw descriptor without closing it;
+- `reset()` closes the current descriptor before adopting another;
+- `waitpid()` handles interruption with `EINTR` retries;
+- signal handlers perform minimal signal-safe work and defer normal C++ logic;
+- `sigsuspend()` avoids a check-then-sleep race;
+- the Unix Domain Socket server removes stale socket paths but refuses to overwrite regular files;
+- integration tests use the actual kernel IPC path instead of mocked transports.
 
-Key idea:
+## Build and run
 
-> `fork()` creates a new process. `exec()` replaces the current process image; it does not create another PID.
+Build and run the normal debug tests:
 
-### 4. POSIX signal handling
+```bash
+cmake --preset debug
+cmake --build --preset debug -j
+ctest --preset debug --output-on-failure
+```
 
-The signal-handling lab installs handlers with `sigaction()` for `SIGINT` and `SIGTERM`.
+The phase also provides focused Linux labs for process lifecycle, exec replacement, and signal handling.
 
-The handler only updates `volatile sig_atomic_t` state. Normal C++ work is performed outside the signal handler.
+## Verification
 
-The lab blocks the relevant signals during setup and uses `sigsuspend()` for race-aware waiting rather than a check-then-`pause()` loop.
+The phase verifier exercises:
 
-### 5. Unix Domain Socket server
+- unit tests for `UniqueFd` and IPC state;
+- process and signal labs;
+- Unix Domain Socket integration tests;
+- formatting and static analysis;
+- ASan and UBSan;
+- full regression tests;
+- `git diff --check`.
 
-`voip::ipc::UnixDomainSocketServer` provides a local `AF_UNIX` / `SOCK_STREAM` server abstraction.
+Run:
 
-Responsibilities include:
+```bash
+./scripts/phase2/verify.sh
+```
 
-- validating the socket path,
-- creating the listening socket,
-- handling stale socket filesystem entries,
-- refusing to overwrite a regular file,
-- `bind()`, `listen()`, and `accept()`,
-- retrying interrupted `accept()` calls,
-- removing the socket path during shutdown/destruction.
+## Evidence
 
-### 6. Unix Domain Socket client
+Committed evidence lives under:
 
-`voip::ipc::UnixDomainSocketClient` provides the matching local client abstraction.
+```text
+evidence/phase2/
+```
 
-Responsibilities include:
+The evidence records build/test/analysis results together with process, exec, signal, and IPC demonstrations.
 
-- validating the target path,
-- creating an `AF_UNIX` stream socket,
-- connecting to the server,
-- reporting connection failures,
-- disconnecting through RAII-managed descriptor ownership.
+## Interview focus
 
-### 7. IPC integration tests
+Use `docs/interview/phase2-questions.md` together with the implementation. Be ready to explain:
 
-The integration tests exercise the real server and client together rather than mocking either side.
+- file descriptors and RAII;
+- `fork()` return values and process relationships;
+- `fork()` versus `exec()`;
+- why parents reap children with `waitpid()`;
+- `EINTR` handling;
+- `sigaction()` and async-signal-safety;
+- `sigsuspend()`;
+- Unix Domain Sockets versus TCP for local IPC;
+- `bind()`, `listen()`, `accept()`, and socket-path cleanup.
 
-Covered scenarios include:
+## Exit criteria
 
-- request/response round trip (`PING` → `PONG`),
-- server-side `accept()` with a real client,
-- sequential client connections,
-- cleanup of the Unix socket path.
+Phase 2 is complete when all of the following statements are true:
 
-## Engineering practices used in this phase
+- file-descriptor ownership is move-only and deterministic;
+- process lifecycle and exec replacement are demonstrated;
+- signal handling avoids unsafe work in handlers;
+- Unix Domain Socket client/server communication passes integration tests;
+- formatting, static analysis, sanitizers, and full tests pass;
+- architecture and interview documentation are present;
+- Phase 2 evidence is committed;
+- milestone tag `v0.3-linux-system` identifies the completed phase.
 
-Phase 2 keeps the same quality gates established earlier in the project:
+## References
 
-- C++20,
-- CMake + Ninja,
-- GoogleTest,
-- `clang-format`,
-- `clang-tidy`,
-- AddressSanitizer,
-- UndefinedBehaviorSanitizer,
-- GitHub Actions.
+- Architecture: `docs/architecture/linux-process-ipc.md`
+- Interview review: `docs/interview/phase2-questions.md`
+- Evidence: `evidence/phase2/`
 
-The implementation is deliberately split into atomic commits so each Linux concept can be reviewed independently.
+## Next phase
 
-## Relationship to later phases
-
-The primitives introduced here are intentionally reusable:
-
-- `UniqueFd` can own network sockets in the TCP/UDP phase,
-- process and signal knowledge supports service-style components and diagnostics,
-- Unix Domain Sockets provide a concrete IPC mechanism for separating future UI, diagnostics, or worker processes,
-- the integration-test structure becomes a template for later network and SIP tests.
-
-## Suggested demo sequence
-
-A short Phase 2 demonstration can be presented in this order:
-
-1. show `UniqueFd` ownership tests,
-2. run the `fork()` lifecycle lab,
-3. run the `exec()` replacement lab,
-4. run the signal self-test,
-5. run the Unix Domain Socket integration tests,
-6. run sanitizer and static-analysis gates.
-
-This gives a reviewer a progression from low-level resource ownership to complete local IPC.
+Phase 3 reuses `UniqueFd` and the integration-test approach to build IPv4 TCP and UDP socket abstractions.
