@@ -104,6 +104,22 @@ IncomingCallCliOptions parse_incoming_call_cli(const std::span<const std::string
             options.account.realm = require_value(arguments, index, argument);
             continue;
         }
+        if (argument == "--capture-device") {
+            options.capture_device.name = require_value(arguments, index, argument);
+            continue;
+        }
+        if (argument == "--capture-driver") {
+            options.capture_device.driver = std::string{require_value(arguments, index, argument)};
+            continue;
+        }
+        if (argument == "--playback-device") {
+            options.playback_device.name = require_value(arguments, index, argument);
+            continue;
+        }
+        if (argument == "--playback-driver") {
+            options.playback_device.driver = std::string{require_value(arguments, index, argument)};
+            continue;
+        }
         if (argument == "--registration-timeout-ms") {
             const auto value = require_value(arguments, index, argument);
             const auto milliseconds = parse_integer<long long>(
@@ -172,6 +188,10 @@ std::string incoming_call_cli_usage()
            "  --listen-port PORT             Local SIP port; 0 lets PJSIP choose (default: 0)\n"
            "  --transport TYPE               udp or tcp (default: udp)\n"
            "  --realm REALM                  Digest authentication realm (default: *)\n"
+           "  --capture-device NAME          Capture device name (default: default)\n"
+           "  --capture-driver DRIVER        Optional capture driver qualifier\n"
+           "  --playback-device NAME         Playback device name (default: default)\n"
+           "  --playback-driver DRIVER       Optional playback driver qualifier\n"
            "  --registration-timeout-ms MS   Registration wait timeout (default: 10000)\n"
            "  --incoming-timeout-ms MS       Wait for an incoming INVITE (default: 30000)\n"
            "  --call-timeout-ms MS           Wait for CONFIRMED after answer (default: 10000)\n"
@@ -183,7 +203,8 @@ std::string incoming_call_cli_usage()
            "\n"
            "The listener handles one incoming call, sends 180 Ringing, auto-answers with\n"
            "200 OK, waits for CONFIRMED, then hangs up after --hold-ms. The password is\n"
-           "read from an environment variable so it is not exposed in the process list.\n";
+           "read from an environment variable so it is not exposed in the process list.\n"
+           "Audio devices are selected by stable name with an optional driver qualifier.\n";
 }
 
 } // namespace voip::pjsip
