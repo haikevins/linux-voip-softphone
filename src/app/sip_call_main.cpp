@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string_view>
 #include <thread>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -37,6 +38,7 @@ void print_call_result(const voip::pjsip::OutgoingCallResult &result)
     std::cout << "[CALL] state=" << (result.state.empty() ? "UNKNOWN" : result.state)
               << " status=" << result.sip_status_code
               << " connected=" << (result.connected ? "yes" : "no")
+              << " audio=" << (result.media_connected ? "yes" : "no")
               << " disconnected=" << (result.disconnected ? "yes" : "no");
     if (!result.reason.empty()) {
         std::cout << " reason=\"" << result.reason << '"';
@@ -73,7 +75,11 @@ int main(const int argc, char *argv[])
                   << "[CALL] transport=" << voip::pjsip::to_string(options.endpoint.transport)
                   << " listen-port=" << options.endpoint.listen_port << '\n';
 
-        voip::pjsip::SipOutgoingCallClient client{options.endpoint, options.account};
+        voip::pjsip::SipCallAudioConfig audio_config;
+        audio_config.capture_device = options.capture_device;
+        audio_config.playback_device = options.playback_device;
+        voip::pjsip::SipOutgoingCallClient client{options.endpoint, options.account,
+                                                  std::move(audio_config)};
         client.start();
 
         const auto registration = client.wait_for_registration(options.registration_timeout);
@@ -97,7 +103,7 @@ int main(const int argc, char *argv[])
         }
 
         print_call_result(call_result);
-        if (!call_result.connected) {
+        if (!call_result.connected || !call_result.media_connected) {
             return 1;
         }
 
