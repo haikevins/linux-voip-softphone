@@ -99,6 +99,7 @@ gtest_discover_tests(udp_network_integration_tests
 if(ENABLE_PJSIP)
     add_executable(pjsip_config_tests
         unit/test_pjsua2_audio_device_manager.cpp
+        unit/test_pjsua2_call_audio_bridge.cpp
         unit/test_sip_account_config.cpp
         unit/test_sip_endpoint_config.cpp
         unit/test_sip_incoming_call_cli.cpp
