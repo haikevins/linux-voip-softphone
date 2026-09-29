@@ -39,6 +39,7 @@ if(ENABLE_PJSIP)
     add_library(voip_pjsip
         pjsip/SipAccountConfig.cpp
         pjsip/SipEndpointConfig.cpp
+        pjsip/Pjsua2AudioDeviceManager.cpp
         pjsip/SipIncomingCallCli.cpp
         pjsip/SipIncomingCallClient.cpp
         pjsip/SipOutgoingCallCli.cpp
@@ -56,6 +57,7 @@ if(ENABLE_PJSIP)
 
     target_link_libraries(voip_pjsip
         PUBLIC
+            voip::core
             PJSIP::PJSIP
     )
 
