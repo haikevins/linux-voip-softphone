@@ -1,0 +1,27 @@
+Phase 6 live SIP registration evidence (sanitized)
+
+Recorded date: 2026-09-30
+Test implementation: Commit 7 (273ad69)
+
+Scenario
+--------
+Account: workstation extension 1002
+Registrar: existing local Asterisk lab
+Transport: UDP
+Credential source: runtime environment variable; value not recorded
+Registration was observed independently during the outgoing-call program
+(voip-sip-call) and incoming-call program (voip-sip-listen). No separate
+Phase 6 standalone registration experiment is claimed here.
+
+Observed result
+---------------
+Outgoing-run REGISTER result: SIP 200 OK; active=yes
+Incoming-run REGISTER result: SIP 200 OK; active=yes
+Both programs continued to their respective successful call tests.
+
+The workstation's JACK backend emitted non-fatal probe warnings during
+startup. The registration and subsequent audio calls succeeded using the
+selected ALSA devices.
+
+No SIP password, Digest header/response, raw signaling transcript, or packet
+capture is retained here.

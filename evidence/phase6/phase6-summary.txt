@@ -1,0 +1,45 @@
+Phase 6 — RTP and audio acceptance summary (sanitized)
+
+Recorded date: 2026-09-30
+Branch: phase/6-rtp-audio
+
+Revision boundaries
+-------------------
+273ad69  feat(rtp): add live call media diagnostics
+         Outgoing/incoming live calls and manual two-way listening recorded
+         against the working Phase 6 media implementation.
+bbaec38  test(phase6): add automated verification gate
+         Full Phase 6 automated gate passed; rerun during Commit 9 docs work.
+c2354b3  docs(phase6): document audio and RTP architecture
+         Document-only commit based on the verified media implementation.
+
+Acceptance observations
+-----------------------
+PJSIP/PJSUA2 2.17 dependency and audio-device preflight: PASS
+PJSIP-focused tests: 45/45 PASS
+Full PJSIP tests: 117/117 PASS
+PJSIP sanitizer tests: 117/117 PASS
+PJSIP clang-tidy build: 74/74 PASS
+Non-PJSIP regression: 72/72 PASS
+Focused RTP statistics: 4/4 PASS
+Focused PJSUA2 RTP diagnostics: 3/3 PASS
+Documentation structure verifier on Commit 9 docs: PASS
+Live registration observed during outgoing and incoming runs: PASS
+Outgoing 1002 -> 1001: CONFIRMED, PCMU 8 kHz, RTP RX/TX 1062/937,
+                     RX loss 0%, headset/phone two-way audio confirmed,
+                     clean disconnect: PASS
+Incoming 1001 -> 1002: CONFIRMED, PCMU 8 kHz, RTP RX/TX 946/946,
+                     RX loss 0%, headset/phone two-way audio confirmed,
+                     clean disconnect: PASS
+
+Result and boundary
+-------------------
+The above automated and manually observed Phase 6 verification criteria
+passed in the stated local lab. The summaries do not replace fresh live
+listening tests on other hardware, networks, or future media code changes.
+This evidence commit records outcomes; final milestone review and a release
+tag are separate pending actions. No Phase 6 release tag is claimed.
+
+Artifact index: evidence/phase6/README.md
+Reproduction: docs/phase6/README.md
+No authentication secrets, raw SIP transcripts, or packet captures retained.

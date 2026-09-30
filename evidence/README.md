@@ -28,7 +28,7 @@ Evidence must not become the authoritative home for architecture, protocol tutor
 
 ## Directory layout
 
-Completed phases use one stable naming scheme:
+Phase evidence uses one stable naming scheme:
 
 ```text
 evidence/
@@ -46,8 +46,15 @@ evidence/
 │   ├── registration/
 │   ├── call-flow/
 │   └── artifacts/
-└── phase5/
-    └── README.md
+├── phase5/
+│   └── README.md
+└── phase6/
+    ├── README.md
+    ├── automated-verification.txt
+    ├── live-registration.txt
+    ├── live-outgoing-call.txt
+    ├── live-incoming-call.txt
+    └── phase6-summary.txt
 ```
 
 A phase may contain additional artifacts or scenario directories only when they represent real verification needs. Directory symmetry is not required.

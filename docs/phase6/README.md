@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation, live audio/RTP diagnostics, and the Phase 6 automated verification wrapper are in place through Commit 8 (`bbaec38`) on `phase/6-rtp-audio`. The outgoing and incoming lab calls have passed with audible two-way media. Documentation and sanitized evidence/milestone closure are still in progress; no Phase 6 release tag is claimed here.
+Implementation, live audio/RTP diagnostics, automated verification, and architecture documentation are in place through Commit 9 (`c2354b3`) on `phase/6-rtp-audio`. The outgoing and incoming lab calls passed with audible two-way media. Sanitized verification summaries are recorded under `evidence/phase6/`; milestone release review and tagging remain separate tasks, and no Phase 6 release tag is claimed here.
 
 ## Objective
 
@@ -84,9 +84,9 @@ A SIP `200 OK`, `audio=yes`, or nonzero RTP counts alone cannot prove intelligib
 
 ## Evidence
 
-Only sanitized **summaries** of local automated runs and the two live calls belong in future `evidence/phase6/` artifacts. Record the commit, gate result, call direction, relevant status/codec/counters, explicit two-way listening outcome, and disconnect result; do not include secrets or raw call logs.
+The sanitized outcome record is indexed at `evidence/phase6/README.md`. Its short text artifacts retain the automated gate summary, registration observed during the live calls, outgoing/incoming codec and RTP measurements, operator-confirmed two-way listening, and a phase summary. The live calls were performed with Commit 7 (`273ad69`); later changes through Commit 9 added verification orchestration and documentation without changing the audio/RTP implementation. The artifacts are summaries of observed local runs, not synthetic call output or substitutes for future hardware-specific listening checks.
 
-Do **not** commit passwords, Digest authorization headers, complete raw SIP/PJSIP logs, SRTP keying material, `.pcap`/`.pcapng` packet captures, or identifying information from unrelated peers. The current README documents the observed results; it does not claim that Phase 6 evidence files have already been committed.
+Do **not** commit passwords, Digest authorization headers, complete raw SIP/PJSIP logs, SRTP keying material, `.pcap`/`.pcapng` packet captures, or identifying information from unrelated peers. Release review and tagging still require a separate decision after evidence is committed.
 
 ## Interview focus
 
@@ -104,6 +104,7 @@ The milestone can be closed once the following have all been reviewed together: 
 - `docs/phase5/README.md`
 - `scripts/phase6/verify.sh`
 - `scripts/phase6/verify-audio-environment.sh`
+- `evidence/phase6/README.md`
 
 ## Next phase
 

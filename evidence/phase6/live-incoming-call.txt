@@ -1,0 +1,46 @@
+Phase 6 live incoming-call and media evidence (sanitized)
+
+Recorded date: 2026-09-30
+Test implementation: Commit 7 (273ad69)
+
+Scenario
+--------
+Caller: phone SIP client, extension 1001
+Receiver: PJSUA2 voip-sip-listen, workstation extension 1002
+Signaling: through the existing local Asterisk lab over UDP
+Audio selection: ALSA 'default' capture and playback
+Configured auto-answer delay: 1,000 ms
+Configured application hold interval after connection: 20,000 ms
+Credentials: runtime environment variable; secret value not retained
+
+Observed signaling and media
+----------------------------
+Registration: 200 OK; active=yes
+Incoming INVITE received; listener auto-answered after 1,000 ms
+Call: CONFIRMED; SIP 200 OK; connected=yes; audio=yes
+Negotiated media: PCMU; 8,000 Hz; RTP payload type RX=0 TX=0
+Media direction reported by PJMEDIA: sendrecv
+Live diagnostic snapshot captured before hangup:
+  RTP received: 946 packets
+  RTP sent:     946 packets
+  RTP lost:      0 packets (reported 0.00%)
+  RX jitter:     0.88 ms
+  RTCP RTT:      0.59 ms
+The printed summary agreed with the detailed PJSUA2 stream statistics.
+The call remained connected for approximately 20 seconds after answer,
+then reported disconnected=yes; the final timer heap contained zero entries.
+
+Operator listening confirmation
+-------------------------------
+Actual two-way audio between the phone and the workstation headset was
+confirmed by the operator during this incoming call. Packet counts alone
+would not establish this result.
+
+Diagnostic notes
+----------------
+JACK backend probing warnings were non-fatal; the selected ALSA capture and
+playback path completed this run. The observed loss, jitter, and RTT apply
+only to this local call.
+
+No credentials, Digest response, raw SIP/PJSIP logger output, unrelated
+contact details, or packet captures are stored here.
