@@ -137,6 +137,22 @@ OutgoingCallCliOptions parse_outgoing_call_cli(const std::span<const std::string
             options.account.realm = require_value(arguments, index, argument);
             continue;
         }
+        if (argument == "--capture-device") {
+            options.capture_device.name = require_value(arguments, index, argument);
+            continue;
+        }
+        if (argument == "--capture-driver") {
+            options.capture_device.driver = std::string{require_value(arguments, index, argument)};
+            continue;
+        }
+        if (argument == "--playback-device") {
+            options.playback_device.name = require_value(arguments, index, argument);
+            continue;
+        }
+        if (argument == "--playback-driver") {
+            options.playback_device.driver = std::string{require_value(arguments, index, argument)};
+            continue;
+        }
         if (argument == "--registration-timeout-ms") {
             const auto value = require_value(arguments, index, argument);
             const auto milliseconds = parse_integer<long long>(
@@ -193,6 +209,10 @@ std::string outgoing_call_cli_usage()
            "  --listen-port PORT           Local SIP port; 0 lets PJSIP choose (default: 0)\n"
            "  --transport TYPE             udp or tcp (default: udp)\n"
            "  --realm REALM                Digest authentication realm (default: *)\n"
+           "  --capture-device NAME        Capture device name (default: default)\n"
+           "  --capture-driver DRIVER      Optional capture driver qualifier\n"
+           "  --playback-device NAME       Playback device name (default: default)\n"
+           "  --playback-driver DRIVER     Optional playback driver qualifier\n"
            "  --registration-timeout-ms MS Registration wait timeout (default: 10000)\n"
            "  --call-timeout-ms MS         Wait for answer/failure (default: 30000)\n"
            "  --hold-ms MS                 Hold after answer before BYE (default: 2000)\n"
@@ -201,8 +221,8 @@ std::string outgoing_call_cli_usage()
            "  -h, --help                   Show this help\n"
            "\n"
            "The password is read from an environment variable instead of argv so it is\n"
-           "not exposed in the process argument list. This Phase 5 CLI uses PJSIP's null\n"
-           "sound device; Phase 6 adds the real RTP/audio path.\n";
+           "not exposed in the process argument list. Audio devices are selected by stable\n"
+           "name with an optional driver qualifier; runtime numeric IDs are not persisted.\n";
 }
 
 } // namespace voip::pjsip

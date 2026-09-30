@@ -1,0 +1,45 @@
+Phase 6 automated verification evidence (sanitized)
+
+Recorded date: 2026-09-30
+Commands: ./scripts/phase6/verify.sh; ./scripts/quality/verify-docs-structure.sh
+Source/revision context: RTP media implementation at 273ad69; verification
+orchestration at bbaec38; documentation subsequently committed at c2354b3.
+The full Phase 6 gate was rerun with HEAD bbaec38 while the Commit 9
+changes were documentation-only and still in the working tree.
+
+Dependency and audio environment
+--------------------------------
+PJPROJECT / libpjproject: 2.17
+PJSUA2 audio-device compile/link smoke test: PASS
+Audio devices enumerated: 42
+ALSA 'default': input capability 1; output capability 1
+Capture-capable and playback-capable devices: PASS
+Audio environment verification: PASS
+
+Build, regression, and static analysis
+--------------------------------------
+clang-format: PASS
+PJSIP dependency / compile-link verification: PASS
+PJSIP debug build: PASS
+PJSIP-focused tests: 45/45 PASS
+Full PJSIP regression: 117/117 PASS
+ASan + UBSan with PJSIP enabled: 117/117 PASS
+clang-tidy with PJSIP enabled: 74/74 build targets PASS
+Non-PJSIP regression: 72/72 PASS
+Inherited Phase 5 automated verification: PASS
+
+Phase 6-focused tests
+---------------------
+RtpStatisticsTest: 4 discovered, 4/4 PASS
+Pjsua2RtpDiagnosticsTest: 3 discovered, 3/3 PASS
+Documentation structure verification on Commit 9 changes: PASS
+
+Final automated result
+----------------------
+Phase 6 automated verification: PASS
+
+Audio preflight and packet-based tests are not evidence of intelligible
+microphone-to-peer and peer-to-speaker speech; see the separate manual-call
+summaries. Counts belong to the tested revision and are not permanent quotas.
+Full terminal output, SIP authentication material, and raw captures are not
+retained in Git evidence.

@@ -1,4 +1,5 @@
 add_library(voip_core
+    audio/AudioDeviceSelection.cpp
     core/BuildInfo.cpp
     core/CallState.cpp
     core/CallStateMachine.cpp
@@ -6,6 +7,7 @@ add_library(voip_core
     ipc/UnixDomainSocketClient.cpp
     ipc/UnixDomainSocketServer.cpp
     network/Ipv4Endpoint.cpp
+    network/RtpStatistics.cpp
     network/TcpClientSocket.cpp
     network/TcpServerSocket.cpp
     network/UdpSocket.cpp
@@ -38,6 +40,9 @@ if(ENABLE_PJSIP)
     add_library(voip_pjsip
         pjsip/SipAccountConfig.cpp
         pjsip/SipEndpointConfig.cpp
+        pjsip/Pjsua2AudioDeviceManager.cpp
+        pjsip/Pjsua2CallAudioBridge.cpp
+        pjsip/Pjsua2RtpDiagnostics.cpp
         pjsip/SipIncomingCallCli.cpp
         pjsip/SipIncomingCallClient.cpp
         pjsip/SipOutgoingCallCli.cpp
@@ -55,6 +60,7 @@ if(ENABLE_PJSIP)
 
     target_link_libraries(voip_pjsip
         PUBLIC
+            voip::core
             PJSIP::PJSIP
     )
 

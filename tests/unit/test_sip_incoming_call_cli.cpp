@@ -19,6 +19,10 @@ TEST(SipIncomingCallCliTest, ParsesRequiredValuesAndDefaults)
 
     EXPECT_EQ(options.account.username, "1002");
     EXPECT_EQ(options.account.server, "192.168.1.13");
+    EXPECT_EQ(options.capture_device.name, "default");
+    EXPECT_FALSE(options.capture_device.driver.has_value());
+    EXPECT_EQ(options.playback_device.name, "default");
+    EXPECT_FALSE(options.playback_device.driver.has_value());
     EXPECT_EQ(options.account.server_port, 5060U);
     EXPECT_EQ(options.endpoint.listen_port, 0U);
     EXPECT_EQ(options.endpoint.transport, SipTransport::Udp);
@@ -71,6 +75,24 @@ TEST(SipIncomingCallCliTest, ParsesTransportPortsRealmTimeoutsAndPasswordEnviron
     EXPECT_EQ(options.answer_delay, std::chrono::milliseconds{750});
     EXPECT_EQ(options.hold_duration, std::chrono::milliseconds{1500});
     EXPECT_EQ(options.password_environment, "TEST_SIP_PASSWORD");
+}
+
+TEST(SipIncomingCallCliTest, ParsesAudioDeviceSelectors)
+{
+    constexpr std::array arguments{
+        std::string_view{"--username"},        std::string_view{"1002"},
+        std::string_view{"--server"},          std::string_view{"pbx.local"},
+        std::string_view{"--capture-device"},  std::string_view{"hw:CARD=acp63,DEV=0"},
+        std::string_view{"--capture-driver"},  std::string_view{"ALSA"},
+        std::string_view{"--playback-device"}, std::string_view{"pipewire"},
+        std::string_view{"--playback-driver"}, std::string_view{"ALSA"}};
+
+    const auto options = voip::pjsip::parse_incoming_call_cli(arguments);
+
+    EXPECT_EQ(options.capture_device.name, "hw:CARD=acp63,DEV=0");
+    EXPECT_EQ(options.capture_device.driver.value_or(""), "ALSA");
+    EXPECT_EQ(options.playback_device.name, "pipewire");
+    EXPECT_EQ(options.playback_device.driver.value_or(""), "ALSA");
 }
 
 TEST(SipIncomingCallCliTest, AllowsZeroAnswerDelayAndHoldDuration)

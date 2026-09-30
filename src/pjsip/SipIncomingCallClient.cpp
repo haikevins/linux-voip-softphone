@@ -1,5 +1,8 @@
 #include "pjsip/SipIncomingCallClient.hpp"
 
+#include "pjsip/Pjsua2AudioDeviceManager.hpp"
+#include "pjsip/Pjsua2CallAudioBridge.hpp"
+
 #include <cstdio>
 #include <pjsua-lib/pjsua.h>
 #include <stdexcept>
@@ -67,13 +70,35 @@ class SipIncomingCallClient::TrackedIncomingCall final : public pj::Call
         }
     }
 
+    void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override
+    {
+        const std::lock_guard callback_lock{owner_.call_callback_mutex_};
+
+        try {
+            owner_.on_call_media_state(*this);
+        } catch (const pj::Error &error) {
+            owner_.on_call_media_callback_error(error.info());
+        } catch (const std::exception &error) {
+            owner_.on_call_media_callback_error(error.what());
+        } catch (...) {
+            owner_.on_call_media_callback_error("unknown incoming call media callback failure");
+        }
+    }
+
   private:
     SipIncomingCallClient &owner_;
 };
 
 SipIncomingCallClient::SipIncomingCallClient(SipEndpointConfig endpoint_config,
                                              SipAccountConfig account_config)
-    : endpoint_config_(endpoint_config), account_config_(std::move(account_config))
+    : SipIncomingCallClient(endpoint_config, std::move(account_config), {})
+{}
+
+SipIncomingCallClient::SipIncomingCallClient(SipEndpointConfig endpoint_config,
+                                             SipAccountConfig account_config,
+                                             SipCallAudioConfig audio_config)
+    : endpoint_config_(endpoint_config), account_config_(std::move(account_config)),
+      audio_config_(std::move(audio_config))
 {}
 
 SipIncomingCallClient::~SipIncomingCallClient()
@@ -123,7 +148,9 @@ void SipIncomingCallClient::start()
                                        endpoint_config_.to_pjsua2_transport_config());
 
         endpoint_->libStart();
-        endpoint_->audDevManager().setNullDev();
+        static_cast<void>(configure_pjsua2_audio_devices(endpoint_->audDevManager(),
+                                                         audio_config_.capture_device,
+                                                         audio_config_.playback_device));
 
         auto pjsua2_account_config = account_config_.to_pjsua2_account_config();
         pjsua2_account_config.sipConfig.transportId = transport_id;
@@ -259,6 +286,21 @@ IncomingCallResult SipIncomingCallClient::wait_for_call(const std::chrono::milli
     }
 
     return call_result_;
+}
+
+std::vector<RtpMediaDiagnostics> SipIncomingCallClient::rtp_diagnostics()
+{
+    if (!started_) {
+        throw std::logic_error("SIP incoming call client is not started");
+    }
+
+    const std::lock_guard callback_lock{call_callback_mutex_};
+    const std::lock_guard call_object_lock{call_object_mutex_};
+    if (call_ == nullptr) {
+        throw std::logic_error("no incoming call is available for RTP diagnostics");
+    }
+
+    return read_active_audio_rtp_diagnostics(*call_);
 }
 
 void SipIncomingCallClient::hangup() noexcept
@@ -455,7 +497,30 @@ void SipIncomingCallClient::on_call_state(const pj::CallInfo &info)
         call_result_.remote_uri = info.remoteUri;
 
         call_disconnected_ = disconnected;
-        call_complete_ = connected || disconnected;
+        call_complete_ = disconnected || (call_result_.connected && call_result_.media_connected);
+    }
+
+    call_changed_.notify_all();
+}
+
+void SipIncomingCallClient::on_call_media_state(pj::Call &call)
+{
+    const auto call_info = call.getInfo();
+    if (active_audio_media_indices(call_info).empty()) {
+        return;
+    }
+
+    if (endpoint_ == nullptr) {
+        throw std::logic_error("PJSIP endpoint is not available for incoming call audio");
+    }
+
+    connect_active_call_audio(call, endpoint_->audDevManager());
+
+    {
+        const std::lock_guard lock{call_mutex_};
+        call_result_.media_connected = true;
+        call_complete_ =
+            call_disconnected_ || (call_result_.connected && call_result_.media_connected);
     }
 
     call_changed_.notify_all();
@@ -477,6 +542,23 @@ void SipIncomingCallClient::on_call_callback_error(std::string reason) noexcept
         call_changed_.notify_all();
     } catch (...) {
         std::fputs("PJSIP incoming call state callback error handling failed\n", stderr);
+        call_changed_.notify_all();
+    }
+}
+
+void SipIncomingCallClient::on_call_media_callback_error(std::string reason) noexcept
+{
+    try {
+        {
+            const std::lock_guard lock{call_mutex_};
+            call_result_.media_connected = false;
+            call_result_.timed_out = false;
+            call_result_.reason = "audio media error: " + std::move(reason);
+            call_complete_ = true;
+        }
+        call_changed_.notify_all();
+    } catch (...) {
+        std::fputs("PJSIP incoming call media callback error handling failed\n", stderr);
         call_changed_.notify_all();
     }
 }

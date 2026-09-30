@@ -1,8 +1,10 @@
 add_executable(unit_tests
+    unit/test_audio_device_selection.cpp
     unit/test_build_info.cpp
     unit/test_call_state.cpp
     unit/test_call_state_machine.cpp
     unit/test_ipv4_endpoint.cpp
+    unit/test_rtp_statistics.cpp
     unit/test_tcp_client_socket.cpp
     unit/test_tcp_server_socket.cpp
     unit/test_udp_socket.cpp
@@ -97,6 +99,9 @@ gtest_discover_tests(udp_network_integration_tests
 
 if(ENABLE_PJSIP)
     add_executable(pjsip_config_tests
+        unit/test_pjsua2_audio_device_manager.cpp
+        unit/test_pjsua2_call_audio_bridge.cpp
+        unit/test_pjsua2_rtp_diagnostics.cpp
         unit/test_sip_account_config.cpp
         unit/test_sip_endpoint_config.cpp
         unit/test_sip_incoming_call_cli.cpp

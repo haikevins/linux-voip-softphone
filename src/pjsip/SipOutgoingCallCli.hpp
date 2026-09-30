@@ -1,5 +1,6 @@
 #pragma once
 
+#include "audio/AudioDeviceSelection.hpp"
 #include "pjsip/SipAccountConfig.hpp"
 #include "pjsip/SipEndpointConfig.hpp"
 
@@ -15,6 +16,8 @@ struct OutgoingCallCliOptions
     SipEndpointConfig endpoint;
     SipAccountConfig account;
     std::string target;
+    audio::AudioDeviceSelector capture_device{"default", std::nullopt};
+    audio::AudioDeviceSelector playback_device{"default", std::nullopt};
     std::chrono::milliseconds registration_timeout{10'000};
     std::chrono::milliseconds call_timeout{30'000};
     std::chrono::milliseconds hold_duration{2'000};

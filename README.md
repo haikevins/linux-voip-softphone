@@ -6,13 +6,7 @@ The repository is intentionally phase-driven: each milestone adds production cod
 
 ## Current status
 
-Completed through **Phase 5 — PJSIP CLI Softphone**.
-
-Current milestone tag:
-
-```text
-v0.6-pjsip-cli
-```
+Completed through **Phase 6 — RTP and audio** for the documented local lab. Phase 6 release identifier: `v0.7-rtp-audio` (reserved for an annotated tag after the closure commit is verified and pushed; this document does not assert that the tag is already published).
 
 Implemented so far:
 
@@ -29,7 +23,7 @@ Implemented so far:
 - Automated PJSIP contract, regression, sanitizer, and static-analysis verification.
 - Scrubbed runtime evidence that excludes SIP credentials and keying material.
 
-Phase 6 will add RTP/audio handling and real media-device routing. Qt/QML is intentionally deferred until the media path is stable.
+Phase 6 routes active PJSUA2 call audio to Linux capture/playback devices and exposes read-only media/RTP diagnostics in outgoing and incoming CLIs. Local outgoing and incoming calls passed operator-confirmed two-way audio and live RTP checks. A separate, controlled approximately 75-second outgoing call supplied a two-direction Wireshark RTP-header/timing study, documented in `docs/protocols/rtp.md` and `evidence/phase6/rtp-wireshark.txt`. The automated gate, architecture documentation, and sanitized evidence have been accepted for the stated local lab configuration; Qt/QML remains Phase 7 work.
 
 ## Repository layout
 
@@ -77,10 +71,10 @@ Verify the dependency independently:
 ./scripts/phase5/verify-pjsip-dependency.sh
 ```
 
-Run the complete Phase 5 automated verification suite:
+Run the complete Phase 6 automated verification suite (which includes the Phase 5 gate):
 
 ```bash
-./scripts/phase5/verify.sh
+./scripts/phase6/verify.sh
 ```
 
 ## PJSIP CLI applications
@@ -97,7 +91,9 @@ Usage and architecture details are documented in:
 
 ```text
 docs/phase5/README.md
+docs/phase6/README.md
 docs/architecture/pjsip-cli.md
+docs/architecture/audio-rtp.md
 ```
 
 SIP passwords are supplied through an environment variable rather than command-line arguments. Do not commit credentials, raw Digest Authorization headers, or SDP keying material.
@@ -129,9 +125,10 @@ v0.3-linux-system      Phase 2 — Linux system programming and IPC
 v0.4-networking        Phase 3 — TCP/UDP networking
 v0.5-sip-asterisk      Phase 4 — SIP + Asterisk lab
 v0.6-pjsip-cli         Phase 5 — PJSIP CLI softphone
+v0.7-rtp-audio         Phase 6 — RTP + Audio (release identifier)
 ```
 
-Next planned milestone: **Phase 6 — RTP + Audio**.
+Phase 6 acceptance is complete based on the recorded local tests. The annotated Phase 6 tag is published separately after the closure commit is verified and pushed. Next planned phase: **Phase 7 — Qt/QML UI**.
 
 ## Documentation
 

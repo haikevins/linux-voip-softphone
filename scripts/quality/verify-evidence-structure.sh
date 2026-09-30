@@ -19,7 +19,7 @@ expected_scenario_h2=$'## Purpose\n## Preconditions\n## Procedure\n## Observatio
 
 [[ -f evidence/README.md ]] || error "missing evidence/README.md"
 
-for n in 0 1 2 3 4 5; do
+for n in 0 1 2 3 4 5 6; do
     f="evidence/phase${n}/README.md"
     [[ -f "$f" ]] || { error "missing $f"; continue; }
 
@@ -33,6 +33,17 @@ for n in 0 1 2 3 4 5; do
     }
 
     grep -Fq "docs/phase${n}/README.md" "$f" || error "$f does not reference docs/phase${n}/README.md"
+done
+
+# Phase 6 uses short sanitized summaries rather than full terminal transcripts.
+for artifact in \
+    automated-verification.txt \
+    live-registration.txt \
+    live-outgoing-call.txt \
+    live-incoming-call.txt \
+    phase6-summary.txt; do
+    f="evidence/phase6/${artifact}"
+    [[ -s "$f" ]] || error "missing or empty Phase 6 evidence artifact: $f"
 done
 
 for f in evidence/phase4/registration/README.md evidence/phase4/call-flow/README.md; do
@@ -81,7 +92,7 @@ for d in evidence/phase4/artifacts/final evidence/phase4/artifacts/protocol; do
     [[ ! -e "$d" ]] || error "obsolete Phase 4 evidence bucket remains: $d"
 done
 
-if git grep -nE '\[[ xX]\]' -- 'evidence/**/*.md' 'evidence/*.md' >/tmp/voip-evidence-checkbox.$$ 2>/dev/null; then
+if grep -R -nE --include='*.md' '\[[ xX]\]' evidence >/tmp/voip-evidence-checkbox.$$ 2>/dev/null; then
     cat /tmp/voip-evidence-checkbox.$$ >&2
     error "Markdown checkbox syntax remains in evidence documentation"
 fi
@@ -93,13 +104,13 @@ if find evidence -type f \( -name '*.pcap' -o -name '*.pcapng' \) -print -quit |
 fi
 
 # Detect common secret-bearing SIP material without flagging policy text alone.
-if git grep -nEi '^[[:space:]]*Authorization:[[:space:]]*Digest[[:space:]]' -- evidence >/tmp/voip-evidence-auth.$$ 2>/dev/null; then
+if grep -R -nEi '^[[:space:]]*Authorization:[[:space:]]*Digest[[:space:]]' evidence >/tmp/voip-evidence-auth.$$ 2>/dev/null; then
     cat /tmp/voip-evidence-auth.$$ >&2
     error "Digest Authorization material detected under evidence/"
 fi
 rm -f /tmp/voip-evidence-auth.$$
 
-if git grep -nEi 'a=crypto:.*inline:' -- evidence >/tmp/voip-evidence-srtp.$$ 2>/dev/null; then
+if grep -R -nEi 'a=crypto:.*inline:' evidence >/tmp/voip-evidence-srtp.$$ 2>/dev/null; then
     cat /tmp/voip-evidence-srtp.$$ >&2
     error "SRTP inline key material detected under evidence/"
 fi

@@ -1,0 +1,92 @@
+Phase 6 Wireshark RTP analysis — 75-second study (sanitized)
+===================================================
+
+Observation date: 2026-09-30
+Scope: one controlled local outgoing call of approximately 75 seconds.
+Operator observation: both ThinkPad and phone reproduced intelligible
+  two-way speech. The operator intentionally remained silent for the
+  final 15 seconds (approximately 60–75 seconds of the call).
+  This timeline is operator-reported; RTP headers alone cannot establish
+  human speech or the exact mechanism that stops packet transmission.
+Capture: private local pcapng, retained outside Git; not distributed.
+Capture interface: any
+Capture filter: udp portrange 10000-20000
+Analysis: Decode As RTP as needed, inspect header fields and
+  Telephony > RTP > RTP Streams > Analyze.
+
+Only transient SSRC identifiers, selected fixed RTP fields, and aggregate
+Wireshark results appear below. The original capture, audio samples,
+IP addresses, ports, SIP exchanges, and packet-hex dumps are excluded.
+
+Selected RTP header sequence: observed direction A -> B
+------------------------------------------------------
+SSRC: 0xb7933d8d (capture-specific)
+Frame 78: RTP v2, PT 0 G.711 PCMU, sequence 0,
+  timestamp 1266780388, marker 0.
+Frame 80: sequence 1, timestamp 1266780548.
+Frame 82: sequence 2, timestamp 1266780708.
+Normal adjacent differences: +1 sequence, +160 RTP timestamp ticks;
+  160 / 8000 Hz = 20 ms per PCMU packet.
+
+Selected opposite direction B -> A
+----------------------------------
+SSRC: 0x1a2c9ab7 (capture-specific)
+Frame 14: RTP v2, PT 0 G.711 PCMU, sequence 31939,
+  timestamp 3217820739, marker 1.
+Frame 16: sequence 31940, timestamp 3217820899.
+Frame 18: sequence 31941, timestamp 3217821059.
+Normal adjacent differences: +1 sequence, +160 RTP timestamp ticks.
+
+Wireshark RTP Stream Analysis (two selected LAN-side directions)
+----------------------------------------------------------------
+                                Direction A -> B Direction B -> A
+SSRC                            0xb7933d8d     0x1a2c9ab7
+Observed RTP packets            3698           2960
+Expected RTP packets            3698           2960
+Lost packets                    0 (0.00%)      0 (0.00%)
+Sequence errors                 0              0
+Mean jitter                     0.597943 ms    0.464147 ms
+Maximum jitter                  3.589688 ms    0.784246 ms
+Max delta (Wireshark SUMMARY)   40.845230 ms   21.954884 ms
+Analyzed stream duration        73.92 s        72.92 s
+RTP clock                       ~8000 Hz       ~8000 Hz
+
+The private capture includes the direction A -> B initial frame 78
+(sequence 0), while the shown Wireshark Stream Analysis begins at
+frame 80 (sequence 1). Do not mix raw frame counts and the analyzed
+packet totals. RTP stream
+statistics here are transcribed from the two selected Analysis windows.
+
+Timing and intentional-silence observation
+-----------------------------------------
+The operator confirmed deliberate silence for approximately seconds
+60-75 of the test after two-way speech had been heard earlier. In the
+observed B -> A stream, the packet table contains additional startup
+and mid-call pauses. Near the end of the capture, overlapping the operator-reported
+silent interval, notable successive gaps include roughly 1.32 s
+followed later by two approximately 5 s gaps. The latter two show about 40000 RTP ticks
+of timestamp advance each at the 8000 Hz media clock; sequence numbers
+remain continuous and a marker appears on the first packet after each
+gap. The opposite selected A -> B stream continued near-20-ms packet
+transmission during the same portion of the test.
+
+The observations are compatible with silence suppression or a related
+media-pause mechanism on one observed stream; they do not prove a
+particular feature, vendor setting, or which sender deliberately muted
+transmission. In particular, 15 s of user silence should NOT be
+reported as one unbroken 15 s packet gap. Zero lost packets means no
+loss detected within these analyzed streams, NOT uninterrupted media,
+no audible impairment, or zero loss elsewhere in the network.
+
+The opposite stream's 21.954884-ms "maximum delta" is Wireshark's
+summary measure; larger marker-delimited gaps are visible in the
+packet table and must be documented separately.
+
+Manual and data-handling notes
+------------------------------
+Audibility is based on the operator's report, not an inference from RTP
+counters. This wire-level outgoing-call study is separate from the earlier
+incoming/outgoing application acceptance gates. Keep the original
+packet capture private outside the repository. Never commit captures, unredacted
+screenshots, PCMU payload bytes, raw SIP logs, or credentials.
+See docs/protocols/rtp.md for interpretation and limitations.

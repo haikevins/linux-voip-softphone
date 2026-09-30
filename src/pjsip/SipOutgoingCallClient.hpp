@@ -1,6 +1,8 @@
 #pragma once
 
+#include "pjsip/Pjsua2RtpDiagnostics.hpp"
 #include "pjsip/SipAccountConfig.hpp"
+#include "pjsip/SipCallAudioConfig.hpp"
 #include "pjsip/SipEndpointConfig.hpp"
 #include "pjsip/SipRegistrationClient.hpp"
 
@@ -9,6 +11,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 namespace voip::pjsip {
 
@@ -16,6 +19,7 @@ struct OutgoingCallResult
 {
     bool connected{false};
     bool disconnected{false};
+    bool media_connected{false};
     bool timed_out{false};
     int sip_status_code{0};
     std::string state;
@@ -27,6 +31,8 @@ class SipOutgoingCallClient
 {
   public:
     SipOutgoingCallClient(SipEndpointConfig endpoint_config, SipAccountConfig account_config);
+    SipOutgoingCallClient(SipEndpointConfig endpoint_config, SipAccountConfig account_config,
+                          SipCallAudioConfig audio_config);
     ~SipOutgoingCallClient();
 
     SipOutgoingCallClient(const SipOutgoingCallClient &) = delete;
@@ -41,6 +47,7 @@ class SipOutgoingCallClient
 
     void make_call(const std::string &destination_uri);
     [[nodiscard]] OutgoingCallResult wait_for_call(std::chrono::milliseconds timeout);
+    [[nodiscard]] std::vector<RtpMediaDiagnostics> rtp_diagnostics();
     void hangup() noexcept;
     [[nodiscard]] bool wait_for_disconnection(std::chrono::milliseconds timeout);
 
@@ -51,12 +58,15 @@ class SipOutgoingCallClient
     void on_registration_state(const pj::OnRegStateParam &parameter, const pj::AccountInfo &info);
     void on_registration_callback_error(std::string reason) noexcept;
     void on_call_state(const pj::CallInfo &info);
+    void on_call_media_state(pj::Call &call);
     void on_call_callback_error(std::string reason) noexcept;
+    void on_call_media_callback_error(std::string reason) noexcept;
     [[nodiscard]] bool wait_for_call_cleanup(std::chrono::milliseconds timeout) noexcept;
     [[nodiscard]] bool shutdown_account_safely() noexcept;
 
     SipEndpointConfig endpoint_config_;
     SipAccountConfig account_config_;
+    SipCallAudioConfig audio_config_;
     std::unique_ptr<pj::Endpoint> endpoint_;
     std::unique_ptr<CallAccount> account_;
     std::unique_ptr<TrackedCall> call_;
