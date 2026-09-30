@@ -11,7 +11,7 @@
 namespace voip::application {
 namespace {
 
-class FakeCallBackend final : public CallBackend
+class FakeCallBackend : public CallBackend
 {
   public:
     bool registration_accepted{true};
@@ -72,6 +72,31 @@ TEST(CallManagerTest, RegistrationIsPendingUntilExplicitBackendCompletion)
     EXPECT_TRUE(manager.snapshot().call_actions_enabled);
     EXPECT_EQ(manager.snapshot().state, CallState::Ready);
     EXPECT_FALSE(manager.on_registration_succeeded());
+}
+
+TEST(CallManagerTest, RegistrationOnlyBackendNeverAdvertisesCalls)
+{
+    class RegistrationOnlyBackend final : public FakeCallBackend
+    {
+      public:
+        [[nodiscard]] bool supports_calls() const noexcept override
+        {
+            return false;
+        }
+    };
+
+    RegistrationOnlyBackend backend;
+    CallManager manager(&backend);
+    ASSERT_TRUE(manager.request_registration());
+    ASSERT_TRUE(manager.on_registration_succeeded());
+    EXPECT_EQ(manager.snapshot().state, CallState::Ready);
+    EXPECT_TRUE(manager.snapshot().backend_available);
+    EXPECT_FALSE(manager.snapshot().call_actions_enabled);
+    EXPECT_FALSE(manager.request_registration()); // Must not re-enter a retained session.
+    EXPECT_EQ(backend.registration_requests, 1);
+    EXPECT_FALSE(manager.request_outgoing_call("1001"));
+    EXPECT_EQ(backend.outgoing_requests, 0);
+    EXPECT_EQ(manager.snapshot().state, CallState::Ready);
 }
 
 TEST(CallManagerTest, RejectedRegistrationFailsWithoutReportingReady)

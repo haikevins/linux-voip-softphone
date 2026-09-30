@@ -32,20 +32,30 @@ ApplicationWindow {
             implicitHeight: 68
             Layout.fillWidth: true
 
-            Column {
+            RowLayout {
                 anchors.fill: parent
                 anchors.margins: 12
-                spacing: 5
+                spacing: 10
 
-                Label {
-                    text: qsTr("Registration")
-                    color: "#9ca3af"
-                    font.pixelSize: 12
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    Label {
+                        text: qsTr("Registration")
+                        color: "#9ca3af"
+                        font.pixelSize: 12
+                    }
+                    Label {
+                        text: softphone.registrationStatus
+                        color: "#fbbf24"
+                        font.pixelSize: 15
+                    }
                 }
-                Label {
-                    text: softphone.registrationStatus
-                    color: "#fbbf24"
-                    font.pixelSize: 15
+                Button {
+                    text: qsTr("Register")
+                    enabled: softphone.registrationActionsEnabled
+                    Accessible.name: qsTr("Register SIP account")
+                    onClicked: softphone.registerAccount()
                 }
             }
         }
@@ -108,14 +118,24 @@ ApplicationWindow {
             Layout.fillWidth: true
             Layout.preferredHeight: 52
             enabled: softphone.callActionsEnabled
-            Accessible.name: qsTr("Call - unavailable in GUI shell")
+            Accessible.name: qsTr("Call - unavailable during registration-only integration")
         }
 
         Label {
-            text: qsTr("GUI preview only. SIP registration, calls and audio are not wired yet.")
+            text: softphone.backendAvailable
+                  ? qsTr("Registration-only SIP integration. Calls and audio are not wired yet.")
+                  : qsTr("GUI preview only. Start with --sip-register to enable live registration.")
             color: "#9ca3af"
             wrapMode: Text.WordWrap
             horizontalAlignment: Text.AlignHCenter
+            Layout.fillWidth: true
+        }
+
+        Label {
+            text: softphone.lastError
+            visible: text.length > 0
+            color: "#fca5a5"
+            wrapMode: Text.WordWrap
             Layout.fillWidth: true
         }
 

@@ -51,6 +51,29 @@ QString GuiViewModel::lastError() const
     return QString::fromStdString(manager_.snapshot().error);
 }
 
+bool GuiViewModel::backendAvailable() const
+{
+    return manager_.snapshot().backend_available;
+}
+
+bool GuiViewModel::registrationActionsEnabled() const
+{
+    const auto current = manager_.snapshot();
+    return current.backend_available &&
+           (current.state == CallState::Idle || current.state == CallState::Failed);
+}
+
+bool GuiViewModel::registerAccount()
+{
+    if (!registrationActionsEnabled()) {
+        return false;
+    }
+    if (manager_.snapshot().state == CallState::Failed && !manager_.reset_after_failure()) {
+        return false;
+    }
+    return manager_.request_registration();
+}
+
 application::CallManager &GuiViewModel::manager() noexcept
 {
     return manager_;

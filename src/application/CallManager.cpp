@@ -37,7 +37,8 @@ CallSnapshot CallManager::snapshot() const
             .peer = machine_.peer().value_or(std::string{}),
             .error = !feedback_.empty() ? feedback_ : machine_error.value_or(std::string{}),
             .backend_available = backend_ != nullptr,
-            .call_actions_enabled = backend_ != nullptr && machine_.state() == CallState::Ready};
+            .call_actions_enabled = backend_ != nullptr && backend_->supports_calls() &&
+                                    machine_.state() == CallState::Ready};
 }
 
 void CallManager::set_observer(Observer observer)
@@ -66,7 +67,7 @@ bool CallManager::request_registration()
     if (backend_ == nullptr) {
         return reject("SIP backend is not connected");
     }
-    if (machine_.state() != CallState::Idle && machine_.state() != CallState::Ready) {
+    if (machine_.state() != CallState::Idle) {
         return reject("Registration is not available in the current state");
     }
     feedback_.clear();
@@ -98,6 +99,9 @@ bool CallManager::request_outgoing_call(const std::string &destination)
     }
     if (machine_.state() != CallState::Ready) {
         return reject("Calls require a confirmed registration");
+    }
+    if (!backend_->supports_calls()) {
+        return reject("Calling is not available in this backend");
     }
     if (!is_dialable_destination(destination)) {
         return reject("Destination must contain 1-64 dialable characters");

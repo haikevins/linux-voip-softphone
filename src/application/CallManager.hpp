@@ -19,6 +19,11 @@ class CallBackend
     virtual ~CallBackend() = default;
 
     [[nodiscard]] virtual bool begin_registration() = 0;
+    // A registration-only adapter must never advertise a callable dialer.
+    [[nodiscard]] virtual bool supports_calls() const noexcept
+    {
+        return true;
+    }
     [[nodiscard]] virtual bool begin_outgoing_call(std::string_view destination) = 0;
     [[nodiscard]] virtual bool begin_hangup() = 0;
 };

@@ -2,61 +2,78 @@
 
 ## Status
 
-In progress. Commit 1 introduced an optional Qt6 GUI shell. Commit 2 adds a Qt-free application facade and an observable ViewModel, but no production SIP adapter. Live SIP operations are not enabled in the GUI.
+Commit 1 introduced an optional Qt6/QML dialer shell. Commit 2 added a Qt-free `CallManager` with an injectable `CallBackend` and observable snapshots. Commit 3 adds an opt-in, production-backed **SIP registration adapter only**. It does not implement GUI calling, incoming-call answering, audio routing or RTP diagnostics.
 
 ## Purpose
 
-Establish a Qt/QML boundary that can display VoIP status and request call operations in later commits without exposing PJSUA2 objects or running SIP work from QML.
+Connect the Qt GUI to the existing Phase 6 registration implementation through an explicit application-layer boundary. Preserve the existing SIP/RTP CLI, keep PJSUA2 out of QML and deliver asynchronous registration results to the Qt UI thread without publishing sensitive backend information.
 
 ## Scope
 
-This document covers the GUI target, its observable ViewModel, the new application-layer CallManager facade, and planned boundaries with the existing C++ core and PJSIP components. SIP/account lifecycle, incoming-call handling, audio routing, and diagnostics integration are future Phase 7 work.
+Commit 3 covers opt-in initial SIP registration, a Qt-to-CallManager bridge, dedicated registration-worker ownership, a retained successful registration session and tests with injected fake sessions. It does not provide continuous registration-health monitoring, automatic retries, account switching or deregistration monitoring.
+
+`ENABLE_QT_GUI=OFF` preserves CLI/headless operation. Enabling Qt alone builds and tests the bridge with fake registration sessions and no PJSIP linkage. The combined `qt-pjsip-gui-debug` preset builds the production registration adapter alongside the existing Phase 6 SIP implementation.
 
 ## Architecture model
 
-The roadmap's target dependency direction is:
-
 ```text
-QML view
-    |
-    v
-QObject ViewModel (UI-thread ownership)
-    |
-    v
-CallManager (Qt-free application facade, Commit 2)
-    |
-    v
-CallBackend interface -> SipEngine / PJSUA2 adapter (future integration)
+QML (status, Register button and local dial-pad UI)
+  |
+  v
+GuiViewModel (QObject, UI-thread owner of CallManager)
+  |
+  v
+CallManager (Qt-free core state machine, explicit async events)
+  |
+  v
+CallBackend API
+  |
+  v
+QtRegistrationBackend (QObject, UI thread + dedicated worker)
+  |
+  v
+RegistrationSession interface
+  |
+  v
+PjsipRegistrationSession (Qt+PJSIP builds only)
+  |
+  v
+Existing Phase 6 SipRegistrationClient / PJSUA2
 ```
 
-Commit 2 adds `src/application/CallManager.*` to `voip::core`. It wraps the existing `CallStateMachine`, accepts a borrowed `CallBackend` interface, publishes a copyable `CallSnapshot`, and never creates a PJSUA2 endpoint. Registration, outgoing call and hangup requests represent *accepted commands*, not successful SIP operations. Only later backend lifecycle events can move an accepted registration to `Ready` or a call to `Connected`. The default GUI constructs its ViewModel with no backend, so the Call button stays disabled.
+`CallManager` reuses `CallStateMachine`. An accepted `begin_registration()` request enters `Registering` but does not imply success. An explicit queued backend event is the only route to `Ready` or `Failed`. `CallBackend::supports_calls()` is a capability flag: the registration-only backend returns `false`, so calls remain disabled even after successful registration. An absent backend disables both registration and calling.
 
 ## Runtime and lifecycle
 
-`ENABLE_QT_GUI=OFF` leaves the established CLI and Phase 6 targets unchanged. When enabled, CMake requires Qt6 Quick and QuickControls2 and builds `voip-qt-gui`. QML is embedded as a Qt resource rather than being loaded from an arbitrary working directory.
+`GuiViewModel` owns `CallManager` on the Qt UI thread. `QtRegistrationBackend` is a QObject on that same thread. Its `begin_registration()` starts a dedicated worker rather than executing the SIP operation synchronously. The worker constructs, starts, waits on and destroys its `RegistrationSession`. A successfully registered session remains alive until application shutdown rather than being destroyed immediately after success; a failed or timed-out session is stopped before the result is delivered.
 
-The ViewModel is constructed on the Qt application thread and outlives the QML engine. It now owns a CallManager and exposes NOTIFY-enabled `registrationStatus`, `callActionsEnabled` and `lastError` properties. The dial pad edits only a local destination field; it does not issue network requests. The default ViewModel has no backend and continues to show a disconnected state. The injected `CallBackend` is non-owning and must outlive the manager. Both CallManager methods and observer notifications are restricted to its construction thread. A future PJSIP adapter must queue *sanitized* asynchronous callbacks onto the QObject thread (e.g., using `Qt::QueuedConnection`) and must not call back synchronously from a command dispatch.
+The worker reports initial registration through `QMetaObject::invokeMethod(..., Qt::QueuedConnection)`. `registrationFinished(bool)` is emitted on the QObject's owning thread and connected to `CallManager::on_registration_succeeded/failed` through the ViewModel. The worker never calls `CallManager` directly. In `qt_gui_main.cpp`, the QML engine is destroyed before the ViewModel, and the backend is destroyed last; the backend requests worker stop and joins it before destroying the QObject context.
+
+Shutdown may wait for the eight-second registration wait, plus PJSIP startup and cleanup. PJSUA2 lifecycle and cleanup stay on the thread that created `SipRegistrationClient`. Continuous account-state monitoring and multi-session call ownership are not implemented here.
 
 ## Verification strategy
 
-For Commits 1–2, verify both independent build modes: existing non-Qt/PJSIP regression and opt-in Qt configuration. In the Qt build, `QtGuiShellSmokeTest` launches with `QT_QPA_PLATFORM=offscreen` and software rendering, checks that QML instantiates a destination field and that call actions are disabled, then exits automatically. Run the GUI manually to inspect the layout.
+`QtRegistrationBackendTest` injects fake sessions to test queued UI-thread result delivery, worker ownership, persistent successful registration, failure and retry without live SIP traffic. `CallManagerTest` exercises registration-only capabilities and asynchronous state transitions. `QtGuiShellSmokeTest` runs without a SIP account or network operations and verifies that registration and calling are disabled in inert mode.
 
-Commit 2 adds `CallManagerTest.*` to the existing default, Qt and PJSIP GTest suites. A fake backend verifies request acceptance, explicit asynchronous completion, invalid destinations, failure paths, observer snapshots and disconnected behavior without network access. The GUI smoke test still asserts an inert default backend. End-to-end GUI registration, two-way audio and RTP are *not* established by these tests; Phase 6 has separate CLI evidence.
+Build and test the Qt-only and combined Qt/PJSIP configurations independently, then run inherited Phase 6 automated verification. Separately, use controlled Asterisk registration to confirm the production adapter. Passing automated tests alone is not evidence of a successful live REGISTER or of continuous registration health.
 
 ## Design rationale
 
-Keeping Qt optional prevents new desktop dependencies from breaking established headless and non-PJSIP builds. The ViewModel is a QObject contract rather than a wrapper around raw PJSUA2 pointers. A Qt-free facade reuses the established core state machine and can be tested with an injected fake backend. An unavailable default backend prevents a visually plausible prototype from claiming to be registered or able to place calls. A failed request never masquerades as a successful asynchronous event. Future commits must implement SIP lifecycle ownership and explicit callback marshaling before enabling UI actions.
+The default GUI has no backend and reads no credentials. Production registration is explicitly enabled through `--sip-register USER SERVER [PORT]`; the password is read from stdin before the GUI starts, never from QML or command-line arguments. The backend reports a boolean instead of publishing raw SIP exceptions, credentials, Digest headers or PJSUA2 objects. The GUI uses generic error text because third-party exception messages could include private data.
+
+Separating `RegistrationSession` from the Qt bridge allows deterministic, network-free tests. Retaining a successful session also avoids claiming a registration that the application has already torn down.
 
 ## Phase boundary
 
-Phase 6 owns the validated CLI RTP/audio runtime. Phase 7 will provide registration, dialing, incoming/active-call views and diagnostics through a C++ application interface. Commit 2 deliberately does not provide a production SIP adapter, credential management, call-media ownership or a GUI call button. Phase 8 will expand the threading and message-queue model; CallManager is currently thread-confined, not thread-safe.
+Commit 3 ends at initial SIP registration. Its registration-only backend deliberately rejects outgoing-call requests and keeps the QML Call button disabled even in `Ready`. Actual calls, incoming-call handling, media routing, RTP diagnostics, continuous registration status and the broader concurrency model remain future work. The subsequent integration should reuse this account/session ownership boundary rather than creating another competing PJSIP endpoint in QML.
 
 ## References
 
-- `README_roadmap.md` (Phase 7 — Qt/QML GUI)
+- `README_roadmap.md`
 - `docs/phase7/README.md`
 - `docs/architecture/audio-rtp.md`
-- `docs/phase6/README.md`
-- `src/gui/GuiViewModel.hpp`
 - `src/application/CallManager.hpp`
+- `src/gui/QtRegistrationBackend.hpp`
+- `src/gui/PjsipRegistrationSession.hpp`
 - `tests/unit/test_call_manager.cpp`
+- `tests/qt/test_qt_registration_backend.cpp`
