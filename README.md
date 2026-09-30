@@ -1,12 +1,12 @@
 # Linux VoIP Softphone
 
-A Linux SIP softphone engineering portfolio developed incrementally in C++20 with Linux system programming, TCP/UDP networking, Asterisk, PJSIP/PJSUA2, testing, sanitizers, static analysis, and protocol-focused verification.
+A Linux SIP softphone engineering portfolio developed incrementally in C++20 with Linux system programming, TCP/UDP networking, Asterisk, PJSIP/PJSUA2, Qt/QML, testing, sanitizers, static analysis, and protocol-focused verification.
 
 The repository is intentionally phase-driven: each milestone adds production code, tests, documentation, and verification evidence before moving to the next subsystem.
 
 ## Current status
 
-Completed through **Phase 6 — RTP and audio** for the documented local lab. Phase 6 release identifier: `v0.7-rtp-audio` (reserved for an annotated tag after the closure commit is verified and pushed; this document does not assert that the tag is already published).
+Completed through **Phase 7 — Qt/QML GUI** for the documented local lab. The current published milestone tag remains `v0.7-rtp-audio`; Phase 7 release identifier `v0.8-qt-gui` is reserved for an annotated tag after the Phase 7 closure commit is verified, pushed, and merged according to the repository release workflow.
 
 Implemented so far:
 
@@ -16,14 +16,18 @@ Implemented so far:
 - IPv4 endpoint, TCP client/server, and UDP socket abstractions with integration tests.
 - Local Asterisk SIP lab with two endpoints and documented REGISTER/call flows.
 - PJPROJECT 2.17 / PJSUA2 integration behind `ENABLE_PJSIP`.
-- PJSIP account and endpoint configuration abstractions.
-- CLI registration client.
-- CLI outgoing-call lifecycle.
-- CLI incoming-call lifecycle with ringing and auto-answer support.
-- Automated PJSIP contract, regression, sanitizer, and static-analysis verification.
-- Scrubbed runtime evidence that excludes SIP credentials and keying material.
+- CLI registration plus outgoing/incoming call lifecycles.
+- Real Linux two-way audio with RTP/RTCP diagnostics and Phase 6 wire-level evidence.
+- Optional Qt/QML GUI shell that remains network-free when PJSIP is disabled.
+- Qt application layer with `GuiViewModel`, Qt-free `CallManager`, and a retained PJSUA2 worker/session.
+- Live SIP registration, outgoing calls, incoming calls, Answer/Decline, and local/remote hangup handling.
+- Explicit SIP `603 Decline` on the softphone-to-Asterisk call leg.
+- Connected-call duration with deterministic reset at teardown.
+- Read-only live RTP/audio diagnostics in QML: codec, RX/TX packets, loss, jitter, and RTCP RTT.
+- Registration reuse across sequential incoming/outgoing calls without re-registering.
+- Regression verification that keeps the Phase 5/6 signaling and media behavior green.
 
-Phase 6 routes active PJSUA2 call audio to Linux capture/playback devices and exposes read-only media/RTP diagnostics in outgoing and incoming CLIs. Local outgoing and incoming calls passed operator-confirmed two-way audio and live RTP checks. A separate, controlled approximately 75-second outgoing call supplied a two-direction Wireshark RTP-header/timing study, documented in `docs/protocols/rtp.md` and `evidence/phase6/rtp-wireshark.txt`. The automated gate, architecture documentation, and sanitized evidence have been accepted for the stated local lab configuration; Qt/QML remains Phase 7 work.
+Phase 7 intentionally does not add multiple accounts, call waiting, mute/hold, audio-device selection UI, persistent call history, or a general-purpose cross-thread event queue. Those remain future work rather than being mixed into the GUI milestone.
 
 ## Repository layout
 
@@ -71,7 +75,7 @@ Verify the dependency independently:
 ./scripts/phase5/verify-pjsip-dependency.sh
 ```
 
-Run the complete Phase 6 automated verification suite (which includes the Phase 5 gate):
+Run the complete inherited media gate:
 
 ```bash
 ./scripts/phase6/verify.sh
@@ -87,7 +91,7 @@ voip-sip-call       register and place one outgoing call
 voip-sip-listen     register and handle one incoming call lifecycle
 ```
 
-Usage and architecture details are documented in:
+CLI/media details remain documented in:
 
 ```text
 docs/phase5/README.md
@@ -96,7 +100,33 @@ docs/architecture/pjsip-cli.md
 docs/architecture/audio-rtp.md
 ```
 
-SIP passwords are supplied through an environment variable rather than command-line arguments. Do not commit credentials, raw Digest Authorization headers, or SDP keying material.
+## Build the Qt GUI
+
+The Qt-only preset builds the QML shell without live SIP networking:
+
+```bash
+cmake --preset qt-gui-debug
+cmake --build --preset qt-gui-debug --clean-first -j2
+```
+
+The combined production GUI enables Qt and PJSIP together:
+
+```bash
+export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+cmake --preset qt-pjsip-gui-debug
+cmake --build --preset qt-pjsip-gui-debug --clean-first -j2
+```
+
+Run the combined GUI with the registered extension and SIP server using `--sip-register USER SERVER [PORT]`. Supply the SIP password through the existing hidden stdin flow; do not put real credentials in argv, source files, evidence, screenshots, or committed logs.
+
+Phase 7 architecture and verification details are documented in:
+
+```text
+docs/phase7/README.md
+docs/architecture/qt-qml.md
+docs/interview/phase7-questions.md
+evidence/phase7/README.md
+```
 
 ## Verification philosophy
 
@@ -125,10 +155,11 @@ v0.3-linux-system      Phase 2 — Linux system programming and IPC
 v0.4-networking        Phase 3 — TCP/UDP networking
 v0.5-sip-asterisk      Phase 4 — SIP + Asterisk lab
 v0.6-pjsip-cli         Phase 5 — PJSIP CLI softphone
-v0.7-rtp-audio         Phase 6 — RTP + Audio (release identifier)
+v0.7-rtp-audio         Phase 6 — RTP + Audio
+v0.8-qt-gui            Phase 7 — Qt/QML GUI (release identifier)
 ```
 
-Phase 6 acceptance is complete based on the recorded local tests. The annotated Phase 6 tag is published separately after the closure commit is verified and pushed. Next planned phase: **Phase 7 — Qt/QML UI**.
+Phase 7 acceptance is complete for the recorded local lab. Publishing `v0.8-qt-gui` and merging the Phase 7 branch are separate Git/release operations after the closure commit is verified. Next planned phase: **Phase 8 — Multithreading**.
 
 ## Documentation
 

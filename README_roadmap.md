@@ -1069,81 +1069,93 @@ v0.7-rtp-audio
 
 # 10. Phase 7 — Qt/QML GUI
 
-Thời gian:
+**Trạng thái:** đã nghiệm thu cho lab nội bộ. Phase 7 đặt Qt/QML lên signaling/media path đã kiểm thử, giữ PJSUA2 ngoài UI thread và cung cấp registration, outgoing/incoming call, Answer/Decline, call duration và live RTP/audio diagnostics. Release identifier: `v0.8-qt-gui` (chỉ tạo/push annotated tag sau khi closure commit được xác minh và merge theo release workflow).
+
+Thời gian kế hoạch:
 
 ```text
 5–8 ngày
 ```
 
-Bây giờ mới làm UI.
-
-UI:
+UI thực tế tập trung vào dialer, call lifecycle và observability:
 
 ```text
-┌────────────────────────────┐
-│ Linux VoIP                 │
-│                            │
-│ ● Registered               │
-│                            │
-│ Destination                │
-│ [ 1002                  ] │
-│                            │
-│  1     2     3             │
-│  4     5     6             │
-│  7     8     9             │
-│        0                    │
-│                            │
-│       [ Call ]             │
-└────────────────────────────┘
+┌──────────────────────────────────┐
+│ Linux VoIP                       │
+│ ● Registered                     │
+│                                  │
+│ Destination [ 1001            ] │
+│                                  │
+│        [ Call ]                  │
+│                                  │
+│ Connected        00:00:42        │
+│                                  │
+│ Live RTP / Audio                 │
+│ Codec PCMU   RX/TX ...           │
+│ Loss / Jitter / RTT ...          │
+│                                  │
+│             [ Hang up ]          │
+└──────────────────────────────────┘
 ```
 
-Khi call:
-
-```text
-┌────────────────────────────┐
-│ 1002                       │
-│                            │
-│       Connected            │
-│                            │
-│       00:01:42             │
-│                            │
-│ Mic     ███████░░          │
-│                            │
-│ [Mute]         [Hang up]   │
-└────────────────────────────┘
-```
-
-Dùng structure:
+Architecture đã nghiệm thu:
 
 ```text
 QML
  │
  ▼
-ViewModel
+GuiViewModel                 Qt UI thread
  │
- ▼
-CallManager
+ ├── CallManager             application/call state
  │
- ▼
-SipEngine
+ └── QtRegistrationBackend   retained worker boundary
+          │
+          ▼
+   RegistrationSession
+          │
+          ▼
+ PjsipRegistrationSession
+          │
+          ▼
+        PJSUA2
 ```
 
-Không gọi PJSIP trực tiếp từ QML.
+Không gọi PJSIP trực tiếp từ QML. `CallManager` vẫn Qt-free; PJSUA2 endpoint/account/call và RTP statistics được giữ trên worker/session. Các event và diagnostic snapshot được chuyển về Qt thread bằng queued delivery.
 
-Đó là điểm architecture rất đáng nói khi phỏng vấn.
+Phạm vi đã nghiệm thu:
+
+```text
+Qt/QML shell
+SIP registration
+Outgoing call
+Incoming call
+Answer / Decline
+Local / remote hangup
+Remote cancel before answer
+Connected-call duration
+603 Decline ở softphone -> Asterisk call leg
+Live codec / RX / TX / loss / jitter / RTT
+Reuse registration cho cuộc gọi tiếp theo
+Qt-only + Qt/PJSIP tests
+Phase 5/6 regression gate
+```
+
+`Mute`, `hold`, audio-device selection UI, continuous registration-health events, call waiting, multiple accounts và general-purpose thread-safe event queue không thuộc acceptance scope của Phase 7; chúng phải được thiết kế riêng thay vì mở rộng milestone sau khi đã nghiệm thu.
 
 ### Evidence
 
 ```text
 evidence/phase7/
-├── login.png
-├── dialer.png
-├── incoming-call.png
-├── active-call.png
-└── diagnostics.png
+├── README.md
+├── automated-verification.txt
+├── manual-verification.txt
+├── sip-decline.txt
+└── rtp-diagnostics.txt
 ```
 
-Git tag:
+Evidence chỉ giữ summary đã scrub; không commit SIP password, Digest Authorization, raw SIP trace, raw audio hoặc packet capture chứa payload thoại.
+
+Git tag/release identifier:
 
 ```text
 v0.8-qt-gui
@@ -1902,10 +1914,10 @@ Bạn nói:
 
 ## Tiến độ hiện tại
 
-Repository đã nghiệm thu **Phase 0 đến Phase 6** cho các môi trường đã ghi lại trong evidence. Phase 6 có release identifier:
+Repository đã nghiệm thu **Phase 0 đến Phase 7** cho các môi trường đã ghi lại trong evidence. Phase 7 có release identifier:
 
 ```text
-v0.7-rtp-audio
+v0.8-qt-gui
 ```
 
 Chuỗi milestone đã nghiệm thu:
@@ -1924,8 +1936,10 @@ Phase 4 — SIP + Asterisk lab
 Phase 5 — PJSIP CLI softphone
         ↓
 Phase 6 — RTP + Audio
+        ↓
+Phase 7 — Qt/QML GUI
 ```
 
-Bước tiếp theo là **Phase 7 — Qt/QML GUI**, sử dụng signaling và media path đã kiểm thử. Việc tạo/push annotated tag `v0.7-rtp-audio` và merge branch là thao tác release riêng biệt; kiểm tra Git refs thay vì suy đoán từ roadmap.
+Bước tiếp theo là **Phase 8 — Multithreading**: tổng quát hóa thread model/event handoff, kiểm thử race/lifetime và bổ sung stress/ThreadSanitizer evidence mà không làm thay đổi kết quả nghiệm thu Phase 7. Việc tạo/push annotated tag `v0.8-qt-gui` và merge branch là thao tác release riêng biệt; kiểm tra Git refs thay vì suy đoán từ roadmap.
 
 Mục tiêu không phải hoàn thành softphone càng nhanh càng tốt. Mục tiêu là đến cuối project, **mỗi dòng quan trọng trong JD đều có một artifact trong GitHub để bạn chỉ thẳng cho interviewer xem**.

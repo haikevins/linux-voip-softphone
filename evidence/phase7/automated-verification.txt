@@ -1,0 +1,40 @@
+Phase 7 final automated verification summary
+============================================
+
+Implementation checkpoint: abb0b27
+Branch at test time: phase/7-qt-gui
+Scope: Commit 7 implementation before the separate Phase 7 closure documentation commit
+
+Documentation structure verification: PASS
+
+Qt-only selected gate:
+  18/18 tests passed
+  CallManager tests: PASS
+  QtRegistrationBackendTest: PASS
+  QtGuiShellSmokeTest: PASS
+
+Qt + PJSIP selected gate:
+  PJSIP dependency: libpjproject 2.17 detected
+  18/18 tests passed
+  CallManager tests: PASS
+  QtRegistrationBackendTest: PASS
+  QtGuiShellSmokeTest: PASS
+
+Inherited Phase 6 regression wrapper:
+  45/45 tests passed
+  133/133 tests passed
+  133/133 tests passed
+  88/88 tests passed
+  Phase 5 automated verification: PASS
+  4/4 tests passed
+  3/3 tests passed
+  Phase 6 automated verification: PASS
+
+git diff --check: PASS
+
+Observed non-blocking environment warnings:
+  XKB development library not found by Qt configure.
+  qmlimportscanner reported missing QtQml qmldir entries.
+  Neither warning prevented configure, link, or the selected tests from passing.
+
+This file records observed output only. It does not contain credentials or raw SIP traffic.
