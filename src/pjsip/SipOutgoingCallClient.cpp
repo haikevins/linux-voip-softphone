@@ -263,6 +263,20 @@ OutgoingCallResult SipOutgoingCallClient::wait_for_call(const std::chrono::milli
     return call_result_;
 }
 
+std::vector<RtpMediaDiagnostics> SipOutgoingCallClient::rtp_diagnostics()
+{
+    if (!started_) {
+        throw std::logic_error("SIP outgoing call client is not started");
+    }
+
+    const std::lock_guard callback_lock{call_callback_mutex_};
+    if (call_ == nullptr) {
+        throw std::logic_error("no outgoing call is available for RTP diagnostics");
+    }
+
+    return read_active_audio_rtp_diagnostics(*call_);
+}
+
 void SipOutgoingCallClient::hangup() noexcept
 {
     if (call_ == nullptr) {

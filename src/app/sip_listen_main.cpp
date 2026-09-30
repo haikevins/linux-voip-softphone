@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <exception>
+#include <iomanip>
 #include <iostream>
 #include <string_view>
 #include <thread>
@@ -21,6 +22,26 @@ namespace {
         arguments.emplace_back(argv[index]);
     }
     return arguments;
+}
+
+void print_rtp_diagnostics(const std::vector<voip::pjsip::RtpMediaDiagnostics> &diagnostics)
+{
+    for (const auto &media : diagnostics) {
+        std::cout << "[MEDIA] codec=" << media.codec << " clock-rate=" << media.clock_rate_hz
+                  << "Hz" << " rx-pt=" << media.receive_payload_type
+                  << " tx-pt=" << media.transmit_payload_type << " index=" << media.media_index
+                  << '\n';
+
+        std::cout << "[RTP] received=" << media.receive.packets_received
+                  << " sent=" << media.packets_sent << " lost=" << media.receive.packets_lost
+                  << " loss=" << std::fixed << std::setprecision(2)
+                  << media.receive.packet_loss_percent << "%"
+                  << " jitter=" << media.receive.jitter_ms << "ms"
+                  << " rtt=" << media.round_trip_time_ms << "ms"
+                  << " tx-seq=" << media.last_transmit_sequence
+                  << " tx-ts=" << media.last_transmit_timestamp << " index=" << media.media_index
+                  << '\n';
+    }
 }
 
 void print_registration_result(const voip::pjsip::RegistrationResult &result)
@@ -121,6 +142,15 @@ int main(const int argc, char *argv[])
             std::cout << "[INCOMING] holding for " << options.hold_duration.count() << " ms\n";
             std::this_thread::sleep_for(options.hold_duration);
         }
+
+        const auto diagnostics = client.rtp_diagnostics();
+        if (diagnostics.empty()) {
+            std::cerr << "[RTP] no active audio stream available for diagnostics\n";
+            client.hangup();
+            static_cast<void>(client.wait_for_disconnection(std::chrono::seconds{5}));
+            return 1;
+        }
+        print_rtp_diagnostics(diagnostics);
 
         client.hangup();
         if (!client.wait_for_disconnection(std::chrono::seconds{5})) {

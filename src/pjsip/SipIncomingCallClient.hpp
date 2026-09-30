@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pjsip/Pjsua2RtpDiagnostics.hpp"
 #include "pjsip/SipAccountConfig.hpp"
 #include "pjsip/SipCallAudioConfig.hpp"
 #include "pjsip/SipEndpointConfig.hpp"
@@ -10,6 +11,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 namespace voip::pjsip {
 
@@ -46,6 +48,7 @@ class SipIncomingCallClient
     [[nodiscard]] IncomingCallResult wait_for_incoming_call(std::chrono::milliseconds timeout);
     void answer();
     [[nodiscard]] IncomingCallResult wait_for_call(std::chrono::milliseconds timeout);
+    [[nodiscard]] std::vector<RtpMediaDiagnostics> rtp_diagnostics();
     void hangup() noexcept;
     [[nodiscard]] bool wait_for_disconnection(std::chrono::milliseconds timeout);
 
