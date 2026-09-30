@@ -1,4 +1,5 @@
 add_executable(unit_tests
+    unit/test_call_manager.cpp
     unit/test_audio_device_selection.cpp
     unit/test_build_info.cpp
     unit/test_call_state.cpp

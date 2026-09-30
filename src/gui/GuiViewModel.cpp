@@ -1,17 +1,59 @@
 #include "gui/GuiViewModel.hpp"
 
+#include "core/CallState.hpp"
+
 namespace voip::gui {
 
-GuiViewModel::GuiViewModel(QObject *parent) : QObject(parent) {}
+GuiViewModel::GuiViewModel(QObject *parent) : QObject(parent)
+{
+    subscribe();
+}
+
+GuiViewModel::GuiViewModel(application::CallBackend &backend, QObject *parent)
+    : QObject(parent), manager_(&backend)
+{
+    subscribe();
+}
+
+void GuiViewModel::subscribe()
+{
+    manager_.set_observer([this](const application::CallSnapshot &) { emit statusChanged(); });
+}
 
 QString GuiViewModel::registrationStatus() const
 {
-    return QStringLiteral("Not connected - GUI shell only");
+    const auto current = manager_.snapshot();
+    switch (current.state) {
+    case CallState::Idle:
+        return current.backend_available ? QStringLiteral("Not registered")
+                                         : QStringLiteral("Not connected - GUI shell only");
+    case CallState::Registering:
+        return QStringLiteral("Registering...");
+    case CallState::Ready:
+    case CallState::Calling:
+    case CallState::Ringing:
+    case CallState::Connected:
+    case CallState::Terminating:
+        return QStringLiteral("Registered");
+    case CallState::Failed:
+        return QStringLiteral("Registration or call failed");
+    }
+    return QStringLiteral("Unknown");
 }
 
-bool GuiViewModel::callActionsEnabled() const noexcept
+bool GuiViewModel::callActionsEnabled() const
 {
-    return false;
+    return manager_.snapshot().call_actions_enabled;
+}
+
+QString GuiViewModel::lastError() const
+{
+    return QString::fromStdString(manager_.snapshot().error);
+}
+
+application::CallManager &GuiViewModel::manager() noexcept
+{
+    return manager_;
 }
 
 } // namespace voip::gui
