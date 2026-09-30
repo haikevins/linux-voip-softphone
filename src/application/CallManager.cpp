@@ -45,6 +45,8 @@ CallSnapshot CallManager::snapshot() const
                 registration_confirmed_ && backend_calls && state == CallState::Failed,
             .incoming_call = incoming_call_,
             .answer_actions_enabled =
+                backend_calls && state == CallState::Ringing && incoming_call_ && !answer_pending_,
+            .decline_actions_enabled =
                 backend_calls && state == CallState::Ringing && incoming_call_ && !answer_pending_};
 }
 
@@ -163,6 +165,34 @@ bool CallManager::request_answer()
 
     answer_pending_ = true;
     publish();
+    return true;
+}
+
+bool CallManager::request_decline()
+{
+    check_thread();
+    if (backend_ == nullptr) {
+        return reject("SIP backend is not connected");
+    }
+    if (machine_.state() != CallState::Ringing || !incoming_call_ || answer_pending_) {
+        return reject("There is no incoming call waiting to be declined");
+    }
+    feedback_.clear();
+    if (!machine_.handle(HangupRequested{})) {
+        return reject("Decline state transition was rejected");
+    }
+    publish();
+
+    bool accepted = false;
+    try {
+        accepted = backend_->begin_decline();
+    } catch (...) {
+        accepted = false;
+    }
+    if (!accepted) {
+        static_cast<void>(on_call_failed("SIP backend rejected the decline request"));
+        return false;
+    }
     return true;
 }
 

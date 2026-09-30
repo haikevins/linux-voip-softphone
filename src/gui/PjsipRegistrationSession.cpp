@@ -75,6 +75,11 @@ void PjsipRegistrationSession::answer_call()
     client_.answer_incoming_call();
 }
 
+void PjsipRegistrationSession::decline_call()
+{
+    client_.decline_incoming_call();
+}
+
 CallProgress PjsipRegistrationSession::poll_call(const std::chrono::milliseconds timeout)
 {
     const auto result = client_.wait_for_call(timeout);

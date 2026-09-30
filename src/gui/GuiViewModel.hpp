@@ -21,6 +21,8 @@ class GuiViewModel final : public QObject
     Q_PROPERTY(QString activePeer READ activePeer NOTIFY statusChanged)
     Q_PROPERTY(bool incomingCall READ incomingCall NOTIFY statusChanged)
     Q_PROPERTY(bool answerActionsEnabled READ answerActionsEnabled NOTIFY statusChanged)
+    Q_PROPERTY(bool declineActionsEnabled READ declineActionsEnabled NOTIFY statusChanged)
+    Q_PROPERTY(bool callConnected READ callConnected NOTIFY statusChanged)
     Q_PROPERTY(bool hangupActionsEnabled READ hangupActionsEnabled NOTIFY statusChanged)
     Q_PROPERTY(bool recoveryActionsEnabled READ recoveryActionsEnabled NOTIFY statusChanged)
 
@@ -38,10 +40,13 @@ class GuiViewModel final : public QObject
     [[nodiscard]] QString activePeer() const;
     [[nodiscard]] bool incomingCall() const;
     [[nodiscard]] bool answerActionsEnabled() const;
+    [[nodiscard]] bool declineActionsEnabled() const;
+    [[nodiscard]] bool callConnected() const;
     [[nodiscard]] bool hangupActionsEnabled() const;
     [[nodiscard]] bool recoveryActionsEnabled() const;
     Q_INVOKABLE bool startCall(const QString &destination);
     Q_INVOKABLE bool answerCall();
+    Q_INVOKABLE bool declineCall();
     Q_INVOKABLE bool hangupCall();
     Q_INVOKABLE bool recoverCall();
 

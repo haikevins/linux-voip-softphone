@@ -121,6 +121,16 @@ bool GuiViewModel::answerActionsEnabled() const
     return manager_.snapshot().answer_actions_enabled;
 }
 
+bool GuiViewModel::declineActionsEnabled() const
+{
+    return manager_.snapshot().decline_actions_enabled;
+}
+
+bool GuiViewModel::callConnected() const
+{
+    return manager_.snapshot().state == CallState::Connected;
+}
+
 bool GuiViewModel::hangupActionsEnabled() const
 {
     const auto state = manager_.snapshot().state;
@@ -141,6 +151,11 @@ bool GuiViewModel::startCall(const QString &destination)
 bool GuiViewModel::answerCall()
 {
     return manager_.request_answer();
+}
+
+bool GuiViewModel::declineCall()
+{
+    return manager_.request_decline();
 }
 
 bool GuiViewModel::hangupCall()

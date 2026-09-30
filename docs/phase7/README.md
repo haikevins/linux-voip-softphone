@@ -2,26 +2,26 @@
 
 ## Status
 
-In progress. Commit 1 delivered the Qt dialer shell, Commit 2 the Qt-free `CallManager`, Commit 3 live SIP registration, and Commit 4 outgoing SIP calls with two-way audio. **Commit 5 adds incoming-call notification, Answer and Decline on the same retained PJSUA2 account.** Continuous registration-health monitoring, mute/device controls, in-GUI RTP diagnostics and Phase 7 closure remain future work.
+In progress. Commit 1 delivered the Qt dialer shell, Commit 2 the Qt-free `CallManager`, Commit 3 live SIP registration, Commit 4 outgoing SIP calls with two-way audio, and Commit 5 incoming calls. **Commit 6 separates SIP Decline from generic hangup and adds an active-call elapsed timer.** Continuous registration-health monitoring, mute/device controls, in-GUI RTP diagnostics and Phase 7 closure remain future work.
 
 ## Objective
 
-Make the desktop GUI a bidirectional softphone without introducing a second SIP endpoint/account. Incoming PJSIP callbacks are converted into sanitized worker events, queued onto the Qt thread, and then applied through `CallManager`. QML never receives credentials, raw PJSIP objects or raw SIP URIs.
+Polish the verified bidirectional desktop softphone without changing its single-account ownership model. Commit 6 makes incoming rejection explicit through every layer and gives the user a simple connected-call duration indicator. QML still never receives credentials, raw PJSIP objects or raw SIP URIs.
 
 ## Scope
 
-The combined `qt-pjsip-gui-debug` application started with `--sip-register USER SERVER [PORT]` can register, place outgoing calls, receive an INVITE, show the caller extension, answer it, decline it and return to `Ready to call` after local or remote hangup. Qt-only and GUI-preview modes remain network-free.
+The combined `qt-pjsip-gui-debug` application started with `--sip-register USER SERVER [PORT]` can register, place outgoing calls, receive an INVITE, show the caller extension, answer it, explicitly decline it with SIP `603 Decline`, show elapsed connected time, and return to `Ready to call` after local or remote hangup. Qt-only and GUI-preview modes remain network-free.
 
 An incoming caller is displayed only as a validated dialable user part (1–64 digits / `*` / `#` / `+`). Any remote URI that cannot be reduced safely is shown as `Unknown caller`. The GUI does not expose arbitrary SIP header text.
 
 ## Deliverables
 
-- `CallManager` adds an explicit asynchronous answer request and tracks whether a ringing state belongs to an incoming call. Outgoing ringing never enables the Answer action.
-- `QtRegistrationBackend` polls for incoming offers on the retained worker, publishes a sanitized `incomingCall(QString)` event, and serializes Answer, Decline/Hang up, connect, disconnect and cleanup with outgoing calls.
-- `PjsipRegistrationSession` exposes incoming offer polling and answering while retaining the same account created for registration/outgoing calls.
-- The Phase 6 `SipOutgoingCallClient` is extended as the retained GUI call session: its account handles `onIncomingCall`, sends `180 Ringing`, accepts with `200 OK`, rejects a second simultaneous INVITE with `486 Busy Here`, and reuses the existing Phase 6 audio bridge.
-- QML adds an incoming-call panel with **Answer** and **Decline** controls. After connection, the normal active-call **Hang up** control is used.
-- Unit/fake-session tests cover explicit answer, decline without re-registration, incoming call → connected → remote hangup, and the existing Commit 4 outgoing/recovery paths.
+- `CallManager` adds `request_decline()` plus a dedicated `decline_actions_enabled` snapshot flag so incoming rejection is no longer routed through generic Hang up.
+- `QtRegistrationBackend` serializes a distinct decline command on the retained worker, mutually exclusive with Answer/Hang up.
+- `PjsipRegistrationSession` forwards Decline to the retained PJSUA2 call client.
+- `SipOutgoingCallClient::decline_incoming_call()` sends `603 Decline`; second simultaneous INVITEs still receive `486 Busy Here`, while Answer remains `200 OK`.
+- `GuiViewModel` exposes `callConnected`; QML uses it to show/reset an `mm:ss` elapsed timer only while audio-connected state is active.
+- Unit/fake-session tests verify the explicit decline path, no generic hangup on Decline, retained registration, and connected-state timer gating while preserving Commit 5 call flows.
 
 ## Architecture and design
 
@@ -38,9 +38,9 @@ QML
        -> PJSUA2 Call / audio bridge
 ```
 
-The historical class name `SipOutgoingCallClient` is retained in this commit to avoid a broad Phase 6 API rename; in the GUI path it now owns both directions for the single retained account. A later refactor may rename that implementation without changing behavior.
+The historical class name `SipOutgoingCallClient` remains to avoid a broad Phase 6 API rename; in the GUI path it owns both directions for the single retained account. Commit 6 only adds an explicit incoming-decline operation to that retained owner.
 
-The backend checks for an incoming offer while idle using bounded waits. Once an offer exists, it stays in the same worker call loop until the call is answered/declined/disconnected and the PJSUA2 call slot is safely released. A second incoming INVITE while another call object exists is rejected as busy.
+The backend checks for an incoming offer while idle using bounded waits. Once an offer exists, it stays in the same worker call loop until the call is answered/declined/disconnected and the PJSUA2 call slot is safely released. Answer, Decline and Hang up are serialized as separate commands; Decline maps specifically to `603`. A second incoming INVITE while another call object exists is rejected as busy.
 
 ## Build and run
 
@@ -77,7 +77,7 @@ The fake Qt tests never use a real SIP server. Passing them proves queued state/
 
 The manual incoming-call gate uses the same local Asterisk account setup already verified for Commit 4. After the GUI shows `Registered`, place a call **from the Redmi/Linphone endpoint to the ThinkPad extension** and verify the GUI shows `Incoming call` with the sanitized caller extension.
 
-Test both paths separately: on the Answer path, verify `Connected (audio active)`, two-way audio, Qt hangup and remote hangup, with each call returning to `Ready to call` without re-registering. On the Decline path, decline before answering and verify the Redmi stops ringing, Qt returns to `Ready to call`, and a later incoming or outgoing call still works without re-registration. Also test remote cancel before Answer; Qt must return to `Ready to call` rather than `Request failed`.
+Test both paths separately: on the Answer path, verify `Connected (audio active)`, two-way audio, the duration label advances once per second, Qt hangup and remote hangup, with each call returning to `Ready to call` and the timer resetting. On the Decline path, decline before answering and verify the Redmi stops ringing, Qt returns to `Ready to call`, and a later incoming or outgoing call still works without re-registration. Also test remote cancel before Answer; Qt must return to `Ready to call` rather than `Request failed`. If exact SIP semantics are being evidenced, confirm the generated final response is `603 Decline` from protocol logs rather than relying only on the caller UI wording.
 
 ## Evidence
 
@@ -87,11 +87,11 @@ Automated fake-session results are evidence for state/thread behavior only. Live
 
 ## Interview focus
 
-Be able to explain why Commit 5 reuses one retained PJSUA2 account for registration and both call directions; how `Account::onIncomingCall` is serialized through the worker before reaching Qt; why Answer remains pending until SIP plus active audio are confirmed; how early Decline/remote cancel differ from a connected remote hangup; why only one tracked call is supported; and why raw SIP URI text is sanitized before QML sees it.
+Be able to explain why the GUI reuses one retained PJSUA2 account for registration and both call directions; why Answer, Decline and Hang up are separate application/backend commands; why `603 Decline` is sent only for an unanswered incoming offer; why the QML duration counter starts from application `Connected` rather than INVITE/Ringing time; why only one tracked call is supported; and why raw SIP URI text is sanitized before QML sees it.
 
 ## Exit criteria
 
-Commit 5 is complete only when both Qt build variants and inherited Phase 6 regression pass, followed by manual Asterisk checks for incoming ring, Answer, two-way audio, Qt hangup, remote hangup, Decline, remote cancel and another call on the same registration. Phase 7 remains open for diagnostics/remaining GUI work and milestone closure.
+Commit 6 is complete only when both Qt build variants and inherited Phase 6 regression pass, followed by manual Asterisk checks for incoming ring, Answer, two-way audio, connected-time display/reset, Qt hangup, remote hangup, explicit Decline, remote cancel and another call on the same registration. Phase 7 remains open for diagnostics/remaining GUI work and milestone closure.
 
 ## References
 
@@ -107,4 +107,4 @@ Commit 5 is complete only when both Qt build variants and inherited Phase 6 regr
 
 ## Next phase
 
-Add the remaining Phase 7 active-call/diagnostic presentation without changing the verified SIP account ownership model. Keep continuous registration-health monitoring and broader concurrency work separate unless explicitly designed and tested.
+Add the remaining Phase 7 diagnostic presentation (notably in-GUI RTP/audio information) without changing the verified SIP account ownership model. Keep continuous registration-health monitoring and broader concurrency work separate unless explicitly designed and tested.

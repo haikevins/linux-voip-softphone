@@ -310,6 +310,28 @@ void SipOutgoingCallClient::answer_incoming_call()
     call_->answer(parameter);
 }
 
+void SipOutgoingCallClient::decline_incoming_call()
+{
+    {
+        const std::lock_guard lock{call_mutex_};
+        if (!incoming_received_) {
+            throw std::logic_error("no incoming call is waiting to be declined");
+        }
+        if (call_disconnected_) {
+            throw std::logic_error("incoming call disconnected before it could be declined");
+        }
+    }
+
+    const std::lock_guard call_object_lock{call_object_mutex_};
+    if (call_ == nullptr) {
+        throw std::logic_error("incoming call object is not available");
+    }
+
+    pj::CallOpParam parameter;
+    parameter.statusCode = PJSIP_SC_DECLINE;
+    call_->answer(parameter);
+}
+
 OutgoingCallResult SipOutgoingCallClient::wait_for_call(const std::chrono::milliseconds timeout)
 {
     {

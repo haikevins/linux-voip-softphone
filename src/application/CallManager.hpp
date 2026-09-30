@@ -29,6 +29,10 @@ class CallBackend
     {
         return false;
     }
+    [[nodiscard]] virtual bool begin_decline()
+    {
+        return false;
+    }
     [[nodiscard]] virtual bool begin_hangup() = 0;
 };
 
@@ -43,6 +47,7 @@ struct CallSnapshot
     bool recovery_actions_enabled{false};
     bool incoming_call{false};
     bool answer_actions_enabled{false};
+    bool decline_actions_enabled{false};
 };
 
 // Qt-free application facade, reusing the core CallStateMachine. The backend
@@ -66,6 +71,7 @@ class CallManager final
     [[nodiscard]] bool request_registration();
     [[nodiscard]] bool request_outgoing_call(const std::string &destination);
     [[nodiscard]] bool request_answer();
+    [[nodiscard]] bool request_decline();
     [[nodiscard]] bool request_hangup();
     [[nodiscard]] bool reset_after_failure();
 

@@ -275,10 +275,12 @@ TEST(QtRegistrationBackendTest, OutgoingCallAndHangupUseRetainedWorker)
         EXPECT_FALSE(model.callActionsEnabled());
         ASSERT_TRUE(wait_for_event([&connections] { return connections == 1; }));
         EXPECT_EQ(model.callStatus(), QStringLiteral("Connected (audio active)"));
+        EXPECT_TRUE(model.callConnected());
         ASSERT_TRUE(model.hangupCall());
         ASSERT_TRUE(wait_for_event([&endings] { return endings == 1; }));
         EXPECT_TRUE(model.callActionsEnabled());
         EXPECT_EQ(model.callStatus(), QStringLiteral("Ready to call"));
+        EXPECT_FALSE(model.callConnected());
         EXPECT_TRUE(state->on_worker);
         EXPECT_EQ(state->registration_count.load(), 1);
         EXPECT_EQ(state->hangup_count.load(), 1);
@@ -332,6 +334,7 @@ struct IncomingFakeState
 {
     std::atomic<int> registration_count{0};
     std::atomic<int> answer_count{0};
+    std::atomic<int> decline_count{0};
     std::atomic<int> hangup_count{0};
     std::atomic<int> stopped_count{0};
     std::atomic<bool> offer_pending{false};
@@ -387,6 +390,12 @@ class IncomingFakeSession final : public RegistrationSession
     {
         ++state_->answer_count;
         state_->answered = true;
+    }
+
+    void decline_call() override
+    {
+        ++state_->decline_count;
+        state_->hung_up = true;
     }
 
     [[nodiscard]] CallProgress poll_call(std::chrono::milliseconds /*timeout*/) override
@@ -464,11 +473,14 @@ TEST(QtRegistrationBackendTest, IncomingCallAnswerAndRemoteHangupUseRetainedWork
     EXPECT_TRUE(model.incomingCall());
     EXPECT_EQ(model.activePeer(), QStringLiteral("1001"));
     EXPECT_EQ(model.callStatus(), QStringLiteral("Incoming call"));
+    EXPECT_TRUE(model.declineActionsEnabled());
 
     ASSERT_TRUE(model.answerCall());
     EXPECT_FALSE(model.answerActionsEnabled());
+    EXPECT_FALSE(model.declineActionsEnabled());
     ASSERT_TRUE(wait_for_event([&connections] { return connections == 1; }));
     EXPECT_EQ(model.callStatus(), QStringLiteral("Connected (audio active)"));
+    EXPECT_TRUE(model.callConnected());
     EXPECT_EQ(state->answer_count.load(), 1);
 
     state->remote_disconnected = true;
@@ -505,9 +517,11 @@ TEST(QtRegistrationBackendTest, IncomingCallCanBeDeclinedWithoutReregistering)
     ASSERT_TRUE(wait_for_event([&model] { return model.callActionsEnabled(); }));
     state->offer_pending = true;
     ASSERT_TRUE(wait_for_event([&model] { return model.answerActionsEnabled(); }));
-    ASSERT_TRUE(model.hangupCall());
+    EXPECT_TRUE(model.declineActionsEnabled());
+    ASSERT_TRUE(model.declineCall());
     ASSERT_TRUE(wait_for_event([&endings] { return endings == 1; }));
-    EXPECT_EQ(state->hangup_count.load(), 1);
+    EXPECT_EQ(state->decline_count.load(), 1);
+    EXPECT_EQ(state->hangup_count.load(), 0);
     EXPECT_EQ(state->registration_count.load(), 1);
     EXPECT_EQ(model.callStatus(), QStringLiteral("Ready to call"));
     EXPECT_TRUE(model.callActionsEnabled());

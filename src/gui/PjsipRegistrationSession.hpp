@@ -30,6 +30,7 @@ class PjsipRegistrationSession final : public RegistrationSession
     void start_call(std::string_view extension) override;
     [[nodiscard]] IncomingCallNotice poll_incoming_call(std::chrono::milliseconds timeout) override;
     void answer_call() override;
+    void decline_call() override;
     [[nodiscard]] CallProgress poll_call(std::chrono::milliseconds timeout) override;
     void hangup_call() noexcept override;
     [[nodiscard]] bool wait_for_disconnection(std::chrono::milliseconds timeout) override;

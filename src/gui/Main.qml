@@ -12,6 +12,30 @@ ApplicationWindow {
     visible: true
     title: qsTr("Linux VoIP | Phase 7")
     color: "#111827"
+    property int callElapsedSeconds: 0
+
+    function formatCallDuration(totalSeconds) {
+        const minutes = Math.floor(totalSeconds / 60)
+        const seconds = totalSeconds % 60
+        const minuteText = minutes < 10 ? "0" + minutes : minutes.toString()
+        const secondText = seconds < 10 ? "0" + seconds : seconds.toString()
+        return minuteText + ":" + secondText
+    }
+
+    Timer {
+        interval: 1000
+        repeat: true
+        running: softphone.callConnected
+        onTriggered: window.callElapsedSeconds += 1
+    }
+
+    Connections {
+        target: softphone
+        function onStatusChanged() {
+            if (!softphone.callConnected)
+                window.callElapsedSeconds = 0
+        }
+    }
 
     ScrollView {
         anchors.fill: parent
@@ -133,6 +157,15 @@ ApplicationWindow {
                 Layout.fillWidth: true
             }
 
+            Label {
+                objectName: "callDurationLabel"
+                text: qsTr("Duration: %1").arg(window.formatCallDuration(window.callElapsedSeconds))
+                visible: softphone.callConnected
+                color: "#93c5fd"
+                font.pixelSize: 15
+                Layout.fillWidth: true
+            }
+
             Rectangle {
                 objectName: "incomingCallPanel"
                 visible: softphone.incomingCall
@@ -181,9 +214,9 @@ ApplicationWindow {
                             text: qsTr("Decline")
                             Layout.fillWidth: true
                             Layout.preferredHeight: 52
-                            enabled: softphone.hangupActionsEnabled
+                            enabled: softphone.declineActionsEnabled
                             Accessible.name: qsTr("Decline incoming SIP call")
-                            onClicked: softphone.hangupCall()
+                            onClicked: softphone.declineCall()
                         }
                     }
                 }

@@ -60,6 +60,7 @@ class RegistrationSession
         return {};
     }
     virtual void answer_call() {}
+    virtual void decline_call() {}
     [[nodiscard]] virtual CallProgress poll_call(std::chrono::milliseconds /*timeout*/)
     {
         return CallProgress::Failed;
@@ -96,6 +97,7 @@ class QtRegistrationBackend final : public QObject, public application::CallBack
     [[nodiscard]] bool supports_calls() const noexcept override;
     [[nodiscard]] bool begin_outgoing_call(std::string_view destination) override;
     [[nodiscard]] bool begin_answer() override;
+    [[nodiscard]] bool begin_decline() override;
     [[nodiscard]] bool begin_hangup() override;
 
   signals:
@@ -124,6 +126,7 @@ class QtRegistrationBackend final : public QObject, public application::CallBack
     void post_incoming_call(std::string peer);
     void post_call_event(WorkerEvent event);
     [[nodiscard]] bool take_answer();
+    [[nodiscard]] bool take_decline();
     [[nodiscard]] bool take_hangup();
 
     SessionFactory factory_;
@@ -133,6 +136,7 @@ class QtRegistrationBackend final : public QObject, public application::CallBack
     std::jthread worker_;
     std::optional<std::string> pending_destination_; // stop_mutex_ protected.
     bool answer_requested_{false};                   // stop_mutex_ protected.
+    bool decline_requested_{false};                  // stop_mutex_ protected.
     bool hangup_requested_{false};                   // stop_mutex_ protected.
     bool request_active_{false};                     // Qt thread only.
     bool session_retained_{false};                   // Qt thread only.

@@ -65,6 +65,7 @@ bool QtRegistrationBackend::begin_outgoing_call(const std::string_view destinati
         }
         pending_destination_ = std::string{destination};
         answer_requested_ = false;
+        decline_requested_ = false;
         hangup_requested_ = false;
     }
     incoming_call_active_ = false;
@@ -81,10 +82,27 @@ bool QtRegistrationBackend::begin_answer()
     }
     {
         const std::lock_guard lock{stop_mutex_};
-        if (answer_requested_ || hangup_requested_) {
+        if (answer_requested_ || decline_requested_ || hangup_requested_) {
             return false;
         }
         answer_requested_ = true;
+    }
+    stop_changed_.notify_all();
+    return true;
+}
+
+bool QtRegistrationBackend::begin_decline()
+{
+    if (QThread::currentThread() != thread() || !supports_calls() || !call_active_ ||
+        !incoming_call_active_) {
+        return false;
+    }
+    {
+        const std::lock_guard lock{stop_mutex_};
+        if (answer_requested_ || decline_requested_ || hangup_requested_) {
+            return false;
+        }
+        decline_requested_ = true;
     }
     stop_changed_.notify_all();
     return true;
@@ -98,6 +116,7 @@ bool QtRegistrationBackend::begin_hangup()
     {
         const std::lock_guard lock{stop_mutex_};
         answer_requested_ = false;
+        decline_requested_ = false;
         hangup_requested_ = true;
     }
     stop_changed_.notify_all();
@@ -108,6 +127,12 @@ bool QtRegistrationBackend::take_answer()
 {
     const std::lock_guard lock{stop_mutex_};
     return std::exchange(answer_requested_, false);
+}
+
+bool QtRegistrationBackend::take_decline()
+{
+    const std::lock_guard lock{stop_mutex_};
+    return std::exchange(decline_requested_, false);
 }
 
 bool QtRegistrationBackend::take_hangup()
@@ -262,7 +287,10 @@ void QtRegistrationBackend::handle_incoming_call(RegistrationSession &session,
     try {
         if (!notice.disconnected) {
             while (!stop.stop_requested()) {
-                if (take_hangup()) {
+                if (!answered && take_decline()) {
+                    locally_cancelled = true;
+                    session.decline_call();
+                } else if (take_hangup()) {
                     locally_cancelled = true;
                     session.hangup_call();
                 }

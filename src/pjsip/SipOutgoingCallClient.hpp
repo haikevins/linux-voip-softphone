@@ -62,6 +62,7 @@ class SipOutgoingCallClient
     void make_call(const std::string &destination_uri);
     [[nodiscard]] IncomingCallOfferResult wait_for_incoming_call(std::chrono::milliseconds timeout);
     void answer_incoming_call();
+    void decline_incoming_call();
     [[nodiscard]] OutgoingCallResult wait_for_call(std::chrono::milliseconds timeout);
     [[nodiscard]] std::vector<RtpMediaDiagnostics> rtp_diagnostics();
     void hangup() noexcept;
