@@ -272,7 +272,7 @@ void QtRegistrationBackend::handle_outgoing_call(RegistrationSession &session,
                     connected = true;
                     break;
                 } else if (progress == CallProgress::Disconnected) {
-                    failed = !locally_cancelled && !connected;
+                    failed = !locally_cancelled && !connected && !ringing_reported;
                     break;
                 } else if (progress == CallProgress::Failed) {
                     failed = true;
