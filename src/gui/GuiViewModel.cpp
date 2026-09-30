@@ -80,7 +80,8 @@ bool GuiViewModel::registerAccount()
 
 QString GuiViewModel::callStatus() const
 {
-    switch (manager_.snapshot().state) {
+    const auto current = manager_.snapshot();
+    switch (current.state) {
     case CallState::Idle:
         return QStringLiteral("No active call");
     case CallState::Registering:
@@ -90,6 +91,10 @@ QString GuiViewModel::callStatus() const
     case CallState::Calling:
         return QStringLiteral("Calling...");
     case CallState::Ringing:
+        if (current.incoming_call) {
+            return current.answer_actions_enabled ? QStringLiteral("Incoming call")
+                                                  : QStringLiteral("Answering...");
+        }
         return QStringLiteral("Ringing...");
     case CallState::Connected:
         return QStringLiteral("Connected (audio active)");
@@ -106,6 +111,16 @@ QString GuiViewModel::activePeer() const
     return QString::fromStdString(manager_.snapshot().peer);
 }
 
+bool GuiViewModel::incomingCall() const
+{
+    return manager_.snapshot().incoming_call;
+}
+
+bool GuiViewModel::answerActionsEnabled() const
+{
+    return manager_.snapshot().answer_actions_enabled;
+}
+
 bool GuiViewModel::hangupActionsEnabled() const
 {
     const auto state = manager_.snapshot().state;
@@ -115,13 +130,17 @@ bool GuiViewModel::hangupActionsEnabled() const
 
 bool GuiViewModel::recoveryActionsEnabled() const
 {
-    const auto current = manager_.snapshot();
-    return current.recovery_actions_enabled;
+    return manager_.snapshot().recovery_actions_enabled;
 }
 
 bool GuiViewModel::startCall(const QString &destination)
 {
     return manager_.request_outgoing_call(destination.toStdString());
+}
+
+bool GuiViewModel::answerCall()
+{
+    return manager_.request_answer();
 }
 
 bool GuiViewModel::hangupCall()

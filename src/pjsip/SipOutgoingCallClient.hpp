@@ -27,6 +27,20 @@ struct OutgoingCallResult
     std::string remote_uri;
 };
 
+struct IncomingCallOfferResult
+{
+    bool received{false};
+    bool disconnected{false};
+    bool timed_out{false};
+    int sip_status_code{0};
+    std::string state;
+    std::string reason;
+    std::string remote_uri;
+};
+
+// Phase 6 introduced this class for outbound calling. Phase 7 retains the same
+// endpoint/account and adds incoming-call handling so the Qt GUI never creates
+// a competing PJSUA2 account for the same SIP identity.
 class SipOutgoingCallClient
 {
   public:
@@ -46,6 +60,8 @@ class SipOutgoingCallClient
     [[nodiscard]] RegistrationResult wait_for_registration(std::chrono::milliseconds timeout);
 
     void make_call(const std::string &destination_uri);
+    [[nodiscard]] IncomingCallOfferResult wait_for_incoming_call(std::chrono::milliseconds timeout);
+    void answer_incoming_call();
     [[nodiscard]] OutgoingCallResult wait_for_call(std::chrono::milliseconds timeout);
     [[nodiscard]] std::vector<RtpMediaDiagnostics> rtp_diagnostics();
     void hangup() noexcept;
@@ -59,12 +75,15 @@ class SipOutgoingCallClient
 
     void on_registration_state(const pj::OnRegStateParam &parameter, const pj::AccountInfo &info);
     void on_registration_callback_error(std::string reason) noexcept;
+    void on_incoming_call(pj::Account &account, int call_id);
+    void on_incoming_callback_error(std::string reason) noexcept;
     void on_call_state(const pj::CallInfo &info);
     void on_call_media_state(pj::Call &call);
     void on_call_callback_error(std::string reason) noexcept;
     void on_call_media_callback_error(std::string reason) noexcept;
     [[nodiscard]] bool wait_for_call_cleanup(std::chrono::milliseconds timeout) noexcept;
     [[nodiscard]] bool shutdown_account_safely() noexcept;
+    void reset_call_state();
 
     SipEndpointConfig endpoint_config_;
     SipAccountConfig account_config_;
@@ -79,9 +98,13 @@ class SipOutgoingCallClient
     bool registration_complete_{false};
 
     std::mutex call_mutex_;
+    std::mutex call_object_mutex_;
+    std::mutex incoming_callback_mutex_;
     std::mutex call_callback_mutex_;
     std::condition_variable call_changed_;
     OutgoingCallResult call_result_;
+    bool incoming_complete_{false};
+    bool incoming_received_{false};
     bool call_complete_{false};
     bool call_disconnected_{false};
 

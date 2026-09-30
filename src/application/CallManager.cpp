@@ -33,16 +33,19 @@ CallSnapshot CallManager::snapshot() const
 {
     check_thread();
     const auto &machine_error = machine_.last_error();
-    return {.state = machine_.state(),
+    const auto state = machine_.state();
+    const bool backend_calls = backend_ != nullptr && backend_->supports_calls();
+    return {.state = state,
             .peer = machine_.peer().value_or(std::string{}),
             .error = !feedback_.empty() ? feedback_ : machine_error.value_or(std::string{}),
             .backend_available = backend_ != nullptr,
-            .call_actions_enabled = backend_ != nullptr && backend_->supports_calls() &&
-                                    machine_.state() == CallState::Ready,
+            .call_actions_enabled = backend_calls && state == CallState::Ready,
             .registration_confirmed = registration_confirmed_,
-            .recovery_actions_enabled = registration_confirmed_ && backend_ != nullptr &&
-                                        backend_->supports_calls() &&
-                                        machine_.state() == CallState::Failed};
+            .recovery_actions_enabled =
+                registration_confirmed_ && backend_calls && state == CallState::Failed,
+            .incoming_call = incoming_call_,
+            .answer_actions_enabled =
+                backend_calls && state == CallState::Ringing && incoming_call_ && !answer_pending_};
 }
 
 void CallManager::set_observer(Observer observer)
@@ -65,6 +68,12 @@ bool CallManager::reject(std::string message)
     return false;
 }
 
+void CallManager::clear_call_direction() noexcept
+{
+    incoming_call_ = false;
+    answer_pending_ = false;
+}
+
 bool CallManager::request_registration()
 {
     check_thread();
@@ -80,7 +89,6 @@ bool CallManager::request_registration()
     }
     publish();
 
-    // No backend is allowed to synchronously call back into this facade.
     bool accepted = false;
     try {
         accepted = backend_->begin_registration();
@@ -111,6 +119,7 @@ bool CallManager::request_outgoing_call(const std::string &destination)
         return reject("Destination must contain 1-64 dialable characters");
     }
     feedback_.clear();
+    clear_call_direction();
     if (!machine_.handle(OutgoingCallRequested{destination})) {
         return reject("Call state transition was rejected");
     }
@@ -127,6 +136,33 @@ bool CallManager::request_outgoing_call(const std::string &destination)
         static_cast<void>(on_call_failed("SIP backend rejected the outgoing call request"));
         return false;
     }
+    return true;
+}
+
+bool CallManager::request_answer()
+{
+    check_thread();
+    if (backend_ == nullptr) {
+        return reject("SIP backend is not connected");
+    }
+    if (machine_.state() != CallState::Ringing || !incoming_call_ || answer_pending_) {
+        return reject("There is no incoming call waiting to be answered");
+    }
+    feedback_.clear();
+
+    bool accepted = false;
+    try {
+        accepted = backend_->begin_answer();
+    } catch (...) {
+        accepted = false;
+    }
+    if (!accepted) {
+        static_cast<void>(on_call_failed("SIP backend rejected the answer request"));
+        return false;
+    }
+
+    answer_pending_ = true;
+    publish();
     return true;
 }
 
@@ -150,7 +186,6 @@ bool CallManager::request_hangup()
     try {
         accepted = backend_->begin_hangup();
     } catch (...) {
-        // Prevent backend exception details from reaching GUI-facing state.
         accepted = false;
     }
     if (!accepted) {
@@ -166,8 +201,6 @@ bool CallManager::reset_after_failure()
     if (machine_.state() != CallState::Failed) {
         return false;
     }
-    // A rejected call does not invalidate the already-retained SIP account.
-    // A registration failure, conversely, must return to Idle for retry.
     if (registration_confirmed_ && backend_ != nullptr && backend_->supports_calls()) {
         if (!machine_.handle(RecoverCallRequested{})) {
             return false;
@@ -175,6 +208,7 @@ bool CallManager::reset_after_failure()
     } else if (!machine_.handle(ResetRequested{})) {
         return false;
     }
+    clear_call_direction();
     feedback_.clear();
     publish();
     return true;
@@ -200,6 +234,7 @@ bool CallManager::on_registration_failed(std::string reason)
         return false;
     }
     registration_confirmed_ = false;
+    clear_call_direction();
     feedback_.clear();
     publish();
     return true;
@@ -212,6 +247,8 @@ bool CallManager::on_incoming_call(std::string peer)
         !machine_.handle(IncomingCallReceived{std::move(peer)})) {
         return false;
     }
+    incoming_call_ = true;
+    answer_pending_ = false;
     feedback_.clear();
     publish();
     return true;
@@ -223,6 +260,7 @@ bool CallManager::on_remote_ringing()
     if (machine_.state() != CallState::Calling || !machine_.handle(RemoteRinging{})) {
         return false;
     }
+    clear_call_direction();
     publish();
     return true;
 }
@@ -234,6 +272,7 @@ bool CallManager::on_call_connected()
         !machine_.handle(CallConnected{})) {
         return false;
     }
+    clear_call_direction();
     publish();
     return true;
 }
@@ -253,8 +292,9 @@ bool CallManager::on_call_ended()
     if (!machine_.handle(CallEnded{})) {
         return false;
     }
+    clear_call_direction();
     feedback_.clear();
-    publish(); // Peer is now cleared; observers never see an intermediate state.
+    publish();
     return true;
 }
 
@@ -268,6 +308,7 @@ bool CallManager::on_call_failed(std::string reason)
     if (!machine_.handle(CallFailed{std::move(reason)})) {
         return false;
     }
+    clear_call_direction();
     feedback_.clear();
     publish();
     return true;

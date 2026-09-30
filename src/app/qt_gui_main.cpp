@@ -107,6 +107,11 @@ int main(int argc, char *argv[])
                                      "SIP registration failed or timed out"));
                              }
                          });
+        QObject::connect(backend.get(), &voip::gui::QtRegistrationBackend::incomingCall,
+                         view_model.get(), [model = view_model.get()](const QString &peer) {
+                             static_cast<void>(
+                                 model->manager().on_incoming_call(peer.toStdString()));
+                         });
         QObject::connect(backend.get(), &voip::gui::QtRegistrationBackend::callRinging,
                          view_model.get(), [model = view_model.get()] {
                              static_cast<void>(model->manager().on_remote_ringing());

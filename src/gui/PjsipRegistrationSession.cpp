@@ -5,6 +5,18 @@
 #include <string>
 
 namespace voip::gui {
+namespace {
+
+[[nodiscard]] bool is_dialable_peer(const std::string_view peer)
+{
+    return !peer.empty() && peer.size() <= 64U &&
+           std::all_of(peer.begin(), peer.end(), [](const char value) {
+               return (value >= '0' && value <= '9') || value == '*' || value == '#' ||
+                      value == '+';
+           });
+}
+
+} // namespace
 
 PjsipRegistrationSession::PjsipRegistrationSession(const pjsip::SipEndpointConfig &endpoint,
                                                    const pjsip::SipAccountConfig &account)
@@ -30,21 +42,37 @@ void PjsipRegistrationSession::stop() noexcept
 
 void PjsipRegistrationSession::start_call(const std::string_view extension)
 {
-    // Defense in depth: reject any URI/control-character injection even if a
-    // caller accidentally bypasses CallManager's dialable-destination check.
-    const bool valid =
-        !extension.empty() && extension.size() <= 64U &&
-        std::all_of(extension.begin(), extension.end(), [](const char digit) {
-            return (digit >= '0' && digit <= '9') || digit == '*' || digit == '#' || digit == '+';
-        });
+    const bool valid = is_dialable_peer(extension);
     if (!valid) {
         throw std::invalid_argument("outgoing destination is not a dialable extension");
     }
-    // Never accept a URI/hostname through QML; use the configured SIP server.
     const std::string uri = "sip:" + std::string{extension} + "@" + server_ + ":" +
                             std::to_string(server_port_) +
                             ";transport=" + std::string{pjsip::to_string(transport_)};
     client_.make_call(uri);
+}
+
+IncomingCallNotice
+PjsipRegistrationSession::poll_incoming_call(const std::chrono::milliseconds timeout)
+{
+    const auto result = client_.wait_for_incoming_call(timeout);
+    if (result.timed_out) {
+        return {};
+    }
+    if (result.state == "ERROR") {
+        throw std::runtime_error("incoming call callback failed");
+    }
+    if (!result.received) {
+        return {};
+    }
+    return {.received = true,
+            .disconnected = result.disconnected,
+            .peer = sanitize_peer(result.remote_uri)};
+}
+
+void PjsipRegistrationSession::answer_call()
+{
+    client_.answer_incoming_call();
 }
 
 CallProgress PjsipRegistrationSession::poll_call(const std::chrono::milliseconds timeout)
@@ -54,10 +82,6 @@ CallProgress PjsipRegistrationSession::poll_call(const std::chrono::milliseconds
         return CallProgress::Failed;
     }
     if (result.disconnected) {
-        // A remote BYE can race the worker before it has published the
-        // ConnectedWithMedia state. Preserve the cumulative PJSIP history so
-        // a call that really reached connected media is treated as a normal
-        // remote hangup, not as a failed call attempt.
         if (result.connected && result.media_connected) {
             return CallProgress::DisconnectedAfterConnect;
         }
@@ -66,7 +90,7 @@ CallProgress PjsipRegistrationSession::poll_call(const std::chrono::milliseconds
     if (result.connected && result.media_connected) {
         return CallProgress::ConnectedWithMedia;
     }
-    if (result.state == "EARLY") {
+    if (result.state == "EARLY" || result.state == "INCOMING") {
         return CallProgress::Ringing;
     }
     return CallProgress::Pending;
@@ -85,6 +109,31 @@ bool PjsipRegistrationSession::wait_for_disconnection(const std::chrono::millise
 bool PjsipRegistrationSession::release_disconnected_call()
 {
     return client_.release_disconnected_call();
+}
+
+std::string PjsipRegistrationSession::sanitize_peer(const std::string_view remote_uri)
+{
+    auto scheme = remote_uri.find("sip:");
+    std::size_t scheme_length = 4U;
+    if (scheme == std::string_view::npos) {
+        scheme = remote_uri.find("sips:");
+        scheme_length = 5U;
+    }
+    if (scheme == std::string_view::npos) {
+        return "Unknown caller";
+    }
+
+    const auto user_begin = scheme + scheme_length;
+    const auto user_end = remote_uri.find('@', user_begin);
+    if (user_end == std::string_view::npos || user_end <= user_begin) {
+        return "Unknown caller";
+    }
+
+    const auto user = remote_uri.substr(user_begin, user_end - user_begin);
+    if (!is_dialable_peer(user)) {
+        return "Unknown caller";
+    }
+    return std::string{user};
 }
 
 } // namespace voip::gui

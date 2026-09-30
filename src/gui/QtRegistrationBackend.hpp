@@ -3,6 +3,7 @@
 #include "application/CallManager.hpp"
 
 #include <QObject>
+#include <QString>
 
 #include <chrono>
 #include <condition_variable>
@@ -17,8 +18,6 @@
 
 namespace voip::gui {
 
-// Calls and SIP registration share exactly one PJSUA2 endpoint/account, owned
-// exclusively by this session's dedicated worker thread. No pj:: in Qt/QML.
 enum class CallProgress
 {
     Pending,
@@ -29,6 +28,13 @@ enum class CallProgress
     Failed,
 };
 
+struct IncomingCallNotice
+{
+    bool received{false};
+    bool disconnected{false};
+    std::string peer;
+};
+
 class RegistrationSession
 {
   public:
@@ -37,13 +43,23 @@ class RegistrationSession
     [[nodiscard]] virtual bool wait_for_registration(std::chrono::milliseconds timeout) = 0;
     virtual void stop() noexcept = 0;
 
-    // Default implementations keep the existing Qt-only fake session and inert
-    // build registration-only. Only explicit call-capable sessions opt in.
+    // Defaults preserve the inert and registration-only test seams. Production
+    // call sessions opt in explicitly to outgoing and incoming capabilities.
     [[nodiscard]] virtual bool supports_calls() const noexcept
     {
         return false;
     }
+    [[nodiscard]] virtual bool supports_incoming_calls() const noexcept
+    {
+        return false;
+    }
     virtual void start_call(std::string_view /*extension*/) {}
+    [[nodiscard]] virtual IncomingCallNotice
+    poll_incoming_call(std::chrono::milliseconds /*timeout*/)
+    {
+        return {};
+    }
+    virtual void answer_call() {}
     [[nodiscard]] virtual CallProgress poll_call(std::chrono::milliseconds /*timeout*/)
     {
         return CallProgress::Failed;
@@ -59,8 +75,9 @@ class RegistrationSession
     }
 };
 
-// Main-thread CallBackend. All PJSUA2 operations are serialized on a worker.
-// Worker results are posted with Qt::QueuedConnection, never inline.
+// Main-thread CallBackend. All PJSUA2 operations are serialized on one worker.
+// Worker results are posted with Qt::QueuedConnection and never invoke the
+// CallManager synchronously from a SIP/PJSIP thread.
 class QtRegistrationBackend final : public QObject, public application::CallBackend
 {
     Q_OBJECT
@@ -78,10 +95,12 @@ class QtRegistrationBackend final : public QObject, public application::CallBack
     [[nodiscard]] bool begin_registration() override;
     [[nodiscard]] bool supports_calls() const noexcept override;
     [[nodiscard]] bool begin_outgoing_call(std::string_view destination) override;
+    [[nodiscard]] bool begin_answer() override;
     [[nodiscard]] bool begin_hangup() override;
 
   signals:
     void registrationFinished(bool registered);
+    void incomingCall(QString peer); // Sanitized extension/label only, never a raw SIP URI.
     void callRinging();
     void callConnected(); // Only after PJSIP confirms BOTH call and audio media.
     void callEnded();
@@ -95,11 +114,16 @@ class QtRegistrationBackend final : public QObject, public application::CallBack
         Ended,
         Failed
     };
+
     void run_session(std::stop_token stop);
     void handle_outgoing_call(RegistrationSession &session, const std::string &destination,
                               std::stop_token stop);
+    void handle_incoming_call(RegistrationSession &session, const IncomingCallNotice &notice,
+                              std::stop_token stop);
     void post_registration(bool registered);
+    void post_incoming_call(std::string peer);
     void post_call_event(WorkerEvent event);
+    [[nodiscard]] bool take_answer();
     [[nodiscard]] bool take_hangup();
 
     SessionFactory factory_;
@@ -108,10 +132,12 @@ class QtRegistrationBackend final : public QObject, public application::CallBack
     std::condition_variable stop_changed_;
     std::jthread worker_;
     std::optional<std::string> pending_destination_; // stop_mutex_ protected.
+    bool answer_requested_{false};                   // stop_mutex_ protected.
     bool hangup_requested_{false};                   // stop_mutex_ protected.
     bool request_active_{false};                     // Qt thread only.
     bool session_retained_{false};                   // Qt thread only.
     bool call_active_{false};                        // Qt thread only.
+    bool incoming_call_active_{false};               // Qt thread only.
     bool fatal_call_error_{false};                   // Qt thread only.
 };
 

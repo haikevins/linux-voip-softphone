@@ -133,9 +133,66 @@ ApplicationWindow {
                 Layout.fillWidth: true
             }
 
+            Rectangle {
+                objectName: "incomingCallPanel"
+                visible: softphone.incomingCall
+                color: "#1f2937"
+                radius: 10
+                implicitHeight: incomingColumn.implicitHeight + 24
+                Layout.fillWidth: true
+
+                ColumnLayout {
+                    id: incomingColumn
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 10
+
+                    Label {
+                        text: qsTr("Incoming call")
+                        color: "#f9fafb"
+                        font.pixelSize: 18
+                        font.bold: true
+                        Layout.fillWidth: true
+                    }
+
+                    Label {
+                        text: softphone.activePeer.length > 0
+                              ? qsTr("From: %1").arg(softphone.activePeer)
+                              : qsTr("From: Unknown caller")
+                        color: "#d1d5db"
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+                        Button {
+                            objectName: "answerButton"
+                            text: qsTr("Answer")
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 52
+                            enabled: softphone.answerActionsEnabled
+                            Accessible.name: qsTr("Answer incoming SIP call")
+                            onClicked: softphone.answerCall()
+                        }
+                        Button {
+                            objectName: "declineButton"
+                            text: qsTr("Decline")
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 52
+                            enabled: softphone.hangupActionsEnabled
+                            Accessible.name: qsTr("Decline incoming SIP call")
+                            onClicked: softphone.hangupCall()
+                        }
+                    }
+                }
+            }
+
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
+                visible: !softphone.incomingCall
                 Button {
                     text: qsTr("Call")
                     Layout.fillWidth: true
@@ -164,7 +221,7 @@ ApplicationWindow {
 
             Label {
                 text: softphone.backendAvailable
-                      ? qsTr("Outgoing calls only. Answering incoming calls is not integrated yet.")
+                      ? qsTr("Incoming and outgoing SIP calls share the registered account.")
                       : qsTr("GUI preview only. Start with --sip-register to enable live SIP calls.")
                 color: "#9ca3af"
                 wrapMode: Text.WordWrap

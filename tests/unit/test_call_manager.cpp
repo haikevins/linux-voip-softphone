@@ -16,10 +16,12 @@ class FakeCallBackend : public CallBackend
   public:
     bool registration_accepted{true};
     bool call_accepted{true};
+    bool answer_accepted{true};
     bool hangup_accepted{true};
     bool registration_throws{false};
     int registration_requests{0};
     int outgoing_requests{0};
+    int answer_requests{0};
     int hangup_requests{0};
     std::string destination;
 
@@ -37,6 +39,12 @@ class FakeCallBackend : public CallBackend
         ++outgoing_requests;
         destination = target;
         return call_accepted;
+    }
+
+    bool begin_answer() override
+    {
+        ++answer_requests;
+        return answer_accepted;
     }
 
     bool begin_hangup() override
@@ -180,7 +188,7 @@ TEST(CallManagerTest, OutgoingCallFlowUsesExplicitAsynchronousEvents)
     EXPECT_TRUE(manager.snapshot().call_actions_enabled);
 }
 
-TEST(CallManagerTest, IncomingCallAndRemoteDisconnectReturnToReady)
+TEST(CallManagerTest, IncomingCallRequiresExplicitAnswerAndRemoteDisconnectReturnsToReady)
 {
     FakeCallBackend backend;
     CallManager manager(&backend);
@@ -189,11 +197,51 @@ TEST(CallManagerTest, IncomingCallAndRemoteDisconnectReturnToReady)
     ASSERT_TRUE(manager.on_incoming_call("1002"));
     EXPECT_EQ(manager.snapshot().state, CallState::Ringing);
     EXPECT_EQ(manager.snapshot().peer, "1002");
+    EXPECT_TRUE(manager.snapshot().incoming_call);
+    EXPECT_TRUE(manager.snapshot().answer_actions_enabled);
+
+    ASSERT_TRUE(manager.request_answer());
+    EXPECT_EQ(backend.answer_requests, 1);
+    EXPECT_FALSE(manager.snapshot().answer_actions_enabled);
+    EXPECT_FALSE(manager.request_answer());
+    EXPECT_EQ(backend.answer_requests, 1);
+
     ASSERT_TRUE(manager.on_call_connected());
+    EXPECT_FALSE(manager.snapshot().incoming_call);
     ASSERT_TRUE(manager.on_call_ended());
     EXPECT_EQ(manager.snapshot().state, CallState::Ready);
     EXPECT_EQ(backend.hangup_requests, 0);
     EXPECT_TRUE(manager.snapshot().peer.empty());
+}
+
+TEST(CallManagerTest, IncomingCallCanBeDeclinedWithoutLosingRegistration)
+{
+    FakeCallBackend backend;
+    CallManager manager(&backend);
+    ASSERT_TRUE(manager.request_registration());
+    ASSERT_TRUE(manager.on_registration_succeeded());
+    ASSERT_TRUE(manager.on_incoming_call("1001"));
+    ASSERT_TRUE(manager.request_hangup());
+    EXPECT_EQ(backend.hangup_requests, 1);
+    EXPECT_EQ(manager.snapshot().state, CallState::Terminating);
+    ASSERT_TRUE(manager.on_call_ended());
+    EXPECT_EQ(manager.snapshot().state, CallState::Ready);
+    EXPECT_TRUE(manager.snapshot().registration_confirmed);
+    EXPECT_TRUE(manager.snapshot().call_actions_enabled);
+}
+
+TEST(CallManagerTest, OutgoingRingingNeverEnablesAnswerAction)
+{
+    FakeCallBackend backend;
+    CallManager manager(&backend);
+    ASSERT_TRUE(manager.request_registration());
+    ASSERT_TRUE(manager.on_registration_succeeded());
+    ASSERT_TRUE(manager.request_outgoing_call("1002"));
+    ASSERT_TRUE(manager.on_remote_ringing());
+    EXPECT_FALSE(manager.snapshot().incoming_call);
+    EXPECT_FALSE(manager.snapshot().answer_actions_enabled);
+    EXPECT_FALSE(manager.request_answer());
+    EXPECT_EQ(backend.answer_requests, 0);
 }
 
 TEST(CallManagerTest, RejectedBackendCallReportsFailureNotConnection)

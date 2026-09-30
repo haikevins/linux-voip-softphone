@@ -218,7 +218,6 @@ class OutgoingFakeSession final : public RegistrationSession
             state_->remote_disconnected = true;
             return CallProgress::DisconnectedAfterConnect;
         }
-
         return state_->remote_disconnected || state_->hung_up ? CallProgress::Disconnected
                                                               : CallProgress::ConnectedWithMedia;
     }
@@ -304,19 +303,16 @@ TEST(QtRegistrationBackendTest, RemoteHangupAfterConnectedMediaIsNotReportedAsFa
     GuiViewModel model(backend);
     int endings = 0;
     int failures = 0;
-
     QObject::connect(&backend, &QtRegistrationBackend::registrationFinished, &model,
                      [&model](const bool success) {
                          if (success) {
                              static_cast<void>(model.manager().on_registration_succeeded());
                          }
                      });
-
     QObject::connect(&backend, &QtRegistrationBackend::callEnded, &model, [&model, &endings] {
         ++endings;
         static_cast<void>(model.manager().on_call_ended());
     });
-
     QObject::connect(&backend, &QtRegistrationBackend::callFailed, &model, [&model, &failures] {
         ++failures;
         static_cast<void>(model.manager().on_call_failed("Call request was rejected"));
@@ -324,15 +320,197 @@ TEST(QtRegistrationBackendTest, RemoteHangupAfterConnectedMediaIsNotReportedAsFa
 
     ASSERT_TRUE(model.registerAccount());
     ASSERT_TRUE(wait_for_event([&model] { return model.callActionsEnabled(); }));
-
     ASSERT_TRUE(model.startCall(QStringLiteral("1001")));
-
     ASSERT_TRUE(wait_for_event([&endings] { return endings == 1; }));
-
     EXPECT_EQ(failures, 0);
     EXPECT_EQ(model.callStatus(), QStringLiteral("Ready to call"));
     EXPECT_TRUE(model.callActionsEnabled());
     EXPECT_FALSE(model.recoveryActionsEnabled());
+}
+
+struct IncomingFakeState
+{
+    std::atomic<int> registration_count{0};
+    std::atomic<int> answer_count{0};
+    std::atomic<int> hangup_count{0};
+    std::atomic<int> stopped_count{0};
+    std::atomic<bool> offer_pending{false};
+    std::atomic<bool> call_active{false};
+    std::atomic<bool> answered{false};
+    std::atomic<bool> remote_disconnected{false};
+    std::atomic<bool> hung_up{false};
+};
+
+class IncomingFakeSession final : public RegistrationSession
+{
+  public:
+    explicit IncomingFakeSession(std::shared_ptr<IncomingFakeState> state)
+        : state_(std::move(state))
+    {}
+
+    void start() override
+    {
+        ++state_->registration_count;
+    }
+    [[nodiscard]] bool wait_for_registration(std::chrono::milliseconds /*timeout*/) override
+    {
+        return true;
+    }
+    void stop() noexcept override
+    {
+        ++state_->stopped_count;
+    }
+    [[nodiscard]] bool supports_calls() const noexcept override
+    {
+        return true;
+    }
+    [[nodiscard]] bool supports_incoming_calls() const noexcept override
+    {
+        return true;
+    }
+
+    [[nodiscard]] IncomingCallNotice
+    poll_incoming_call(const std::chrono::milliseconds timeout) override
+    {
+        if (state_->offer_pending.exchange(false)) {
+            state_->call_active = true;
+            state_->answered = false;
+            state_->remote_disconnected = false;
+            state_->hung_up = false;
+            return {.received = true, .disconnected = false, .peer = "1001"};
+        }
+        std::this_thread::sleep_for(std::min(timeout, std::chrono::milliseconds{2}));
+        return {};
+    }
+
+    void answer_call() override
+    {
+        ++state_->answer_count;
+        state_->answered = true;
+    }
+
+    [[nodiscard]] CallProgress poll_call(std::chrono::milliseconds /*timeout*/) override
+    {
+        if (state_->remote_disconnected || state_->hung_up) {
+            return CallProgress::Disconnected;
+        }
+        return state_->answered ? CallProgress::ConnectedWithMedia : CallProgress::Ringing;
+    }
+
+    void hangup_call() noexcept override
+    {
+        ++state_->hangup_count;
+        state_->hung_up = true;
+    }
+
+    [[nodiscard]] bool wait_for_disconnection(const std::chrono::milliseconds timeout) override
+    {
+        if (state_->remote_disconnected || state_->hung_up) {
+            return true;
+        }
+        std::this_thread::sleep_for(std::min(timeout, std::chrono::milliseconds{2}));
+        return state_->remote_disconnected || state_->hung_up;
+    }
+
+    [[nodiscard]] bool release_disconnected_call() override
+    {
+        if (!state_->remote_disconnected && !state_->hung_up) {
+            return false;
+        }
+        state_->call_active = false;
+        state_->answered = false;
+        state_->remote_disconnected = false;
+        state_->hung_up = false;
+        return true;
+    }
+
+  private:
+    std::shared_ptr<IncomingFakeState> state_;
+};
+
+TEST(QtRegistrationBackendTest, IncomingCallAnswerAndRemoteHangupUseRetainedWorker)
+{
+    auto state = std::make_shared<IncomingFakeState>();
+    QtRegistrationBackend backend([state] { return std::make_unique<IncomingFakeSession>(state); },
+                                  true);
+    GuiViewModel model(backend);
+    int connections = 0;
+    int endings = 0;
+
+    QObject::connect(&backend, &QtRegistrationBackend::registrationFinished, &model,
+                     [&model](const bool success) {
+                         if (success) {
+                             static_cast<void>(model.manager().on_registration_succeeded());
+                         }
+                     });
+    QObject::connect(&backend, &QtRegistrationBackend::incomingCall, &model,
+                     [&model](const QString &peer) {
+                         static_cast<void>(model.manager().on_incoming_call(peer.toStdString()));
+                     });
+    QObject::connect(&backend, &QtRegistrationBackend::callConnected, &model,
+                     [&model, &connections] {
+                         ++connections;
+                         static_cast<void>(model.manager().on_call_connected());
+                     });
+    QObject::connect(&backend, &QtRegistrationBackend::callEnded, &model, [&model, &endings] {
+        ++endings;
+        static_cast<void>(model.manager().on_call_ended());
+    });
+
+    ASSERT_TRUE(model.registerAccount());
+    ASSERT_TRUE(wait_for_event([&model] { return model.callActionsEnabled(); }));
+    state->offer_pending = true;
+    ASSERT_TRUE(wait_for_event([&model] { return model.answerActionsEnabled(); }));
+    EXPECT_TRUE(model.incomingCall());
+    EXPECT_EQ(model.activePeer(), QStringLiteral("1001"));
+    EXPECT_EQ(model.callStatus(), QStringLiteral("Incoming call"));
+
+    ASSERT_TRUE(model.answerCall());
+    EXPECT_FALSE(model.answerActionsEnabled());
+    ASSERT_TRUE(wait_for_event([&connections] { return connections == 1; }));
+    EXPECT_EQ(model.callStatus(), QStringLiteral("Connected (audio active)"));
+    EXPECT_EQ(state->answer_count.load(), 1);
+
+    state->remote_disconnected = true;
+    ASSERT_TRUE(wait_for_event([&endings] { return endings == 1; }));
+    EXPECT_EQ(model.callStatus(), QStringLiteral("Ready to call"));
+    EXPECT_TRUE(model.callActionsEnabled());
+    EXPECT_EQ(state->registration_count.load(), 1);
+}
+
+TEST(QtRegistrationBackendTest, IncomingCallCanBeDeclinedWithoutReregistering)
+{
+    auto state = std::make_shared<IncomingFakeState>();
+    QtRegistrationBackend backend([state] { return std::make_unique<IncomingFakeSession>(state); },
+                                  true);
+    GuiViewModel model(backend);
+    int endings = 0;
+
+    QObject::connect(&backend, &QtRegistrationBackend::registrationFinished, &model,
+                     [&model](const bool success) {
+                         if (success) {
+                             static_cast<void>(model.manager().on_registration_succeeded());
+                         }
+                     });
+    QObject::connect(&backend, &QtRegistrationBackend::incomingCall, &model,
+                     [&model](const QString &peer) {
+                         static_cast<void>(model.manager().on_incoming_call(peer.toStdString()));
+                     });
+    QObject::connect(&backend, &QtRegistrationBackend::callEnded, &model, [&model, &endings] {
+        ++endings;
+        static_cast<void>(model.manager().on_call_ended());
+    });
+
+    ASSERT_TRUE(model.registerAccount());
+    ASSERT_TRUE(wait_for_event([&model] { return model.callActionsEnabled(); }));
+    state->offer_pending = true;
+    ASSERT_TRUE(wait_for_event([&model] { return model.answerActionsEnabled(); }));
+    ASSERT_TRUE(model.hangupCall());
+    ASSERT_TRUE(wait_for_event([&endings] { return endings == 1; }));
+    EXPECT_EQ(state->hangup_count.load(), 1);
+    EXPECT_EQ(state->registration_count.load(), 1);
+    EXPECT_EQ(model.callStatus(), QStringLiteral("Ready to call"));
+    EXPECT_TRUE(model.callActionsEnabled());
 }
 
 TEST(QtRegistrationBackendTest, RejectedCallAllowsExplicitRecoveryWithoutReregistering)
