@@ -23,6 +23,9 @@ void GuiViewModel::subscribe()
 QString GuiViewModel::registrationStatus() const
 {
     const auto current = manager_.snapshot();
+    if (current.registration_confirmed) {
+        return QStringLiteral("Registered");
+    }
     switch (current.state) {
     case CallState::Idle:
         return current.backend_available ? QStringLiteral("Not registered")
@@ -60,7 +63,8 @@ bool GuiViewModel::registrationActionsEnabled() const
 {
     const auto current = manager_.snapshot();
     return current.backend_available &&
-           (current.state == CallState::Idle || current.state == CallState::Failed);
+           (current.state == CallState::Idle ||
+            (current.state == CallState::Failed && !current.registration_confirmed));
 }
 
 bool GuiViewModel::registerAccount()
@@ -72,6 +76,65 @@ bool GuiViewModel::registerAccount()
         return false;
     }
     return manager_.request_registration();
+}
+
+QString GuiViewModel::callStatus() const
+{
+    switch (manager_.snapshot().state) {
+    case CallState::Idle:
+        return QStringLiteral("No active call");
+    case CallState::Registering:
+        return QStringLiteral("Waiting for registration");
+    case CallState::Ready:
+        return QStringLiteral("Ready to call");
+    case CallState::Calling:
+        return QStringLiteral("Calling...");
+    case CallState::Ringing:
+        return QStringLiteral("Ringing...");
+    case CallState::Connected:
+        return QStringLiteral("Connected (audio active)");
+    case CallState::Terminating:
+        return QStringLiteral("Ending call...");
+    case CallState::Failed:
+        return QStringLiteral("Request failed");
+    }
+    return QStringLiteral("Unknown");
+}
+
+QString GuiViewModel::activePeer() const
+{
+    return QString::fromStdString(manager_.snapshot().peer);
+}
+
+bool GuiViewModel::hangupActionsEnabled() const
+{
+    const auto state = manager_.snapshot().state;
+    return state == CallState::Calling || state == CallState::Ringing ||
+           state == CallState::Connected;
+}
+
+bool GuiViewModel::recoveryActionsEnabled() const
+{
+    const auto current = manager_.snapshot();
+    return current.recovery_actions_enabled;
+}
+
+bool GuiViewModel::startCall(const QString &destination)
+{
+    return manager_.request_outgoing_call(destination.toStdString());
+}
+
+bool GuiViewModel::hangupCall()
+{
+    return manager_.request_hangup();
+}
+
+bool GuiViewModel::recoverCall()
+{
+    if (!recoveryActionsEnabled()) {
+        return false;
+    }
+    return manager_.reset_after_failure();
 }
 
 application::CallManager &GuiViewModel::manager() noexcept

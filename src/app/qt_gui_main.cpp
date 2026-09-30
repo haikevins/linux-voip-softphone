@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
              account = std::move(account)]() -> std::unique_ptr<voip::gui::RegistrationSession> {
             return std::make_unique<voip::gui::PjsipRegistrationSession>(endpoint, account);
         };
-        backend = std::make_unique<voip::gui::QtRegistrationBackend>(std::move(factory));
+        backend = std::make_unique<voip::gui::QtRegistrationBackend>(std::move(factory), true);
         view_model = std::make_unique<voip::gui::GuiViewModel>(*backend);
         QObject::connect(backend.get(), &voip::gui::QtRegistrationBackend::registrationFinished,
                          view_model.get(), [model = view_model.get()](const bool registered) {
@@ -106,6 +106,22 @@ int main(int argc, char *argv[])
                                  static_cast<void>(model->manager().on_registration_failed(
                                      "SIP registration failed or timed out"));
                              }
+                         });
+        QObject::connect(backend.get(), &voip::gui::QtRegistrationBackend::callRinging,
+                         view_model.get(), [model = view_model.get()] {
+                             static_cast<void>(model->manager().on_remote_ringing());
+                         });
+        QObject::connect(backend.get(), &voip::gui::QtRegistrationBackend::callConnected,
+                         view_model.get(), [model = view_model.get()] {
+                             static_cast<void>(model->manager().on_call_connected());
+                         });
+        QObject::connect(
+            backend.get(), &voip::gui::QtRegistrationBackend::callEnded, view_model.get(),
+            [model = view_model.get()] { static_cast<void>(model->manager().on_call_ended()); });
+        QObject::connect(backend.get(), &voip::gui::QtRegistrationBackend::callFailed,
+                         view_model.get(), [model = view_model.get()] {
+                             static_cast<void>(model->manager().on_call_failed(
+                                 "Call failed, timed out or media did not connect"));
                          });
     } else {
         view_model = std::make_unique<voip::gui::GuiViewModel>();

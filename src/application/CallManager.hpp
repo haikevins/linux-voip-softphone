@@ -35,6 +35,8 @@ struct CallSnapshot
     std::string error;
     bool backend_available{false};
     bool call_actions_enabled{false};
+    bool registration_confirmed{false};
+    bool recovery_actions_enabled{false};
 };
 
 // Qt-free application facade, reusing the core CallStateMachine. The backend
@@ -80,6 +82,7 @@ class CallManager final
     NullStateChangeSink sink_;
     CallStateMachine machine_;
     std::string feedback_;
+    bool registration_confirmed_{false};
     Observer observer_;
 };
 

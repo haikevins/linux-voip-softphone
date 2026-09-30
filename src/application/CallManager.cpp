@@ -38,7 +38,11 @@ CallSnapshot CallManager::snapshot() const
             .error = !feedback_.empty() ? feedback_ : machine_error.value_or(std::string{}),
             .backend_available = backend_ != nullptr,
             .call_actions_enabled = backend_ != nullptr && backend_->supports_calls() &&
-                                    machine_.state() == CallState::Ready};
+                                    machine_.state() == CallState::Ready,
+            .registration_confirmed = registration_confirmed_,
+            .recovery_actions_enabled = registration_confirmed_ && backend_ != nullptr &&
+                                        backend_->supports_calls() &&
+                                        machine_.state() == CallState::Failed};
 }
 
 void CallManager::set_observer(Observer observer)
@@ -159,7 +163,16 @@ bool CallManager::request_hangup()
 bool CallManager::reset_after_failure()
 {
     check_thread();
-    if (machine_.state() != CallState::Failed || !machine_.handle(ResetRequested{})) {
+    if (machine_.state() != CallState::Failed) {
+        return false;
+    }
+    // A rejected call does not invalidate the already-retained SIP account.
+    // A registration failure, conversely, must return to Idle for retry.
+    if (registration_confirmed_ && backend_ != nullptr && backend_->supports_calls()) {
+        if (!machine_.handle(RecoverCallRequested{})) {
+            return false;
+        }
+    } else if (!machine_.handle(ResetRequested{})) {
         return false;
     }
     feedback_.clear();
@@ -173,6 +186,7 @@ bool CallManager::on_registration_succeeded()
     if (machine_.state() != CallState::Registering || !machine_.handle(RegistrationSucceeded{})) {
         return false;
     }
+    registration_confirmed_ = true;
     feedback_.clear();
     publish();
     return true;
@@ -185,6 +199,7 @@ bool CallManager::on_registration_failed(std::string reason)
         !machine_.handle(RegistrationFailed{std::move(reason)})) {
         return false;
     }
+    registration_confirmed_ = false;
     feedback_.clear();
     publish();
     return true;

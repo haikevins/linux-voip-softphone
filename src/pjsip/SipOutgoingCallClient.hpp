@@ -50,6 +50,8 @@ class SipOutgoingCallClient
     [[nodiscard]] std::vector<RtpMediaDiagnostics> rtp_diagnostics();
     void hangup() noexcept;
     [[nodiscard]] bool wait_for_disconnection(std::chrono::milliseconds timeout);
+    // Called on the owner worker only, after remote/local disconnect.
+    [[nodiscard]] bool release_disconnected_call();
 
   private:
     class CallAccount;

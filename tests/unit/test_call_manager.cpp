@@ -210,6 +210,26 @@ TEST(CallManagerTest, RejectedBackendCallReportsFailureNotConnection)
     EXPECT_TRUE(manager.snapshot().peer.empty());
 }
 
+TEST(CallManagerTest, FailedCallCanRecoverToExistingRegisteredAccount)
+{
+    FakeCallBackend backend;
+    CallManager manager(&backend);
+    ASSERT_TRUE(manager.request_registration());
+    ASSERT_TRUE(manager.on_registration_succeeded());
+    ASSERT_TRUE(manager.snapshot().registration_confirmed);
+    ASSERT_TRUE(manager.request_outgoing_call("1002"));
+    ASSERT_TRUE(manager.on_call_failed("SIP call rejected"));
+    EXPECT_TRUE(manager.snapshot().registration_confirmed);
+    EXPECT_FALSE(manager.snapshot().call_actions_enabled);
+    ASSERT_TRUE(manager.reset_after_failure());
+    EXPECT_EQ(manager.snapshot().state, CallState::Ready);
+    EXPECT_TRUE(manager.snapshot().peer.empty());
+    EXPECT_TRUE(manager.snapshot().call_actions_enabled);
+    EXPECT_TRUE(manager.snapshot().error.empty());
+    EXPECT_EQ(backend.registration_requests, 1);
+    EXPECT_TRUE(manager.request_outgoing_call("1003"));
+}
+
 TEST(CallManagerTest, UnexpectedEventsCannotFabricateState)
 {
     FakeCallBackend backend;

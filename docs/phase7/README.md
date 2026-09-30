@@ -2,34 +2,34 @@
 
 ## Status
 
-In progress. Commit 1 established the optional Qt dialer shell; Commit 2 introduced the Qt-free `CallManager` and its testable lifecycle contract. **Commit 3 adds opt-in initial SIP registration**, retaining the production SIP session after successful registration. Real GUI calls, incoming calls, two-way audio and RTP diagnostics are not yet connected.
+In progress. Commit 1 delivered a Qt dialer shell; Commit 2 delivered the Qt-free `CallManager`; Commit 3 delivered live initial SIP registration. **Commit 4 adds opt-in outgoing SIP calls and hangup through the SAME registered PJSUA2 account, using the Phase 6 call/audio implementation.** Incoming-call answering, long-running registration-health monitoring, in-GUI RTP diagnostics and Phase 7 closure are not included.
 
 ## Objective
 
-Provide a Linux Qt/QML softphone UI on top of the verified Phase 6 SIP/RTP runtime, without leaking PJSIP implementation objects or session ownership into QML. Connect real SIP functions in independently testable increments.
+Expose a real outbound SIP calling workflow from the Qt/QML desktop dialer without putting PJSUA2 objects, account credentials, or blocking network operations on the GUI thread. Preserve the existing headless SIP/RTP tests and optional Qt-only smoke mode.
 
 ## Scope
 
-Commit 3 connects the registration UI to the existing Phase 6 `SipRegistrationClient` through `CallManager`, `QtRegistrationBackend` and `PjsipRegistrationSession`. Its production capability is **initial registration only**. The inert GUI remains network-free; a Qt-only build can test the bridge without linking PJSIP. Calling, incoming events, media and continuous registration monitoring are outside the commit.
+The combined `qt-pjsip-gui-debug` application started with `--sip-register USER SERVER [PORT]` enables registration and, **after confirmation**, a Call button. The GUI sends only an extension (1–64 dialable characters) to `CallManager`; the worker assembles the SIP URI from the already configured server, runs the Phase 6 `SipOutgoingCallClient` and connects audio using the existing Phase 6 bridge. Qt-only and ordinary GUI preview modes remain network-free and cannot place a call. No incoming-call answer control is provided.
 
 ## Deliverables
 
-- `QtRegistrationBackend` implements the `CallBackend` interface using a C++20 `std::jthread` worker and replaceable `RegistrationSession` factory.
-- `PjsipRegistrationSession` wraps the existing Phase 6 `SipRegistrationClient` only when **both** Qt and PJSIP are enabled; it does not create a new SIP protocol implementation.
-- A queued Qt signal delivers the registration result to the UI-thread-owned `GuiViewModel` and `CallManager`. No PJSUA2 objects or raw backend exception text reach QML.
-- QML provides a Register button and sanitized status. The registration-only backend reports `supports_calls() == false`, so the Call button remains disabled even after registration succeeds.
-- The `qt-pjsip-gui-debug` preset builds Qt and PJSIP together. Qt-only and CLI configurations remain available.
-- Fake-session tests exercise worker ownership, queued result delivery, retained registration, failure and retry; core tests cover registration-only call capability.
+- `QtRegistrationBackend` retains one worker and serializes registration, dialing, ringing, connect, hangup and cleanup. A `RegistrationSession` provides an injectable, Qt-free, call-capable seam; existing registration-only fake sessions remain usable.
+- `PjsipRegistrationSession` delegates to Phase 6 `SipOutgoingCallClient` rather than creating a second endpoint. `Connected` is published only after both SIP confirmation and active audio media.
+- `SipOutgoingCallClient::release_disconnected_call()` waits for call-slot cleanup before allowing another call on the same account; its `stop()` is idempotent.
+- `CallManager` tracks whether initial registration succeeded. An explicitly recovered call failure returns to `Ready` without requesting registration again; failed initial registration still resets to `Idle`.
+- QML exposes destination, **Call**, **Hang up**, sanitized call status, active peer, and a contextual **Clear error** control. The default GUI smoke test remains inert.
+- The existing `CallManager` unit tests and Qt fake-session tests are expanded to cover retained registration, successful call, local hangup, remote hangup, redial and explicit recovery after a rejected call. Test expectations do not require network access.
 
 ## Architecture and design
 
-The dependency boundary is QML → `GuiViewModel` → `CallManager` → `QtRegistrationBackend` → `PjsipRegistrationSession` → existing `SipRegistrationClient`. The ViewModel owns the application state on the UI thread while the registration session runs on a dedicated worker. Completion reaches the UI through a queued signal; the SIP session is retained after successful registration, then released on its worker thread during shutdown.
+QML → `GuiViewModel` → `CallManager` → `QtRegistrationBackend` → `RegistrationSession` → `PjsipRegistrationSession` → existing Phase 6 `SipOutgoingCallClient` / PJSUA2. The backend worker owns exactly one PJSUA2 endpoint/account for registration and outbound calls. `CallManager` is strictly Qt-thread-owned; all worker completion signals are queued to Qt. QML never accesses the SIP account, password or PJSUA2 objects. Remote disconnect returns the call to `Ready`, while rejected calls publish a generic error and need an explicit user reset.
 
-The default GUI remains disconnected. With a registration-only backend, `CallManager` can transition to `Ready` after a confirmed registration but must still reject call operations. A generic failure message prevents raw PJSIP exceptions from reaching the UI. See `docs/architecture/qt-qml.md` for ownership, threading and the phase boundary.
+During the active-call phase, the worker checks for Hang up approximately every 150 ms. Initial ringing display is opportunistic; lack of a separate `Ringing...` event is not necessarily a failure. Initial call setup has a 30-second timeout, and a disconnected call wrapper must be safely released before redial. In an unrecoverable cleanup failure, outbound calling remains disabled for that application session; close/restart the app instead of attempting another call.
 
 ## Build and run
 
-Install Qt6 development packages and the QML runtime modules on Ubuntu 24.04 if required:
+On Ubuntu 24.04, install Qt6 headers and the QML runtime modules as needed:
 
 ```bash
 sudo apt install qt6-base-dev qt6-declarative-dev \
@@ -38,36 +38,38 @@ sudo apt install qt6-base-dev qt6-declarative-dev \
     qml6-module-qtquick-templates
 ```
 
-Point pkg-config at the already verified PJSIP/PJSUA2 2.17 installation, then configure the independent variants:
+Build the inert Qt-only target separately from the production Qt+PJSIP target:
 
 ```bash
 cmake --preset qt-gui-debug
 cmake --build --preset qt-gui-debug -j
-
 export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 cmake --preset qt-pjsip-gui-debug
 cmake --build --preset qt-pjsip-gui-debug -j
 ```
 
-After automated verification, optionally launch the combined GUI for a controlled Asterisk registration check. The password is read from stdin, not from a shell command argument, QML or a project file. Replace the placeholders with the locally configured extension and Asterisk host:
+For an optional controlled test with your local Asterisk, read the SIP password from a hidden terminal prompt. Do not embed a real password in shell history, logs or screenshots:
 
 ```bash
 (
     set -euo pipefail
-    read -r -s -p 'SIP password: ' VOIP_SIP_PASSWORD
+    set +x
+    read -r -p 'SIP extension: ' SIP_EXT
+    read -r -p 'Asterisk host/IP: ' SIP_HOST
+    read -r -s -p 'SIP password: ' SIP_PASS
     printf '\n'
-    trap 'unset VOIP_SIP_PASSWORD' EXIT
-    printf '%s\n' "$VOIP_SIP_PASSWORD" | \
+    trap 'unset SIP_PASS' EXIT
+    printf '%s\n' "$SIP_PASS" | \
         ./build/qt-pjsip-gui-debug/src/voip-qt-gui \
-        --sip-register YOUR_EXTENSION YOUR_ASTERISK_HOST 5060
+            --sip-register "$SIP_EXT" "$SIP_HOST" 5060
 )
 ```
 
-Click **Register** to initiate registration. Do not paste credentials or capture private SIP details in shared logs.
+Click **Register**, wait for `Registered`, dial a known local test extension, check the SIP and audio status, then test **Hang up** and a second call. The command above uses the existing validated PJSIP account input flow; QML does not collect credentials.
 
 ## Verification
 
-Run the network-free tests in both build variants and preserve the inherited Phase 6 regression gate:
+Before any live call, run both builds and the inherited regression gate:
 
 ```bash
 ctest --preset qt-gui-debug \
@@ -79,30 +81,31 @@ ctest --preset qt-pjsip-gui-debug \
 ./scripts/phase6/verify.sh
 ```
 
-The offscreen smoke test never constructs a SIP account or makes a network request, even in a combined build. The separate manual gate checks that GUI status moves from `Not registered` through `Registering...` to `Registered` **only after** backend confirmation, and independently verifies registration in local Asterisk. Check that the Call button remains disabled. Report failure or timeout using the generic UI status; retry only after explicitly requesting another registration.
+**Manual gate is separate**: confirm registration with Asterisk, place a controlled outgoing call to the known test endpoint, hear audio in both directions, hang up from GUI, repeat using remote hangup, verify the UI returns to `Ready`, and try a second call on the same registration. Test a rejected/unanswered call and explicit **Clear error** recovery. Validate mute/volume or audio-device settings only in future work; this commit reuses Phase 6 defaults. No manual outgoing call is considered proven until this separate gate passes on the user's machine.
 
 ## Evidence
 
-Automated results should be retained as sanitized test counts and PASS/FAIL summaries. Keep the manual Asterisk registration result separate from automated test evidence. Do not include SIP passwords, authentication headers, raw packet captures or other private data in Git or shared logs. This documentation describes required evidence; it does not by itself establish that a manual registration test has passed.
+Record only summarized PASS/FAIL, test counts, GUI visible state and sanitized SIP status. Do not commit or share SIP passwords, credentials in environment dumps, authentication headers, raw audio, packet captures or full SIP logs. A successful automated fake-session run is not evidence of a live INVITE or two-way audio.
 
 ## Interview focus
 
-Explain why `CallManager` treats registration as pending until the backend reports success; how the queued Qt result preserves UI-thread ownership; why a successful PJSIP session must remain alive; and why a registration-only backend must still disable the Call button. Be able to distinguish initial REGISTER confirmation from ongoing network/account health.
+Explain how the single retained registered account is reused for INVITEs; how a Qt queued event prevents PJSIP callbacks from updating QML off-thread; why `Connected` requires an active audio-media indication; how call-slot cleanup gates redial; and why registration recovery and call recovery are different state transitions.
 
 ## Exit criteria
 
-For Commit 3, require clean Qt-only and combined Qt/PJSIP builds, core and queued-bridge tests, an inert offscreen smoke test and the full inherited Phase 6 automated regression. A controlled live Asterisk REGISTER confirmation is a separate manual acceptance gate and must be reported separately, not inferred from automated tests. Phase 7 as a whole additionally requires actual GUI calls, incoming/active-call UI, two-way audio and RTP diagnostics.
+Commit 4 requires compilation of both Qt-only and combined Qt/PJSIP modes, network-free core and fake Qt tests, the inherited full Phase 6 automated gate and **manual** Asterisk registration/outgoing audio/hangup/redial checks. No commit or push is justified by documentation or synthetic tests alone. Phase 7 remains open until incoming-call UI and remaining planned diagnostics are implemented and separately verified.
 
 ## References
 
 - `README_roadmap.md` — Phase 7 / `v0.8-qt-gui`
 - `docs/architecture/qt-qml.md`
 - `docs/architecture/audio-rtp.md`
-- `docs/phase6/README.md`
 - `src/application/CallManager.hpp`
-- `tests/unit/test_call_manager.cpp`
+- `src/gui/QtRegistrationBackend.hpp`
+- `src/gui/PjsipRegistrationSession.hpp`
+- `src/pjsip/SipOutgoingCallClient.hpp`
 - `tests/qt/test_qt_registration_backend.cpp`
 
 ## Next phase
 
-The next Phase 7 commit should extend the same account/session ownership boundary to real calls and media rather than starting a separate PJSIP endpoint in QML. Continue to keep Qt-only tests isolated from live SIP traffic and retain the inherited Phase 6 regression gate.
+Add incoming-call notification and accept/reject UI on the same PJSUA2 account with explicit worker-thread ownership. Extend the Qt diagnostics panel and network/registration-health checks only after separate design and tests.

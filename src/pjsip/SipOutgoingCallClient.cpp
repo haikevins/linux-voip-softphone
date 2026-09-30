@@ -150,6 +150,9 @@ void SipOutgoingCallClient::start()
 
 void SipOutgoingCallClient::stop() noexcept
 {
+    if (endpoint_ == nullptr && !library_created_) {
+        return;
+    }
     hangup();
 
     // wait_for_disconnection() may wake while PJSUA2 is still executing
@@ -306,6 +309,26 @@ bool SipOutgoingCallClient::wait_for_disconnection(const std::chrono::millisecon
 
     std::unique_lock lock{call_mutex_};
     return call_changed_.wait_for(lock, timeout, [this] { return call_disconnected_; });
+}
+
+bool SipOutgoingCallClient::release_disconnected_call()
+{
+    if (call_ == nullptr) {
+        return true;
+    }
+    {
+        const std::lock_guard lock{call_mutex_};
+        if (!call_disconnected_) {
+            return false;
+        }
+    }
+    // PJSUA2 callbacks and call slots must finish before the wrapper is freed.
+    if (!wait_for_call_cleanup(std::chrono::seconds{2})) {
+        return false;
+    }
+    const std::lock_guard callback_lock{call_callback_mutex_};
+    call_.reset();
+    return true;
 }
 
 bool SipOutgoingCallClient::wait_for_call_cleanup(const std::chrono::milliseconds timeout) noexcept

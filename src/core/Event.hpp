@@ -49,12 +49,17 @@ struct CallFailed
     std::string reason;
 };
 
+struct RecoverCallRequested
+{
+};
+
 struct ResetRequested
 {
 };
 
-using Event = std::variant<RegisterRequested, RegistrationSucceeded, RegistrationFailed,
-                           OutgoingCallRequested, IncomingCallReceived, RemoteRinging,
-                           CallConnected, HangupRequested, CallEnded, CallFailed, ResetRequested>;
+using Event =
+    std::variant<RegisterRequested, RegistrationSucceeded, RegistrationFailed,
+                 OutgoingCallRequested, IncomingCallReceived, RemoteRinging, CallConnected,
+                 HangupRequested, CallEnded, CallFailed, RecoverCallRequested, ResetRequested>;
 
 } // namespace voip

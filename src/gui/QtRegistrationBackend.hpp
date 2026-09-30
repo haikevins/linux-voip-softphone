@@ -9,14 +9,26 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <stop_token>
+#include <string>
 #include <string_view>
 #include <thread>
 
 namespace voip::gui {
 
-// Qt-free session contract. Implementations own their SIP resources on the
-// worker thread and retain registration until stop() has completed there.
+// Calls and SIP registration share exactly one PJSUA2 endpoint/account, owned
+// exclusively by this session's dedicated worker thread. No pj:: in Qt/QML.
+enum class CallProgress
+{
+    Pending,
+    Ringing,
+    ConnectedWithMedia,
+    DisconnectedAfterConnect,
+    Disconnected,
+    Failed,
+};
+
 class RegistrationSession
 {
   public:
@@ -24,11 +36,31 @@ class RegistrationSession
     virtual void start() = 0;
     [[nodiscard]] virtual bool wait_for_registration(std::chrono::milliseconds timeout) = 0;
     virtual void stop() noexcept = 0;
+
+    // Default implementations keep the existing Qt-only fake session and inert
+    // build registration-only. Only explicit call-capable sessions opt in.
+    [[nodiscard]] virtual bool supports_calls() const noexcept
+    {
+        return false;
+    }
+    virtual void start_call(std::string_view /*extension*/) {}
+    [[nodiscard]] virtual CallProgress poll_call(std::chrono::milliseconds /*timeout*/)
+    {
+        return CallProgress::Failed;
+    }
+    virtual void hangup_call() noexcept {}
+    [[nodiscard]] virtual bool wait_for_disconnection(std::chrono::milliseconds /*timeout*/)
+    {
+        return false;
+    }
+    [[nodiscard]] virtual bool release_disconnected_call()
+    {
+        return false;
+    }
 };
 
-// Qt-thread-owned bridge; never exposes credentials or pj:: objects to QML.
-// A one-shot worker performs blocking SIP startup and registration. The
-// result is always dispatched back onto this QObject's owning Qt thread.
+// Main-thread CallBackend. All PJSUA2 operations are serialized on a worker.
+// Worker results are posted with Qt::QueuedConnection, never inline.
 class QtRegistrationBackend final : public QObject, public application::CallBackend
 {
     Q_OBJECT
@@ -36,34 +68,51 @@ class QtRegistrationBackend final : public QObject, public application::CallBack
   public:
     using SessionFactory = std::function<std::unique_ptr<RegistrationSession>()>;
 
-    explicit QtRegistrationBackend(SessionFactory factory, QObject *parent = nullptr);
+    explicit QtRegistrationBackend(SessionFactory factory, bool enable_calls = false,
+                                   QObject *parent = nullptr);
     ~QtRegistrationBackend() override;
 
     QtRegistrationBackend(const QtRegistrationBackend &) = delete;
     QtRegistrationBackend &operator=(const QtRegistrationBackend &) = delete;
 
     [[nodiscard]] bool begin_registration() override;
-    [[nodiscard]] bool supports_calls() const noexcept override
-    {
-        return false;
-    }
+    [[nodiscard]] bool supports_calls() const noexcept override;
     [[nodiscard]] bool begin_outgoing_call(std::string_view destination) override;
     [[nodiscard]] bool begin_hangup() override;
 
   signals:
-    // Emitted on the Qt owning thread. No raw SIP error strings cross here.
     void registrationFinished(bool registered);
+    void callRinging();
+    void callConnected(); // Only after PJSIP confirms BOTH call and audio media.
+    void callEnded();
+    void callFailed(); // No untrusted SIP error strings escape the worker.
 
   private:
+    enum class WorkerEvent
+    {
+        Ringing,
+        Connected,
+        Ended,
+        Failed
+    };
     void run_session(std::stop_token stop);
-    void post_result(bool registered);
+    void handle_outgoing_call(RegistrationSession &session, const std::string &destination,
+                              std::stop_token stop);
+    void post_registration(bool registered);
+    void post_call_event(WorkerEvent event);
+    [[nodiscard]] bool take_hangup();
 
     SessionFactory factory_;
+    const bool calls_enabled_;
     std::mutex stop_mutex_;
     std::condition_variable stop_changed_;
     std::jthread worker_;
-    bool request_active_{false};   // Accessed only on the Qt owning thread.
-    bool session_retained_{false}; // A successful session must not be joined on retry.
+    std::optional<std::string> pending_destination_; // stop_mutex_ protected.
+    bool hangup_requested_{false};                   // stop_mutex_ protected.
+    bool request_active_{false};                     // Qt thread only.
+    bool session_retained_{false};                   // Qt thread only.
+    bool call_active_{false};                        // Qt thread only.
+    bool fatal_call_error_{false};                   // Qt thread only.
 };
 
 } // namespace voip::gui
