@@ -27,3 +27,55 @@ The Phase 7 client implements explicit SIP 603 Decline correctly. The Redmi/Linp
 Security/redaction
 ------------------
 This summary intentionally omits Call-ID values, transport ports, Digest Authorization material, SIP credentials, and full raw headers.
+
+===============================================================================
+PHASE7_POST_CLOSURE_UPDATE_2026-10-01
+SIP DECLINE END-TO-END CORRECTION
+===============================================================================
+
+The earlier capture in this file recorded this path:
+
+    Qt 1002 -> Asterisk: SIP/2.0 603 Decline
+    Asterisk -> Redmi 1001: SIP/2.0 403 Forbidden
+    Reason: Q.850;cause=21
+
+That caller-leg 403 was caused by the lab Asterisk dialplan terminating the
+incoming PJSIP channel with generic Hangup() after Dial().  The softphone was
+already generating the correct SIP 603 response.
+
+The Asterisk 20.6.0 installation provides PJSIPHangup(), which allows an
+incoming PJSIP channel to be terminated using an explicit SIP final response.
+
+The lab extension 1002 was updated from:
+
+    same => n,Hangup()
+
+to conditional rejection handling:
+
+    same => n,NoOp(Dial result: DIALSTATUS=${DIALSTATUS} HANGUPCAUSE=${HANGUPCAUSE})
+    same => n,GotoIf($["${HANGUPCAUSE}"="21"]?declined)
+    same => n,Hangup()
+    same => n(declined),NoOp(Preserving call rejection as SIP 603 Decline)
+    same => n,PJSIPHangup(603)
+
+Verified runtime result:
+
+    Redmi 1001
+        -> INVITE
+    Asterisk
+        -> INVITE
+    Qt 1002
+        -> SIP/2.0 603 Decline
+    Asterisk
+        -> SIP/2.0 603 Decline
+           Reason: Q.850;cause=21
+    Redmi 1001
+        -> ACK
+
+The final response is therefore now preserved as SIP 603 Decline end-to-end
+for the Phase 7 lab topology.
+
+RESULT: PASS
+
+The pre-fix 403 evidence above remains historical evidence of the original
+Asterisk mapping and is superseded by this update for the final Phase 7 state.

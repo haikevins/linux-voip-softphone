@@ -75,3 +75,26 @@ For the live gate, securely register the workstation account, exercise one incom
 - `docs/interview/phase7-questions.md`
 - `docs/architecture/audio-rtp.md`
 - `tests/qt/test_qt_registration_backend.cpp`
+
+## Post-closure verification update — 2026-10-01
+
+`PHASE7_POST_CLOSURE_UPDATE_2026-10-01`
+
+Two issues discovered during final manual verification were resolved and
+re-verified after the original Phase 7 closure commit:
+
+- **Incoming Decline:** Qt 1002 already generated `603 Decline`. The lab
+  Asterisk dialplan was updated to preserve that response on the caller leg
+  using `PJSIPHangup(603)`, so Redmi 1001 now receives `603 Decline` rather
+  than the previous `403 Forbidden` mapping.
+- **Outgoing remote rejection:** when Qt 1002 calls Redmi 1001 and the remote
+  side rejects after Ringing but before Answer, Qt now treats the disconnect
+  as a normal call end and returns to **Ready to call** instead of presenting
+  `Request failed / Clear error`.
+
+The outgoing-rejection correction is covered by
+`QtRegistrationBackendTest.RemoteRejectAfterRingingIsNotReportedAsFailure`.
+The rebuilt test suite passed `135/135`.
+
+See `sip-decline.txt`, `manual-verification.txt`, and
+`automated-verification.txt` for the post-closure evidence.

@@ -36,3 +36,60 @@ A Redmi-side 403 Forbidden after Decline was traced to Asterisk's caller-side re
 One outgoing INVITE emitted a transient PJSIP_ETPNOTSUITABLE message before fallback/retry. The later call reached CONFIRMED with active PCMU audio, so this observation was non-blocking in the accepted run.
 
 No credential values or unredacted SIP headers are retained here.
+
+===============================================================================
+PHASE7_POST_CLOSURE_UPDATE_2026-10-01
+POST-CLOSURE MANUAL REGRESSION
+===============================================================================
+
+1. Incoming decline semantics
+
+   Scenario:
+       Redmi 1001 -> Qt 1002
+       Qt receives incoming call
+       Qt user presses Decline before answering
+
+   Verified:
+       - Qt terminates the incoming offer normally.
+       - Qt returns to Ready to call.
+       - Asterisk receives SIP 603 Decline from Qt 1002.
+       - Asterisk sends SIP 603 Decline to Redmi 1001.
+       - Q.850 cause 21 is retained in the Reason header.
+       - No re-registration is required.
+
+   RESULT: PASS
+
+2. Outgoing remote rejection after ringing
+
+   Scenario:
+       Qt 1002 -> Redmi 1001
+       Redmi reaches ringing state
+       Redmi rejects the call before answering
+
+   Previous behavior:
+       Qt treated the pre-connect disconnect as a technical call failure and
+       displayed:
+           Request failed
+           Clear error
+           Call failed, timed out or media did not connect
+
+   Corrected behavior:
+       - Remote rejection after Ringing is treated as normal call termination.
+       - Qt returns directly to Ready to call.
+       - Request failed is not displayed.
+       - Clear error is not required.
+       - Registration remains active.
+       - A subsequent call can be started without re-registering.
+
+   RESULT: PASS
+
+3. Scope
+
+   The correction does not change:
+       - genuine setup failures that occur before Ringing;
+       - local outgoing cancellation;
+       - connected-call local hangup;
+       - connected-call remote hangup;
+       - incoming SIP 603 Decline generation.
+
+OVERALL POST-CLOSURE MANUAL RESULT: PASS
