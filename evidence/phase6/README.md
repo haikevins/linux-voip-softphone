@@ -2,7 +2,7 @@
 
 ## Status
 
-Verification outcomes recorded for Phase 6. Implementation, audio/RTP diagnostics, automated checks, and outgoing/incoming audible two-way calls passed in the local lab. Sanitized evidence is assembled here; milestone release review and tagging remain pending.
+Phase 6 acceptance evidence was committed in Commit 10 (`8337297`) and the separate single-study Wireshark addition in Commit 11 (`4582baa`); both were reviewed for milestone closure. Implementation, audio/RTP diagnostics, automated checks, outgoing/incoming audible two-way calls, and the controlled approximately 75-second outgoing-call RTP study passed their stated local verification scope. The original evidence artifacts retain their revision boundaries; publishing an annotated release tag is a separate Git operation.
 
 ## Verification scope
 
@@ -33,7 +33,7 @@ Only curated summaries are retained; full terminal transcripts and captures are 
 
 ## Results
 
-The recorded automated and manual acceptance gates passed for the stated local configuration. RTP counters and the separate Wireshark study corroborate observed packet flow; operator listening confirmation supports the audible-media result. These observations do not claim that every audio device, network, or future revision has been tested. Phase 6 release review/tagging are not part of this evidence commit.
+The recorded automated and manual acceptance gates passed for the stated local configuration. RTP counters and the separate approximately 75-second Wireshark study corroborate observed packet flow in their respective tests; operator listening confirmation supports the audible-media result. Zero packet loss in the two selected Wireshark RTP streams does not establish uninterrupted media or network-wide zero loss. These findings do not cover every device, network, or future revision. The milestone closure and release-tag publication are separate from the original evidence commits.
 
 ## Security and redaction
 

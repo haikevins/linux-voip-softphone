@@ -6,13 +6,7 @@ The repository is intentionally phase-driven: each milestone adds production cod
 
 ## Current status
 
-Completed **Phase 5 — PJSIP CLI Softphone**; **Phase 6 — RTP and audio** is implemented and under documentation/evidence review.
-
-Current milestone tag:
-
-```text
-v0.6-pjsip-cli
-```
+Completed through **Phase 6 — RTP and audio** for the documented local lab. Phase 6 release identifier: `v0.7-rtp-audio` (reserved for an annotated tag after the closure commit is verified and pushed; this document does not assert that the tag is already published).
 
 Implemented so far:
 
@@ -29,7 +23,7 @@ Implemented so far:
 - Automated PJSIP contract, regression, sanitizer, and static-analysis verification.
 - Scrubbed runtime evidence that excludes SIP credentials and keying material.
 
-Phase 6 now routes active PJSUA2 call audio to real Linux capture/playback devices and exposes read-only media/RTP diagnostics in outgoing and incoming CLIs. Both directions have passed local live two-way audio tests, and the Phase 6 automated gate is green. Sanitized committed evidence and milestone closure remain pending; Qt/QML is intentionally deferred.
+Phase 6 routes active PJSUA2 call audio to Linux capture/playback devices and exposes read-only media/RTP diagnostics in outgoing and incoming CLIs. Local outgoing and incoming calls passed operator-confirmed two-way audio and live RTP checks. A separate, controlled approximately 75-second outgoing call supplied a two-direction Wireshark RTP-header/timing study, documented in `docs/protocols/rtp.md` and `evidence/phase6/rtp-wireshark.txt`. The automated gate, architecture documentation, and sanitized evidence have been accepted for the stated local lab configuration; Qt/QML remains Phase 7 work.
 
 ## Repository layout
 
@@ -131,9 +125,10 @@ v0.3-linux-system      Phase 2 — Linux system programming and IPC
 v0.4-networking        Phase 3 — TCP/UDP networking
 v0.5-sip-asterisk      Phase 4 — SIP + Asterisk lab
 v0.6-pjsip-cli         Phase 5 — PJSIP CLI softphone
+v0.7-rtp-audio         Phase 6 — RTP + Audio (release identifier)
 ```
 
-Current work: **Phase 6 — RTP + Audio** (implementation verified; documentation and sanitized evidence/release review in progress). Next planned phase: **Phase 7 — Qt/QML UI**.
+Phase 6 acceptance is complete based on the recorded local tests. The annotated Phase 6 tag is published separately after the closure commit is verified and pushed. Next planned phase: **Phase 7 — Qt/QML UI**.
 
 ## Documentation
 

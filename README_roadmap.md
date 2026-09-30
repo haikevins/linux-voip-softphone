@@ -967,6 +967,8 @@ v0.6-pjsip-cli
 
 # 9. Phase 6 — RTP + Audio
 
+**Trạng thái:** đã nghiệm thu cho lab nội bộ. Source, automated tests, kiến trúc và bằng chứng kiểm thử thực tế nằm trong `docs/phase6/README.md`, `docs/architecture/audio-rtp.md` và `evidence/phase6/`. Milestone release identifier: `v0.7-rtp-audio` (chỉ tạo và push annotated tag sau khi closure commit được xác minh; kiểm tra Git refs để xác nhận trạng thái thực tế).
+
 Thời gian:
 
 ```text
@@ -990,18 +992,18 @@ ThinkPad → Redmi
 Redmi → ThinkPad
 ```
 
-Thêm:
+Thêm (ví dụ cấu trúc minh họa; API thực tế xem `src/network/RtpStatistics.*`):
 
 ```cpp
 struct RtpStatistics {
-    uint64_t packetsReceived;
-    uint64_t packetsLost;
-    double packetLossPercent;
-    double jitterMs;
+    std::uint64_t packets_received;
+    std::uint64_t packets_lost;
+    double packet_loss_percent;
+    double jitter_ms;
 };
 ```
 
-Diagnostics:
+Diagnostics (ví dụ định dạng, **không phải số đo** của lần test 75 giây):
 
 ```text
 [MEDIA] codec=PCMU
@@ -1023,31 +1025,45 @@ jitter buffer
 codec
 ```
 
-### Evidence
+### Evidence và phạm vi nghiệm thu thực tế
+
+Bằng chứng đã được commit theo quy ước bảo mật hiện tại:
 
 ```text
-captures/rtp-call.pcapng
+evidence/phase6/automated-verification.txt
+evidence/phase6/live-registration.txt
+evidence/phase6/live-outgoing-call.txt
+evidence/phase6/live-incoming-call.txt
+evidence/phase6/phase6-summary.txt
+evidence/phase6/rtp-wireshark.txt
 ```
 
-và screenshot Wireshark:
+Các cuộc gọi thực tế hai chiều, codec PCMU 8 kHz và RTP RX/TX đã được xác minh
+trong lab. `docs/architecture/audio-rtp.md` giải thích vòng đời media,
+conference bridge và cách đọc thống kê; `docs/interview/phase6-questions.md`
+phục vụ rà soát kiến thức.
+
+**Phân tích Wireshark đã thực hiện:** một cuộc gọi đi được kiểm soát, kéo
+dài khoảng 75 giây, với operator xác nhận nghe được âm thanh hai chiều và
+chủ động im lặng khoảng giây 60–75. Hai luồng RTP LAN ngược chiều được
+phân tích bằng Wireshark: PCMU 8 kHz, RTP timestamp tăng thông thường
+160 đơn vị / 20 ms, 3.698 và 2.960 gói trong các bảng phân tích đã chọn;
+cả hai báo cáo 0% packet loss và 0 sequence errors. Các khoảng ngắt có
+marker gần cuối ở một luồng được ghi nhận riêng; số liệu không chứng minh
+nguyên nhân của việc tạm dừng truyền hay đại diện cho mọi nhánh cuộc gọi.
+
+Tài liệu giao thức `docs/protocols/rtp.md` giải thích RTP header và các
+quan sát từ chính capture này; báo cáo đã biên tập nằm tại
+`evidence/phase6/rtp-wireshark.txt`. **Chỉ giữ kết quả kiểm thử 75 giây**
+trong bằng chứng Wireshark của Phase 6. File `.pcapng` gốc chứa payload
+âm thanh chỉ lưu riêng tư ngoài Git; không commit capture, ảnh chưa biên
+tập, SIP credentials, Digest headers hoặc keying material.
+
+Git tag cho milestone đã nghiệm thu:
 
 ```text
-Telephony
-→ RTP
-→ RTP Streams
+v0.7-rtp-audio
 ```
-
-Tạo:
-
-```text
-docs/protocols/rtp.md
-```
-
-Giải thích một packet RTP từ capture của chính bạn.
-
-Đây là bằng chứng mạnh hơn nhiều so với README ghi:
-
-> Know RTP.
 
 ---
 
@@ -1119,7 +1135,7 @@ Không gọi PJSIP trực tiếp từ QML.
 ### Evidence
 
 ```text
-evidence/06-qt/
+evidence/phase7/
 ├── login.png
 ├── dialer.png
 ├── incoming-call.png
@@ -1130,7 +1146,7 @@ evidence/06-qt/
 Git tag:
 
 ```text
-v0.7-qt-gui
+v0.8-qt-gui
 ```
 
 ---
@@ -1316,7 +1332,7 @@ Một recruiter C++ nhìn phần này sẽ biết ngay bạn đã động tới 
 Git tag:
 
 ```text
-v0.8-diagnostics
+v0.9-diagnostics
 ```
 
 ---
@@ -1379,7 +1395,7 @@ media transport
 Git tag:
 
 ```text
-v0.9-rtsp-lab
+v0.10-rtsp-lab
 ```
 
 ---
@@ -1569,9 +1585,10 @@ v0.3-linux-system
 v0.4-networking
 v0.5-sip-asterisk
 v0.6-pjsip-cli
-v0.7-qt-gui
-v0.8-diagnostics
-v0.9-rtsp-lab
+v0.7-rtp-audio
+v0.8-qt-gui
+v0.9-diagnostics
+v0.10-rtsp-lab
 v1.0.0
 ```
 
@@ -1885,34 +1902,30 @@ Bạn nói:
 
 ## Tiến độ hiện tại
 
-Repository hiện đã hoàn thành **Phase 0 đến Phase 5**. Milestone mới nhất là:
+Repository đã nghiệm thu **Phase 0 đến Phase 6** cho các môi trường đã ghi lại trong evidence. Phase 6 có release identifier:
 
 ```text
-v0.6-pjsip-cli
+v0.7-rtp-audio
 ```
 
-Chuỗi milestone đã hoàn thành:
+Chuỗi milestone đã nghiệm thu:
 
 ```text
-Phase 0
-Repository + engineering environment
+Phase 0 — Repository + engineering environment
         ↓
-Phase 1
-Modern C++ foundation
+Phase 1 — Modern C++ foundation
         ↓
-Phase 2
-Linux system programming + IPC
+Phase 2 — Linux system programming + IPC
         ↓
-Phase 3
-TCP/UDP networking
+Phase 3 — TCP/UDP networking
         ↓
-Phase 4
-SIP + Asterisk lab
+Phase 4 — SIP + Asterisk lab
         ↓
-Phase 5
-PJSIP CLI softphone
+Phase 5 — PJSIP CLI softphone
+        ↓
+Phase 6 — RTP + Audio
 ```
 
-Bước tiếp theo là **Phase 6 — RTP + Audio**. Phase này tập trung vào media path thực tế, audio device handling, two-way audio và RTP diagnostics trước khi chuyển sang Qt/QML ở Phase 7.
+Bước tiếp theo là **Phase 7 — Qt/QML GUI**, sử dụng signaling và media path đã kiểm thử. Việc tạo/push annotated tag `v0.7-rtp-audio` và merge branch là thao tác release riêng biệt; kiểm tra Git refs thay vì suy đoán từ roadmap.
 
 Mục tiêu không phải hoàn thành softphone càng nhanh càng tốt. Mục tiêu là đến cuối project, **mỗi dòng quan trọng trong JD đều có một artifact trong GitHub để bạn chỉ thẳng cho interviewer xem**.

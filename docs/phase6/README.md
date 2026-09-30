@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation, live audio/RTP diagnostics, automated verification, and architecture documentation are in place through Commit 9 (`c2354b3`) on `phase/6-rtp-audio`. The outgoing and incoming lab calls passed with audible two-way media, and sanitized baseline verification summaries were committed in Commit 10 (`8337297`). The separate Wireshark protocol study records one controlled outgoing call lasting approximately 75 seconds; only this study is retained as Phase 6 wire-level evidence. Milestone release review and tagging remain separate tasks; no Phase 6 release tag is claimed here.
+Phase 6 acceptance is complete for the documented local lab configuration. Media implementation (Commit 7, `273ad69`), automated gate (Commit 8, `bbaec38`), architecture documentation (Commit 9, `c2354b3`), sanitized baseline verification evidence (Commit 10, `8337297`), and the single controlled approximately 75-second Wireshark RTP study (Commit 11, `4582baa`) have been reviewed together. Outgoing and incoming lab calls passed operator-confirmed audible two-way audio. Release identifier: `v0.7-rtp-audio`; creation and publication of its annotated Git tag follow verification and push of the separate closure commit.
 
 ## Objective
 
@@ -23,7 +23,7 @@ Phase 6 owns device capability preflight, stable capture/playback selection, act
 | CLI result reporting | `src/app/sip_call_main.cpp`, `src/app/sip_listen_main.cpp` |
 | Automated verification | `scripts/phase6/verify.sh`, existing Phase 5 checks, focused GoogleTests |
 
-These deliverables have been exercised locally. Sanitized committed evidence is tracked separately and must not be implied by a successful local test alone.
+These deliverables and their observed local verification outcomes are recorded for the stated lab configuration. Sanitized evidence is committed in Commits 10 and 11; success with another device or network requires separate validation.
 
 ## Architecture and design
 
@@ -88,7 +88,7 @@ A SIP `200 OK`, `audio=yes`, or nonzero RTP counts alone cannot prove intelligib
 
 The sanitized outcome record is indexed at `evidence/phase6/README.md`. Its short text artifacts retain the automated gate summary, registration observed during the live calls, outgoing/incoming codec and RTP measurements, operator-confirmed two-way listening, and a phase summary. The live calls were performed with Commit 7 (`273ad69`); later changes through Commit 9 added verification orchestration and documentation without changing the audio/RTP implementation. The additional `rtp-wireshark.txt` artifact records selected RTP headers and opposite-direction stream analyses from the controlled approximately 75-second packet-inspection lab. The artifacts are summaries of observed local runs, not synthetic call output or substitutes for future hardware-specific listening checks.
 
-Do **not** commit passwords, Digest authorization headers, complete raw SIP/PJSIP logs, SRTP keying material, `.pcap`/`.pcapng` packet captures, or identifying information from unrelated peers. Release review and tagging still require a separate decision after evidence is committed.
+Do **not** commit passwords, Digest authorization headers, complete raw SIP/PJSIP logs, SRTP keying material, `.pcap`/`.pcapng` packet captures, or identifying information from unrelated peers. The 75-second capture remains private outside Git. Release tagging and any branch merge are separate operations after the closure commit is verified.
 
 ## Interview focus
 
@@ -96,7 +96,7 @@ Explain why a confirmed SIP dialog is different from audible media; how name/dri
 
 ## Exit criteria
 
-The milestone can be closed once the following have all been reviewed together: working two-way outgoing and incoming audio; valid codec/media and live RTP observations; safe media/call teardown; the complete Phase 6 automated gate; updated architecture/phase/interview documentation; and sanitized committed evidence covering automated and manual results, including the Wireshark RTP-header/timing study of two observed directions in the controlled approximately 75-second outgoing call. Passing the code gates does not automatically complete the remaining evidence/release tasks.
+Acceptance review is complete for the documented local lab: working two-way outgoing and incoming audio; valid codec/media and live RTP observations; clean disconnection; the complete Phase 6 automated gate; architecture, phase, interview, and RTP-protocol documentation; and sanitized evidence including the two selected Wireshark RTP directions from the controlled approximately 75-second outgoing call. These observations apply to the tested revision and environment; they are not a guarantee for other devices or network conditions. Publishing `v0.7-rtp-audio` and any branch merge are separate release operations and must be checked via Git refs.
 
 ## References
 
@@ -111,4 +111,4 @@ The milestone can be closed once the following have all been reviewed together: 
 
 ## Next phase
 
-Phase 7 adds the Qt/QML user interface on top of the validated signaling and audio runtime, after Phase 6 evidence and milestone closure.
+Phase 7 adds the Qt/QML user interface on top of the locally validated signaling and audio runtime, without changing the recorded Phase 6 acceptance results.
