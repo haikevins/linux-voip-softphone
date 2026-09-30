@@ -6,7 +6,7 @@ The repository is intentionally phase-driven: each milestone adds production cod
 
 ## Current status
 
-Completed through **Phase 5 — PJSIP CLI Softphone**.
+Completed **Phase 5 — PJSIP CLI Softphone**; **Phase 6 — RTP and audio** is implemented and under documentation/evidence review.
 
 Current milestone tag:
 
@@ -29,7 +29,7 @@ Implemented so far:
 - Automated PJSIP contract, regression, sanitizer, and static-analysis verification.
 - Scrubbed runtime evidence that excludes SIP credentials and keying material.
 
-Phase 6 will add RTP/audio handling and real media-device routing. Qt/QML is intentionally deferred until the media path is stable.
+Phase 6 now routes active PJSUA2 call audio to real Linux capture/playback devices and exposes read-only media/RTP diagnostics in outgoing and incoming CLIs. Both directions have passed local live two-way audio tests, and the Phase 6 automated gate is green. Sanitized committed evidence and milestone closure remain pending; Qt/QML is intentionally deferred.
 
 ## Repository layout
 
@@ -77,10 +77,10 @@ Verify the dependency independently:
 ./scripts/phase5/verify-pjsip-dependency.sh
 ```
 
-Run the complete Phase 5 automated verification suite:
+Run the complete Phase 6 automated verification suite (which includes the Phase 5 gate):
 
 ```bash
-./scripts/phase5/verify.sh
+./scripts/phase6/verify.sh
 ```
 
 ## PJSIP CLI applications
@@ -97,7 +97,9 @@ Usage and architecture details are documented in:
 
 ```text
 docs/phase5/README.md
+docs/phase6/README.md
 docs/architecture/pjsip-cli.md
+docs/architecture/audio-rtp.md
 ```
 
 SIP passwords are supplied through an environment variable rather than command-line arguments. Do not commit credentials, raw Digest Authorization headers, or SDP keying material.
@@ -131,7 +133,7 @@ v0.5-sip-asterisk      Phase 4 — SIP + Asterisk lab
 v0.6-pjsip-cli         Phase 5 — PJSIP CLI softphone
 ```
 
-Next planned milestone: **Phase 6 — RTP + Audio**.
+Current work: **Phase 6 — RTP + Audio** (implementation verified; documentation and sanitized evidence/release review in progress). Next planned phase: **Phase 7 — Qt/QML UI**.
 
 ## Documentation
 

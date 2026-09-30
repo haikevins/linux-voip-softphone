@@ -2,78 +2,109 @@
 
 ## Status
 
-In progress. Commit 1 establishes the Linux/PJSUA2 audio-device preflight before call media is connected to real capture and playback devices.
+Implementation, live audio/RTP diagnostics, and the Phase 6 automated verification wrapper are in place through Commit 8 (`bbaec38`) on `phase/6-rtp-audio`. The outgoing and incoming lab calls have passed with audible two-way media. Documentation and sanitized evidence/milestone closure are still in progress; no Phase 6 release tag is claimed here.
 
 ## Objective
 
-Enable reliable two-way audio for the existing SIP call lifecycle by connecting negotiated PJSIP call media to Linux audio capture and playback while preserving the Phase 5 signaling behavior.
+Extend the existing Phase 5 SIP call lifecycle to real Linux capture/playback, verified two-way audio, and read-only RTP/media diagnostics without regressing signaling or safe teardown.
 
 ## Scope
 
-Phase 6 covers the runtime media path after SIP/SDP negotiation: PJSUA2 audio devices, call audio media, conference-bridge connections, RTP-backed audio flow, device selection, media lifecycle handling, and verification of real two-way audio.
-
-Commit 1 is deliberately narrower. It verifies that the configured PJPROJECT installation can compile/link PJSUA2 audio code and that the runtime exposes at least one capture-capable and one playback-capable audio device. It does not modify the existing call applications or replace their Phase 5 null-audio behavior yet.
+Phase 6 owns device capability preflight, stable capture/playback selection, active call-audio conference-bridge routing, RTP/RTCP statistics presentation, focused automated verification, and manual live-call validation. PJSUA2/PJMEDIA—not the project's general-purpose UDP socket class—owns the call's RTP transport and codecs. See `docs/architecture/audio-rtp.md` for component responsibilities and lifecycle detail.
 
 ## Deliverables
 
-Current deliverable:
+| Area | Implementation |
+|---|---|
+| Audio capability preflight | `scripts/phase6/verify-audio-environment.sh` |
+| Capture/playback selection | `src/pjsip/Pjsua2AudioDeviceManager.*`, `src/pjsip/SipCallAudioConfig.hpp` |
+| Two-way media routing | `src/pjsip/Pjsua2CallAudioBridge.*` and outgoing/incoming call media callbacks |
+| RTP/media diagnostics | `src/network/RtpStatistics.*`, `src/pjsip/Pjsua2RtpDiagnostics.*` |
+| CLI result reporting | `src/app/sip_call_main.cpp`, `src/app/sip_listen_main.cpp` |
+| Automated verification | `scripts/phase6/verify.sh`, existing Phase 5 checks, focused GoogleTests |
 
-- `scripts/phase6/verify-audio-environment.sh` — compile/link and runtime preflight for PJSUA2 audio-device enumeration.
-
-Planned Phase 6 deliverables include real call-media attachment, safe media teardown, focused automated verification where practical, and sanitized live-call evidence.
+These deliverables have been exercised locally. Sanitized committed evidence is tracked separately and must not be implied by a successful local test alone.
 
 ## Architecture and design
 
-SIP signaling and RTP/audio remain separate responsibilities. SIP establishes and tears down the dialog and negotiates media parameters through SDP. PJSIP/PJMEDIA owns the RTP media stream and exposes the active call audio as PJSUA2 `AudioMedia`. The application will connect that call media to the PJSUA2 capture and playback device media rather than using the Phase 5 null device.
+SIP/SDP negotiates the call; PJSUA2/PJMEDIA supplies the negotiated call audio and RTP stream. After PJSUA2 starts, the call client resolves the requested audio devices by name and optional driver, then configures capture and playback. Once the media callback reports active audio, the bridge connects microphone-to-call and call-to-speaker with `AudioMedia::startTransmit()` in both directions.
 
-Commit 1 establishes the hardware/runtime boundary first. Device enumeration must succeed before later commits make real audio devices part of the call lifecycle.
+The synchronous CLI waits for confirmed signaling and `media_connected`. While the call is still active, it reads stream information and PJMEDIA statistics, prints `[MEDIA]` and `[RTP]` snapshots, and only then requests hangup. The established Phase 5 callback synchronization and safe teardown sequence remain in use.
 
 ## Build and run
 
-Use the same PJPROJECT 2.17 installation used by Phase 5:
+Expose the PJPROJECT installation and run the complete Phase 6 automated gate from the repository root:
 
 ```bash
 export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-./scripts/phase6/verify-audio-environment.sh
+./scripts/phase6/verify.sh
 ```
 
-The preflight compiles a temporary C++20 PJSUA2 program using `pkg-config --static --libs libpjproject`, starts the PJSUA2 endpoint, enumerates audio devices, and requires both capture and playback capability.
+The wrapper starts with the audio preflight, runs `scripts/phase5/verify.sh` (including PJSIP/non-PJSIP regressions, ASan/UBSan, clang-tidy), then checks focused RTP/diagnostics suites. To build just the PJSIP applications:
+
+```bash
+cmake --preset pjsip-debug
+cmake --build --preset pjsip-debug -j
+build/pjsip-debug/src/voip-sip-call --help
+build/pjsip-debug/src/voip-sip-listen --help
+```
+
+Supply the SIP password through the configured environment variable (the default CLI contract uses `VOIP_SIP_PASSWORD`); never pass it as a command-line argument. The examples below assume the user has already configured the existing local Asterisk lab and has securely set that variable in the active shell.
+
+For the existing local `1002` (ThinkPad) and `1001` (phone) lab, test outgoing media with:
+
+```bash
+build/pjsip-debug/src/voip-sip-call \
+    --username 1002 --server 127.0.0.1 --target 1001 --transport udp \
+    --capture-device default --capture-driver ALSA \
+    --playback-device default --playback-driver ALSA \
+    --call-timeout-ms 30000 --hold-ms 20000
+```
+
+Test incoming media by starting the listener, then calling `1002` from the phone's `1001` account:
+
+```bash
+build/pjsip-debug/src/voip-sip-listen \
+    --username 1002 --server 127.0.0.1 --transport udp \
+    --capture-device default --capture-driver ALSA \
+    --playback-device default --playback-driver ALSA \
+    --incoming-timeout-ms 60000 --call-timeout-ms 15000 \
+    --answer-delay-ms 1000 --hold-ms 20000
+```
+
+The stable selector `default` is resolved at runtime. Select an appropriate current Linux input/output device before making calls; an audio preflight PASS by itself does not confirm what a human will hear.
 
 ## Verification
 
-Commit 1 is complete when:
+**Automated gate:** `./scripts/phase6/verify.sh` must exit successfully. The Commit 8 verification run passed: PJSIP-focused 45/45, full PJSIP 117/117, sanitizer 117/117, non-PJSIP 72/72, RTP statistics 4/4, PJSUA2 RTP diagnostics 3/3, clang-tidy, and audio preflight. These counts describe that tested revision; later commits may add or reorganize cases.
 
-- `libpjproject >= 2.17` is visible through `pkg-config`;
-- the PJSUA2 audio-device smoke program compiles and links;
-- runtime audio-device enumeration succeeds;
-- at least one capture-capable device is present;
-- at least one playback-capable device is present;
-- the existing Phase 5 automated verification remains green.
+**Manual live gate:** for both outgoing and incoming calls, confirm registration and call confirmation, actual two-way intelligible speech, `[MEDIA]` identifying an active negotiated codec, `[RTP]` with nonzero sent and received packets, and a clean disconnection. The Commit 7 reference runs observed PCMU at 8 kHz in both directions with zero reported receive loss; see `docs/architecture/audio-rtp.md` for the interpretation and limitations of these snapshots.
 
-No live SIP call is required for this commit.
+A SIP `200 OK`, `audio=yes`, or nonzero RTP counts alone cannot prove intelligible sound through the chosen microphone and speaker. Live audio must be checked separately by a person.
 
 ## Evidence
 
-Commit 1 does not add committed Phase 6 evidence. Its output is an environment preflight, not yet proof of an end-to-end RTP/audio call. Phase 6 evidence should be added only after the media path is implemented and verified, and must follow the repository evidence retention and secret-redaction policy.
+Only sanitized **summaries** of local automated runs and the two live calls belong in future `evidence/phase6/` artifacts. Record the commit, gate result, call direction, relevant status/codec/counters, explicit two-way listening outcome, and disconnect result; do not include secrets or raw call logs.
+
+Do **not** commit passwords, Digest authorization headers, complete raw SIP/PJSIP logs, SRTP keying material, `.pcap`/`.pcapng` packet captures, or identifying information from unrelated peers. The current README documents the observed results; it does not claim that Phase 6 evidence files have already been committed.
 
 ## Interview focus
 
-Be able to explain the difference between SIP signaling, SDP negotiation, RTP media transport, the PJSUA2 conference bridge, call `AudioMedia`, capture/playback device media, and the Phase 5 null audio device.
-
-Also be able to explain why device enumeration is validated before wiring hardware audio into call lifecycle callbacks.
+Explain why a confirmed SIP dialog is different from audible media; how name/driver selection avoids fixed device IDs; what `onCallMediaState()` connects and why direction matters; why RTP statistics are read before hangup; how receive loss, jitter, and RTT are derived; and why automated tests, runtime counters, and actual listening are distinct verification layers. See `docs/interview/phase6-questions.md`.
 
 ## Exit criteria
 
-Phase 6 exits only when outgoing and incoming calls can carry verified two-way audio through the Linux audio devices, media connections are established and removed safely with the call lifecycle, regressions remain green, and sanitized evidence records the final result.
+The milestone can be closed once the following have all been reviewed together: working two-way outgoing and incoming audio; valid codec/media and live RTP observations; safe media/call teardown; the complete Phase 6 automated gate; updated architecture/phase/interview documentation; and sanitized committed evidence covering automated and manual results. Passing the code gates does not automatically complete the remaining evidence/release tasks.
 
 ## References
 
+- `docs/architecture/audio-rtp.md`
 - `docs/architecture/pjsip-cli.md`
-- `docs/protocols/sip.md`
+- `docs/interview/phase6-questions.md`
 - `docs/phase5/README.md`
-- `scripts/phase5/verify.sh`
-- PJPROJECT/PJSUA2 audio device manager documentation
+- `scripts/phase6/verify.sh`
+- `scripts/phase6/verify-audio-environment.sh`
 
 ## Next phase
 
-Phase 7 introduces the Qt/QML user interface on top of the verified signaling and audio runtime.
+Phase 7 adds the Qt/QML user interface on top of the validated signaling and audio runtime, after Phase 6 evidence and milestone closure.
