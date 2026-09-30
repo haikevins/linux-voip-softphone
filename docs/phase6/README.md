@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation, live audio/RTP diagnostics, automated verification, and architecture documentation are in place through Commit 9 (`c2354b3`) on `phase/6-rtp-audio`. The outgoing and incoming lab calls passed with audible two-way media. Sanitized verification summaries are recorded under `evidence/phase6/`; milestone release review and tagging remain separate tasks, and no Phase 6 release tag is claimed here.
+Implementation, live audio/RTP diagnostics, automated verification, and architecture documentation are in place through Commit 9 (`c2354b3`) on `phase/6-rtp-audio`. The outgoing and incoming lab calls passed with audible two-way media, and sanitized baseline verification summaries were committed in Commit 10 (`8337297`). The separate Wireshark protocol study records one controlled outgoing call lasting approximately 75 seconds; only this study is retained as Phase 6 wire-level evidence. Milestone release review and tagging remain separate tasks; no Phase 6 release tag is claimed here.
 
 ## Objective
 
@@ -80,11 +80,13 @@ The stable selector `default` is resolved at runtime. Select an appropriate curr
 
 **Manual live gate:** for both outgoing and incoming calls, confirm registration and call confirmation, actual two-way intelligible speech, `[MEDIA]` identifying an active negotiated codec, `[RTP]` with nonzero sent and received packets, and a clean disconnection. The Commit 7 reference runs observed PCMU at 8 kHz in both directions with zero reported receive loss; see `docs/architecture/audio-rtp.md` for the interpretation and limitations of these snapshots.
 
+**Wireshark wire-level lab:** on 2026-09-30, one controlled approximately 75-second outgoing call was captured with a UDP RTP-port-range filter. The operator confirmed intelligible speech in both directions and reported deliberate silence during approximately seconds 60–75 of the call. Two selected opposite-direction streams showed PCMU, adjacent 160-tick/20-ms timestamp steps, and zero observed loss or sequence errors under Wireshark analysis. The selected network-facing stream in one direction transmitted regularly; the opposite direction contained marker-delimited pauses near the end of the capture, with continuous sequence numbers and matching timestamp advances. These observations are consistent with, but do not prove, silence-related media suppression. Results and limitations appear in `docs/protocols/rtp.md` and `evidence/phase6/rtp-wireshark.txt`. The Wireshark outgoing-call study does not replace the independently verified incoming-call manual gate.
+
 A SIP `200 OK`, `audio=yes`, or nonzero RTP counts alone cannot prove intelligible sound through the chosen microphone and speaker. Live audio must be checked separately by a person.
 
 ## Evidence
 
-The sanitized outcome record is indexed at `evidence/phase6/README.md`. Its short text artifacts retain the automated gate summary, registration observed during the live calls, outgoing/incoming codec and RTP measurements, operator-confirmed two-way listening, and a phase summary. The live calls were performed with Commit 7 (`273ad69`); later changes through Commit 9 added verification orchestration and documentation without changing the audio/RTP implementation. The artifacts are summaries of observed local runs, not synthetic call output or substitutes for future hardware-specific listening checks.
+The sanitized outcome record is indexed at `evidence/phase6/README.md`. Its short text artifacts retain the automated gate summary, registration observed during the live calls, outgoing/incoming codec and RTP measurements, operator-confirmed two-way listening, and a phase summary. The live calls were performed with Commit 7 (`273ad69`); later changes through Commit 9 added verification orchestration and documentation without changing the audio/RTP implementation. The additional `rtp-wireshark.txt` artifact records selected RTP headers and opposite-direction stream analyses from the controlled approximately 75-second packet-inspection lab. The artifacts are summaries of observed local runs, not synthetic call output or substitutes for future hardware-specific listening checks.
 
 Do **not** commit passwords, Digest authorization headers, complete raw SIP/PJSIP logs, SRTP keying material, `.pcap`/`.pcapng` packet captures, or identifying information from unrelated peers. Release review and tagging still require a separate decision after evidence is committed.
 
@@ -94,11 +96,12 @@ Explain why a confirmed SIP dialog is different from audible media; how name/dri
 
 ## Exit criteria
 
-The milestone can be closed once the following have all been reviewed together: working two-way outgoing and incoming audio; valid codec/media and live RTP observations; safe media/call teardown; the complete Phase 6 automated gate; updated architecture/phase/interview documentation; and sanitized committed evidence covering automated and manual results. Passing the code gates does not automatically complete the remaining evidence/release tasks.
+The milestone can be closed once the following have all been reviewed together: working two-way outgoing and incoming audio; valid codec/media and live RTP observations; safe media/call teardown; the complete Phase 6 automated gate; updated architecture/phase/interview documentation; and sanitized committed evidence covering automated and manual results, including the Wireshark RTP-header/timing study of two observed directions in the controlled approximately 75-second outgoing call. Passing the code gates does not automatically complete the remaining evidence/release tasks.
 
 ## References
 
 - `docs/architecture/audio-rtp.md`
+- `docs/protocols/rtp.md`
 - `docs/architecture/pjsip-cli.md`
 - `docs/interview/phase6-questions.md`
 - `docs/phase5/README.md`

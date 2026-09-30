@@ -18,7 +18,7 @@ Ubuntu workstation with PJPROJECT/PJSIP 2.17, the existing local Asterisk lab, a
 
 ## Manual verification
 
-On 2026-09-30, the operator tested outgoing 1002-to-1001 and incoming 1001-to-1002 calls against local Asterisk using the Commit 7 media implementation (`273ad69`). Both reached SIP 200/CONFIRMED with `audio=yes`, PCMU at 8 kHz, nonzero bidirectional RTP counters, and clean disconnect. The operator separately confirmed that actual audio was audible in both directions during each call. See `live-registration.txt`, `live-outgoing-call.txt`, and `live-incoming-call.txt`.
+On 2026-09-30, the operator tested outgoing 1002-to-1001 and incoming 1001-to-1002 calls against local Asterisk using the Commit 7 media implementation (`273ad69`). Both reached SIP 200/CONFIRMED with `audio=yes`, PCMU at 8 kHz, nonzero bidirectional RTP counters, and clean disconnect. The operator separately confirmed that actual audio was audible in both directions during each call. See `live-registration.txt`, `live-outgoing-call.txt`, and `live-incoming-call.txt`. A separate controlled approximately 75-second outgoing call was captured on 2026-09-30 for the wire-level RTP study. The operator confirmed intelligible speech in both directions and deliberately remained silent for approximately seconds 60–75 of the call. Wireshark analyzed two selected opposite-direction RTP streams in this single study, recorded in `rtp-wireshark.txt`. The observed pauses and RTP timestamps are documented separately from packet-loss estimates; measurements apply only to the selected streams.
 
 ## Artifacts
 
@@ -27,16 +27,17 @@ On 2026-09-30, the operator tested outgoing 1002-to-1001 and incoming 1001-to-10
 - `live-outgoing-call.txt`: outgoing call/media counters and listening outcome.
 - `live-incoming-call.txt`: incoming call/media counters and listening outcome.
 - `phase6-summary.txt`: concise acceptance record and revision boundaries.
+- `rtp-wireshark.txt`: selected RTP headers and opposite-direction Wireshark statistics from the single controlled approximately 75-second study, including the operator-reported 15-second silence interval.
 
 Only curated summaries are retained; full terminal transcripts and captures are deliberately excluded.
 
 ## Results
 
-The recorded automated and manual acceptance gates passed for the stated local configuration. RTP counters corroborate packet flow; the separate operator listening confirmation supports the audible-media result. These observations do not claim that every audio device, network, or future revision has been tested. Phase 6 release review/tagging are not part of this evidence commit.
+The recorded automated and manual acceptance gates passed for the stated local configuration. RTP counters and the separate Wireshark study corroborate observed packet flow; operator listening confirmation supports the audible-media result. These observations do not claim that every audio device, network, or future revision has been tested. Phase 6 release review/tagging are not part of this evidence commit.
 
 ## Security and redaction
 
-No SIP credential values, Digest response headers, SDP/SRTP keys, raw SIP/PJSIP transcripts, peer contact details beyond lab extension numbers, or packet captures are retained. Runtime-only credentials are never written into evidence. Review any future added logs before staging.
+No SIP credential values, Digest response headers, SDP/SRTP keys, raw SIP/PJSIP transcripts, peer contact details beyond lab extension numbers, or packet captures are retained. Runtime-only credentials are never written into evidence. The raw Wireshark capture is private and excluded from Git because PCMU payloads may reveal call audio. Review any future added logs before staging.
 
 ## Reproduction
 
@@ -55,6 +56,7 @@ For the separate live gate, follow `docs/phase6/README.md`: securely supply the 
 
 - `docs/phase6/README.md`
 - `docs/architecture/audio-rtp.md`
+- `docs/protocols/rtp.md`
 - `scripts/phase6/verify.sh`
 - `scripts/phase6/verify-audio-environment.sh`
 - `evidence/phase5/README.md`
