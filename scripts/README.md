@@ -32,9 +32,12 @@ scripts/
 │   ├── verify-asterisk.sh
 │   ├── verify-registration.sh
 │   └── verify-call.sh
-└── phase5/
+├── phase5/
+│   ├── verify.sh
+│   └── verify-pjsip-dependency.sh
+└── phase6/
     ├── verify.sh
-    └── verify-pjsip-dependency.sh
+    └── verify-audio-environment.sh
 ```
 
 ## Responsibilities
@@ -64,6 +67,12 @@ scripts/
 ./scripts/quality/verify-docs-structure.sh
 ./scripts/quality/verify-evidence-structure.sh
 ./scripts/phase5/verify.sh
+./scripts/phase6/verify.sh
 ```
+
+`phase6/verify.sh` first checks the audio environment, then reuses the Phase 5
+quality and regression gate and explicitly runs the RTP statistics and PJSUA2
+RTP diagnostics suites. It validates only automated checks; outgoing/incoming
+calls, audible two-way audio, and live RTP results remain manual gates.
 
 Phase-specific documentation under `docs/phaseN/` remains the authoritative source for each phase workflow and prerequisites.
