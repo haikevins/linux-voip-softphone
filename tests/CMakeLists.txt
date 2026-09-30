@@ -136,3 +136,17 @@ if(ENABLE_PJSIP)
         LABELS "pjsip;integration;cli"
     )
 endif()
+
+# Qt's rendering backend is software-only for this short, non-network smoke test.
+# It checks QML loading and ViewModel binding; real calls belong to later commits.
+if(ENABLE_QT_GUI)
+    add_test(
+        NAME QtGuiShellSmokeTest
+        COMMAND $<TARGET_FILE:voip_qt_gui> --smoke-test
+    )
+    set_tests_properties(QtGuiShellSmokeTest PROPERTIES
+        LABELS "qt;gui;smoke"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+        TIMEOUT 15
+    )
+endif()

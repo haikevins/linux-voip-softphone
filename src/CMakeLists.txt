@@ -109,3 +109,33 @@ if(ENABLE_PJSIP)
     project_set_warnings(voip_sip_listen)
     project_enable_sanitizers(voip_sip_listen)
 endif()
+
+# Phase 7 Commit 1: an optional Qt shell with an inert C++ ViewModel.
+# No SIP engine, credentials, or call-media objects are exposed to QML.
+if(ENABLE_QT_GUI)
+    qt_add_executable(voip_qt_gui
+        app/qt_gui_main.cpp
+        gui/GuiViewModel.cpp
+        gui/GuiViewModel.hpp
+    )
+
+    set_target_properties(voip_qt_gui PROPERTIES
+        OUTPUT_NAME "voip-qt-gui"
+        AUTOMOC ON
+    )
+
+    qt_add_resources(voip_qt_gui "phase7_gui_qml"
+        PREFIX "/"
+        FILES gui/Main.qml
+    )
+
+    target_link_libraries(voip_qt_gui
+        PRIVATE
+            voip::core
+            Qt6::Quick
+            Qt6::QuickControls2
+    )
+
+    project_set_warnings(voip_qt_gui)
+    project_enable_sanitizers(voip_qt_gui)
+endif()
