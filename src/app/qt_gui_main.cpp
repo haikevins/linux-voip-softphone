@@ -120,6 +120,10 @@ int main(int argc, char *argv[])
                          view_model.get(), [model = view_model.get()] {
                              static_cast<void>(model->manager().on_call_connected());
                          });
+        QObject::connect(backend.get(), &voip::gui::QtRegistrationBackend::rtpDiagnosticsUpdated,
+                         view_model.get(), &voip::gui::GuiViewModel::updateRtpDiagnostics);
+        QObject::connect(backend.get(), &voip::gui::QtRegistrationBackend::rtpDiagnosticsCleared,
+                         view_model.get(), &voip::gui::GuiViewModel::clearRtpDiagnostics);
         QObject::connect(
             backend.get(), &voip::gui::QtRegistrationBackend::callEnded, view_model.get(),
             [model = view_model.get()] { static_cast<void>(model->manager().on_call_ended()); });
@@ -146,7 +150,9 @@ int main(int argc, char *argv[])
         // No SIP adapter is ever created in the smoke-test mode.
         if (view_model->callActionsEnabled() || view_model->registrationActionsEnabled() ||
             engine.rootObjects().constFirst()->findChild<QObject *>(
-                QStringLiteral("destinationField")) == nullptr) {
+                QStringLiteral("destinationField")) == nullptr ||
+            engine.rootObjects().constFirst()->findChild<QObject *>(
+                QStringLiteral("rtpDiagnosticsPanel")) == nullptr) {
             return EXIT_FAILURE;
         }
         QTimer::singleShot(100, &application, &QCoreApplication::quit);

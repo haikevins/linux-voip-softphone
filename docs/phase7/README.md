@@ -2,45 +2,46 @@
 
 ## Status
 
-In progress. Commit 1 delivered the Qt dialer shell, Commit 2 the Qt-free `CallManager`, Commit 3 live SIP registration, Commit 4 outgoing SIP calls with two-way audio, and Commit 5 incoming calls. **Commit 6 separates SIP Decline from generic hangup and adds an active-call elapsed timer.** Continuous registration-health monitoring, mute/device controls, in-GUI RTP diagnostics and Phase 7 closure remain future work.
+In progress. Commit 1 delivered the Qt dialer shell, Commit 2 the Qt-free `CallManager`, Commit 3 live SIP registration, Commit 4 outgoing SIP calls with two-way audio, Commit 5 incoming calls, and Commit 6 explicit SIP Decline plus connected-call duration. **Commit 7 adds read-only live RTP/audio diagnostics to the Qt GUI while keeping all PJSUA2 access on the retained worker.** Continuous registration-health monitoring, mute/device controls and Phase 7 closure remain future work.
 
 ## Objective
 
-Polish the verified bidirectional desktop softphone without changing its single-account ownership model. Commit 6 makes incoming rejection explicit through every layer and gives the user a simple connected-call duration indicator. QML still never receives credentials, raw PJSIP objects or raw SIP URIs.
+Expose the RTP/audio evidence already available in the Phase 6 PJSUA2 diagnostics layer without moving SIP/media ownership into QML. During a connected call, the GUI should show a small live diagnostic snapshot for the active audio stream: codec, RX/TX packet counts, packet loss, receive jitter and RTCP round-trip time.
 
 ## Scope
 
-The combined `qt-pjsip-gui-debug` application started with `--sip-register USER SERVER [PORT]` can register, place outgoing calls, receive an INVITE, show the caller extension, answer it, explicitly decline it with SIP `603 Decline`, show elapsed connected time, and return to `Ready to call` after local or remote hangup. Qt-only and GUI-preview modes remain network-free.
+The combined `qt-pjsip-gui-debug` application started with `--sip-register USER SERVER [PORT]` can register, place and receive calls, answer/decline, show call duration, and now display live RTP/audio telemetry while the application state is `Connected`. Qt-only and GUI-preview modes remain network-free.
 
-An incoming caller is displayed only as a validated dialable user part (1–64 digits / `*` / `#` / `+`). Any remote URI that cannot be reduced safely is shown as `Unknown caller`. The GUI does not expose arbitrary SIP header text.
+Diagnostics are presentation-only. They do not alter call state, SIP signaling, media routing or recovery behavior. If a diagnostic read fails temporarily, the call continues and the last successfully published snapshot remains visible until a later update or call teardown. Only the first active audio stream is presented because Phase 7 supports one tracked audio call.
 
 ## Deliverables
 
-- `CallManager` adds `request_decline()` plus a dedicated `decline_actions_enabled` snapshot flag so incoming rejection is no longer routed through generic Hang up.
-- `QtRegistrationBackend` serializes a distinct decline command on the retained worker, mutually exclusive with Answer/Hang up.
-- `PjsipRegistrationSession` forwards Decline to the retained PJSUA2 call client.
-- `SipOutgoingCallClient::decline_incoming_call()` sends `603 Decline`; second simultaneous INVITEs still receive `486 Busy Here`, while Answer remains `200 OK`.
-- `GuiViewModel` exposes `callConnected`; QML uses it to show/reset an `mm:ss` elapsed timer only while audio-connected state is active.
-- Unit/fake-session tests verify the explicit decline path, no generic hangup on Decline, retained registration, and connected-state timer gating while preserving Commit 5 call flows.
+- `RegistrationSession` gains a Qt/PJSIP-neutral `RtpDiagnosticsSnapshot` read seam with a safe empty default for inert/fake sessions.
+- `PjsipRegistrationSession` maps the existing `SipOutgoingCallClient::rtp_diagnostics()` result into that snapshot and sanitizes the codec label before it crosses the GUI boundary.
+- `QtRegistrationBackend` samples diagnostics on the retained worker at most once per second after media connection and posts updates to the Qt thread with queued delivery.
+- Diagnostic read failures are non-fatal and never tear down an otherwise healthy call.
+- `GuiViewModel` exposes codec, RX/TX/lost packet counters, loss percentage, jitter and RTT as read-only QML properties and clears them when the call ends or fails.
+- `Main.qml` adds a `Live RTP / Audio` panel visible only while a connected call has a published diagnostic snapshot.
+- Qt fake-session tests verify worker-side sampling, UI-thread delivery, property values and deterministic clearing after disconnect.
 
 ## Architecture and design
 
 ```text
 QML
-  -> GuiViewModel                (Qt UI thread)
-  -> CallManager                 (Qt-free application state)
+  -> GuiViewModel                     (Qt UI thread)
+  -> CallManager                      (Qt-free application state)
   -> CallBackend
-  -> QtRegistrationBackend       (UI facade + retained std::jthread)
+  -> QtRegistrationBackend            (UI facade + retained std::jthread)
   -> RegistrationSession
   -> PjsipRegistrationSession
-  -> SipOutgoingCallClient       (retained Phase 6 PJSUA2 endpoint/account)
-       -> Account::onIncomingCall
-       -> PJSUA2 Call / audio bridge
+  -> SipOutgoingCallClient
+       -> existing PJSUA2 RTP diagnostics
+       -> active audio stream stats
 ```
 
-The historical class name `SipOutgoingCallClient` remains to avoid a broad Phase 6 API rename; in the GUI path it owns both directions for the single retained account. Commit 6 only adds an explicit incoming-decline operation to that retained owner.
+The historical class name `SipOutgoingCallClient` remains because the retained Phase 6 client now owns both incoming and outgoing calls for the single account. Commit 7 does not introduce a second media/session owner.
 
-The backend checks for an incoming offer while idle using bounded waits. Once an offer exists, it stays in the same worker call loop until the call is answered/declined/disconnected and the PJSUA2 call slot is safely released. Answer, Decline and Hang up are serialized as separate commands; Decline maps specifically to `603`. A second incoming INVITE while another call object exists is rejected as busy.
+`QtRegistrationBackend` samples only after `ConnectedWithMedia`. The worker reads the PJSUA2 stream statistics, converts them to the small `RtpDiagnosticsSnapshot`, and queues a signal to the Qt thread. QML never calls PJSUA2 directly and never receives PJSUA2 objects, SIP headers, credentials or raw remote URIs.
 
 ## Build and run
 
@@ -73,38 +74,35 @@ ctest --preset qt-pjsip-gui-debug \
 ./scripts/phase6/verify.sh
 ```
 
-The fake Qt tests never use a real SIP server. Passing them proves queued state/ownership behavior only; it does not prove live incoming signaling or audio.
+The fake Qt diagnostic test uses deterministic values and proves worker-to-UI ownership only. Live values must still be checked during a real Asterisk call.
 
-The manual incoming-call gate uses the same local Asterisk account setup already verified for Commit 4. After the GUI shows `Registered`, place a call **from the Redmi/Linphone endpoint to the ThinkPad extension** and verify the GUI shows `Incoming call` with the sanitized caller extension.
-
-Test both paths separately: on the Answer path, verify `Connected (audio active)`, two-way audio, the duration label advances once per second, Qt hangup and remote hangup, with each call returning to `Ready to call` and the timer resetting. On the Decline path, decline before answering and verify the Redmi stops ringing, Qt returns to `Ready to call`, and a later incoming or outgoing call still works without re-registration. Also test remote cancel before Answer; Qt must return to `Ready to call` rather than `Request failed`. If exact SIP semantics are being evidenced, confirm the generated final response is `603 Decline` from protocol logs rather than relying only on the caller UI wording.
+For the manual gate, establish either an outgoing or answered incoming call and confirm the `Live RTP / Audio` panel appears only after `Connected (audio active)`. Verify RX/TX counters increase during conversation, codec is populated, loss/jitter/RTT are finite non-negative values, and the panel disappears after local or remote hangup. Place another call without re-registering and confirm diagnostics repopulate for the new call.
 
 ## Evidence
 
-Record only summarized PASS/FAIL, automated test counts, GUI-visible state and sanitized extension/status. Do not commit SIP passwords, Digest headers, packet captures containing credentials, raw audio or unredacted SIP logs. Incoming peer text shown in QML is deliberately reduced to a dialable extension or `Unknown caller`.
+Record only summarized PASS/FAIL, automated test counts, GUI-visible state and the small numeric RTP snapshot. Do not commit SIP passwords, Digest headers, packet captures containing credentials, raw audio or unredacted SIP logs.
 
-Automated fake-session results are evidence for state/thread behavior only. Live Asterisk signaling and real two-way audio require the separate manual gate.
+The in-GUI values are an operational snapshot from PJSUA2/RTCP, not a substitute for Wireshark when packet-level evidence is required. A zero RTT or zero jitter early in a call may simply mean insufficient RTCP samples have accumulated yet.
 
 ## Interview focus
 
-Be able to explain why the GUI reuses one retained PJSUA2 account for registration and both call directions; why Answer, Decline and Hang up are separate application/backend commands; why `603 Decline` is sent only for an unanswered incoming offer; why the QML duration counter starts from application `Connected` rather than INVITE/Ringing time; why only one tracked call is supported; and why raw SIP URI text is sanitized before QML sees it.
+Be able to explain why RTP diagnostics are sampled on the existing SIP worker instead of from QML; why telemetry failures are non-fatal; why the GUI exposes a small sanitized snapshot rather than PJSUA2 structures; why the panel is gated by `Connected`; why counters are cleared at call teardown; and why the first active audio stream is sufficient for the current single-call scope.
 
 ## Exit criteria
 
-Commit 6 is complete only when both Qt build variants and inherited Phase 6 regression pass, followed by manual Asterisk checks for incoming ring, Answer, two-way audio, connected-time display/reset, Qt hangup, remote hangup, explicit Decline, remote cancel and another call on the same registration. Phase 7 remains open for diagnostics/remaining GUI work and milestone closure.
+Commit 7 is complete only when both Qt build variants and inherited Phase 6 regression pass, followed by a real Asterisk call showing live codec/counter/loss/jitter/RTT data, deterministic clearing after local/remote hangup, and diagnostics returning on a subsequent call without re-registration. Phase 7 remains open for the remaining GUI polish/health monitoring and milestone closure.
 
 ## References
 
 - `README_roadmap.md` — Phase 7 Qt/QML GUI
 - `docs/architecture/qt-qml.md`
 - `docs/architecture/audio-rtp.md`
-- `src/application/CallManager.hpp`
 - `src/gui/QtRegistrationBackend.hpp`
 - `src/gui/PjsipRegistrationSession.hpp`
+- `src/pjsip/Pjsua2RtpDiagnostics.hpp`
 - `src/pjsip/SipOutgoingCallClient.hpp`
-- `tests/unit/test_call_manager.cpp`
 - `tests/qt/test_qt_registration_backend.cpp`
 
 ## Next phase
 
-Add the remaining Phase 7 diagnostic presentation (notably in-GUI RTP/audio information) without changing the verified SIP account ownership model. Keep continuous registration-health monitoring and broader concurrency work separate unless explicitly designed and tested.
+Finish the remaining Phase 7 GUI reliability/polish work and then close the milestone. Keep continuous registration-health monitoring, mute/audio-device controls or broader concurrency changes as separately designed commits rather than mixing them into the RTP presentation path.

@@ -167,6 +167,56 @@ ApplicationWindow {
             }
 
             Rectangle {
+                id: rtpDiagnosticsPanel
+                objectName: "rtpDiagnosticsPanel"
+                visible: softphone.callConnected && softphone.rtpDiagnosticsAvailable
+                color: "#172033"
+                radius: 10
+                implicitHeight: rtpDiagnosticsColumn.implicitHeight + 24
+                Layout.fillWidth: true
+
+                ColumnLayout {
+                    id: rtpDiagnosticsColumn
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 6
+
+                    Label {
+                        text: qsTr("Live RTP / Audio")
+                        color: "#f9fafb"
+                        font.pixelSize: 16
+                        font.bold: true
+                        Layout.fillWidth: true
+                    }
+
+                    Label {
+                        text: qsTr("Codec: %1").arg(softphone.rtpCodec)
+                        color: "#d1d5db"
+                        Layout.fillWidth: true
+                    }
+
+                    Label {
+                        text: qsTr("Packets: RX %1   TX %2   Lost %3")
+                              .arg(softphone.rtpPacketsReceived)
+                              .arg(softphone.rtpPacketsSent)
+                              .arg(softphone.rtpPacketsLost)
+                        color: "#d1d5db"
+                        Layout.fillWidth: true
+                    }
+
+                    Label {
+                        text: qsTr("Loss: %1%   Jitter: %2 ms   RTT: %3 ms")
+                              .arg(softphone.rtpPacketLossPercent.toFixed(2))
+                              .arg(softphone.rtpJitterMs.toFixed(2))
+                              .arg(softphone.rtpRoundTripTimeMs.toFixed(2))
+                        color: "#93c5fd"
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                }
+            }
+
+            Rectangle {
                 objectName: "incomingCallPanel"
                 visible: softphone.incomingCall
                 color: "#1f2937"

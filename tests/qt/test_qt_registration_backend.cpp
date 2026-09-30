@@ -171,6 +171,7 @@ struct OutgoingFakeState
     std::atomic<int> call_count{0};
     std::atomic<int> hangup_count{0};
     std::atomic<int> stopped_count{0};
+    std::atomic<int> diagnostics_read_count{0};
     std::atomic<bool> remote_disconnected{false};
     std::atomic<bool> hung_up{false};
     std::atomic<bool> fail_next_call{false};
@@ -207,6 +208,18 @@ class OutgoingFakeSession final : public RegistrationSession
         state_->remote_disconnected = false;
         state_->hung_up = false;
         ++state_->call_count;
+    }
+    [[nodiscard]] RtpDiagnosticsSnapshot read_rtp_diagnostics() override
+    {
+        ++state_->diagnostics_read_count;
+        return {.available = true,
+                .codec = "PCMU",
+                .packets_received = 1200,
+                .packets_sent = 1180,
+                .packets_lost = 3,
+                .packet_loss_percent = 0.25,
+                .jitter_ms = 1.5,
+                .round_trip_time_ms = 0.8};
     }
     [[nodiscard]] CallProgress poll_call(std::chrono::milliseconds /*timeout*/) override
     {
@@ -294,6 +307,63 @@ TEST(QtRegistrationBackendTest, OutgoingCallAndHangupUseRetainedWorker)
         EXPECT_EQ(state->call_count.load(), 2);
     }
     EXPECT_EQ(state->stopped_count.load(), 1);
+}
+
+TEST(QtRegistrationBackendTest, ConnectedCallPublishesAndClearsRtpDiagnostics)
+{
+    auto state = std::make_shared<OutgoingFakeState>();
+    QtRegistrationBackend backend([state] { return std::make_unique<OutgoingFakeSession>(state); },
+                                  true);
+    GuiViewModel model(backend);
+    int endings = 0;
+    bool diagnostics_on_ui_thread = false;
+
+    QObject::connect(&backend, &QtRegistrationBackend::registrationFinished, &model,
+                     [&model](const bool success) {
+                         if (success) {
+                             static_cast<void>(model.manager().on_registration_succeeded());
+                         }
+                     });
+    QObject::connect(&backend, &QtRegistrationBackend::callConnected, &model,
+                     [&model] { static_cast<void>(model.manager().on_call_connected()); });
+    QObject::connect(&backend, &QtRegistrationBackend::rtpDiagnosticsUpdated, &model,
+                     [&model, &diagnostics_on_ui_thread](
+                         const QString &codec, const qulonglong received, const qulonglong sent,
+                         const qulonglong lost, const double loss_percent, const double jitter_ms,
+                         const double rtt_ms) {
+                         diagnostics_on_ui_thread =
+                             QThread::currentThread() == QCoreApplication::instance()->thread();
+                         model.updateRtpDiagnostics(codec, received, sent, lost, loss_percent,
+                                                    jitter_ms, rtt_ms);
+                     });
+    QObject::connect(&backend, &QtRegistrationBackend::rtpDiagnosticsCleared, &model,
+                     [&model] { model.clearRtpDiagnostics(); });
+    QObject::connect(&backend, &QtRegistrationBackend::callEnded, &model, [&model, &endings] {
+        ++endings;
+        static_cast<void>(model.manager().on_call_ended());
+    });
+
+    ASSERT_TRUE(model.registerAccount());
+    ASSERT_TRUE(wait_for_event([&model] { return model.callActionsEnabled(); }));
+    ASSERT_TRUE(model.startCall(QStringLiteral("1001")));
+    ASSERT_TRUE(wait_for_event([&model] { return model.callConnected(); }));
+    ASSERT_TRUE(wait_for_event([&model] { return model.rtpDiagnosticsAvailable(); }));
+
+    EXPECT_TRUE(diagnostics_on_ui_thread);
+    EXPECT_EQ(model.rtpCodec(), QStringLiteral("PCMU"));
+    EXPECT_EQ(model.rtpPacketsReceived(), 1200U);
+    EXPECT_EQ(model.rtpPacketsSent(), 1180U);
+    EXPECT_EQ(model.rtpPacketsLost(), 3U);
+    EXPECT_DOUBLE_EQ(model.rtpPacketLossPercent(), 0.25);
+    EXPECT_DOUBLE_EQ(model.rtpJitterMs(), 1.5);
+    EXPECT_DOUBLE_EQ(model.rtpRoundTripTimeMs(), 0.8);
+    EXPECT_GE(state->diagnostics_read_count.load(), 1);
+
+    state->remote_disconnected = true;
+    ASSERT_TRUE(wait_for_event([&endings] { return endings == 1; }));
+    EXPECT_FALSE(model.rtpDiagnosticsAvailable());
+    EXPECT_TRUE(model.rtpCodec().isEmpty());
+    EXPECT_EQ(model.rtpPacketsReceived(), 0U);
 }
 
 TEST(QtRegistrationBackendTest, RemoteHangupAfterConnectedMediaIsNotReportedAsFailure)

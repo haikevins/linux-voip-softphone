@@ -2,6 +2,8 @@
 
 #include "core/CallState.hpp"
 
+#include <utility>
+
 namespace voip::gui {
 
 GuiViewModel::GuiViewModel(QObject *parent) : QObject(parent)
@@ -131,6 +133,46 @@ bool GuiViewModel::callConnected() const
     return manager_.snapshot().state == CallState::Connected;
 }
 
+bool GuiViewModel::rtpDiagnosticsAvailable() const noexcept
+{
+    return rtp_diagnostics_available_;
+}
+
+QString GuiViewModel::rtpCodec() const
+{
+    return rtp_codec_;
+}
+
+qulonglong GuiViewModel::rtpPacketsReceived() const noexcept
+{
+    return rtp_packets_received_;
+}
+
+qulonglong GuiViewModel::rtpPacketsSent() const noexcept
+{
+    return rtp_packets_sent_;
+}
+
+qulonglong GuiViewModel::rtpPacketsLost() const noexcept
+{
+    return rtp_packets_lost_;
+}
+
+double GuiViewModel::rtpPacketLossPercent() const noexcept
+{
+    return rtp_packet_loss_percent_;
+}
+
+double GuiViewModel::rtpJitterMs() const noexcept
+{
+    return rtp_jitter_ms_;
+}
+
+double GuiViewModel::rtpRoundTripTimeMs() const noexcept
+{
+    return rtp_round_trip_time_ms_;
+}
+
 bool GuiViewModel::hangupActionsEnabled() const
 {
     const auto state = manager_.snapshot().state;
@@ -174,6 +216,36 @@ bool GuiViewModel::recoverCall()
 application::CallManager &GuiViewModel::manager() noexcept
 {
     return manager_;
+}
+
+void GuiViewModel::updateRtpDiagnostics(QString codec, const qulonglong packets_received,
+                                        const qulonglong packets_sent,
+                                        const qulonglong packets_lost,
+                                        const double packet_loss_percent, const double jitter_ms,
+                                        const double round_trip_time_ms)
+{
+    rtp_diagnostics_available_ = true;
+    rtp_codec_ = std::move(codec);
+    rtp_packets_received_ = packets_received;
+    rtp_packets_sent_ = packets_sent;
+    rtp_packets_lost_ = packets_lost;
+    rtp_packet_loss_percent_ = packet_loss_percent;
+    rtp_jitter_ms_ = jitter_ms;
+    rtp_round_trip_time_ms_ = round_trip_time_ms;
+    emit rtpDiagnosticsChanged();
+}
+
+void GuiViewModel::clearRtpDiagnostics()
+{
+    rtp_diagnostics_available_ = false;
+    rtp_codec_.clear();
+    rtp_packets_received_ = 0;
+    rtp_packets_sent_ = 0;
+    rtp_packets_lost_ = 0;
+    rtp_packet_loss_percent_ = 0.0;
+    rtp_jitter_ms_ = 0.0;
+    rtp_round_trip_time_ms_ = 0.0;
+    emit rtpDiagnosticsChanged();
 }
 
 } // namespace voip::gui

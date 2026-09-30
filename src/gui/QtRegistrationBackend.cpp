@@ -165,6 +165,41 @@ void QtRegistrationBackend::post_incoming_call(std::string peer)
         Qt::QueuedConnection));
 }
 
+void QtRegistrationBackend::post_rtp_diagnostics(RtpDiagnosticsSnapshot diagnostics)
+{
+    static_cast<void>(QMetaObject::invokeMethod(
+        this,
+        [this, diagnostics = std::move(diagnostics)] {
+            emit rtpDiagnosticsUpdated(QString::fromStdString(diagnostics.codec),
+                                       static_cast<qulonglong>(diagnostics.packets_received),
+                                       static_cast<qulonglong>(diagnostics.packets_sent),
+                                       static_cast<qulonglong>(diagnostics.packets_lost),
+                                       diagnostics.packet_loss_percent, diagnostics.jitter_ms,
+                                       diagnostics.round_trip_time_ms);
+        },
+        Qt::QueuedConnection));
+}
+
+void QtRegistrationBackend::publish_rtp_diagnostics_if_due(
+    RegistrationSession &session, std::chrono::steady_clock::time_point &next_update) noexcept
+{
+    const auto now = std::chrono::steady_clock::now();
+    if (now < next_update) {
+        return;
+    }
+    next_update = now + std::chrono::seconds{1};
+
+    try {
+        auto diagnostics = session.read_rtp_diagnostics();
+        if (diagnostics.available) {
+            post_rtp_diagnostics(std::move(diagnostics));
+        }
+    } catch (...) {
+        // RTP diagnostics are observational only. A telemetry read must never
+        // tear down an otherwise healthy SIP/audio call.
+    }
+}
+
 void QtRegistrationBackend::post_call_event(const WorkerEvent event)
 {
     static_cast<void>(QMetaObject::invokeMethod(
@@ -181,11 +216,13 @@ void QtRegistrationBackend::post_call_event(const WorkerEvent event)
             case WorkerEvent::Ended:
                 call_active_ = false;
                 incoming_call_active_ = false;
+                emit rtpDiagnosticsCleared();
                 emit callEnded();
                 break;
             case WorkerEvent::Failed:
                 call_active_ = false;
                 incoming_call_active_ = false;
+                emit rtpDiagnosticsCleared();
                 emit callFailed();
                 break;
             }
@@ -206,6 +243,7 @@ void QtRegistrationBackend::handle_outgoing_call(RegistrationSession &session,
     bool locally_cancelled = false;
     bool failed = false;
     bool ringing_reported = false;
+    auto next_diagnostics_update = std::chrono::steady_clock::now();
     try {
         session.start_call(destination);
         const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{30};
@@ -215,6 +253,7 @@ void QtRegistrationBackend::handle_outgoing_call(RegistrationSession &session,
                 session.hangup_call();
             }
             if (connected) {
+                publish_rtp_diagnostics_if_due(session, next_diagnostics_update);
                 if (session.wait_for_disconnection(std::chrono::milliseconds{150})) {
                     break;
                 }
@@ -283,6 +322,7 @@ void QtRegistrationBackend::handle_incoming_call(RegistrationSession &session,
     bool failed = false;
     bool locally_cancelled = false;
     auto answer_deadline = std::chrono::steady_clock::time_point::max();
+    auto next_diagnostics_update = std::chrono::steady_clock::now();
 
     try {
         if (!notice.disconnected) {
@@ -301,6 +341,7 @@ void QtRegistrationBackend::handle_incoming_call(RegistrationSession &session,
                 }
 
                 if (connected) {
+                    publish_rtp_diagnostics_if_due(session, next_diagnostics_update);
                     if (session.wait_for_disconnection(std::chrono::milliseconds{150})) {
                         break;
                     }

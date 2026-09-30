@@ -31,6 +31,7 @@ class PjsipRegistrationSession final : public RegistrationSession
     [[nodiscard]] IncomingCallNotice poll_incoming_call(std::chrono::milliseconds timeout) override;
     void answer_call() override;
     void decline_call() override;
+    [[nodiscard]] RtpDiagnosticsSnapshot read_rtp_diagnostics() override;
     [[nodiscard]] CallProgress poll_call(std::chrono::milliseconds timeout) override;
     void hangup_call() noexcept override;
     [[nodiscard]] bool wait_for_disconnection(std::chrono::milliseconds timeout) override;
@@ -38,6 +39,7 @@ class PjsipRegistrationSession final : public RegistrationSession
 
   private:
     [[nodiscard]] static std::string sanitize_peer(std::string_view remote_uri);
+    [[nodiscard]] static std::string sanitize_codec(std::string_view codec);
 
     const std::string server_;
     const std::uint16_t server_port_;

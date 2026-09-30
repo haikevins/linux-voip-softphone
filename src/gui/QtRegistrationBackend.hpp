@@ -7,6 +7,7 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -35,6 +36,18 @@ struct IncomingCallNotice
     std::string peer;
 };
 
+struct RtpDiagnosticsSnapshot
+{
+    bool available{false};
+    std::string codec;
+    std::uint64_t packets_received{0};
+    std::uint64_t packets_sent{0};
+    std::uint64_t packets_lost{0};
+    double packet_loss_percent{0.0};
+    double jitter_ms{0.0};
+    double round_trip_time_ms{0.0};
+};
+
 class RegistrationSession
 {
   public:
@@ -61,6 +74,10 @@ class RegistrationSession
     }
     virtual void answer_call() {}
     virtual void decline_call() {}
+    [[nodiscard]] virtual RtpDiagnosticsSnapshot read_rtp_diagnostics()
+    {
+        return {};
+    }
     [[nodiscard]] virtual CallProgress poll_call(std::chrono::milliseconds /*timeout*/)
     {
         return CallProgress::Failed;
@@ -105,6 +122,10 @@ class QtRegistrationBackend final : public QObject, public application::CallBack
     void incomingCall(QString peer); // Sanitized extension/label only, never a raw SIP URI.
     void callRinging();
     void callConnected(); // Only after PJSIP confirms BOTH call and audio media.
+    void rtpDiagnosticsUpdated(QString codec, qulonglong packetsReceived, qulonglong packetsSent,
+                               qulonglong packetsLost, double packetLossPercent, double jitterMs,
+                               double roundTripTimeMs);
+    void rtpDiagnosticsCleared();
     void callEnded();
     void callFailed(); // No untrusted SIP error strings escape the worker.
 
@@ -125,6 +146,10 @@ class QtRegistrationBackend final : public QObject, public application::CallBack
     void post_registration(bool registered);
     void post_incoming_call(std::string peer);
     void post_call_event(WorkerEvent event);
+    void post_rtp_diagnostics(RtpDiagnosticsSnapshot diagnostics);
+    void
+    publish_rtp_diagnostics_if_due(RegistrationSession &session,
+                                   std::chrono::steady_clock::time_point &next_update) noexcept;
     [[nodiscard]] bool take_answer();
     [[nodiscard]] bool take_decline();
     [[nodiscard]] bool take_hangup();

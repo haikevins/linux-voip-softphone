@@ -80,6 +80,24 @@ void PjsipRegistrationSession::decline_call()
     client_.decline_incoming_call();
 }
 
+RtpDiagnosticsSnapshot PjsipRegistrationSession::read_rtp_diagnostics()
+{
+    const auto diagnostics = client_.rtp_diagnostics();
+    if (diagnostics.empty()) {
+        return {};
+    }
+
+    const auto &media = diagnostics.front();
+    return {.available = true,
+            .codec = sanitize_codec(media.codec),
+            .packets_received = media.receive.packets_received,
+            .packets_sent = media.packets_sent,
+            .packets_lost = media.receive.packets_lost,
+            .packet_loss_percent = media.receive.packet_loss_percent,
+            .jitter_ms = media.receive.jitter_ms,
+            .round_trip_time_ms = media.round_trip_time_ms};
+}
+
 CallProgress PjsipRegistrationSession::poll_call(const std::chrono::milliseconds timeout)
 {
     const auto result = client_.wait_for_call(timeout);
@@ -114,6 +132,20 @@ bool PjsipRegistrationSession::wait_for_disconnection(const std::chrono::millise
 bool PjsipRegistrationSession::release_disconnected_call()
 {
     return client_.release_disconnected_call();
+}
+
+std::string PjsipRegistrationSession::sanitize_codec(const std::string_view codec)
+{
+    if (codec.empty() || codec.size() > 32U) {
+        return "Unknown";
+    }
+
+    const auto safe = std::all_of(codec.begin(), codec.end(), [](const char value) {
+        return (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z') ||
+               (value >= '0' && value <= '9') || value == '/' || value == '-' || value == '_' ||
+               value == '.' || value == '+';
+    });
+    return safe ? std::string{codec} : std::string{"Unknown"};
 }
 
 std::string PjsipRegistrationSession::sanitize_peer(const std::string_view remote_uri)
