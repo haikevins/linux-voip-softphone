@@ -29,6 +29,21 @@ class SipOutgoingCallClient::CallAccount final : public pj::Account
         }
     }
 
+    void onIncomingCall(pj::OnIncomingCallParam &parameter) override
+    {
+        const std::lock_guard callback_lock{owner_.incoming_callback_mutex_};
+
+        try {
+            owner_.on_incoming_call(*this, parameter.callId);
+        } catch (const pj::Error &error) {
+            owner_.on_incoming_callback_error(error.info());
+        } catch (const std::exception &error) {
+            owner_.on_incoming_callback_error(error.what());
+        } catch (...) {
+            owner_.on_incoming_callback_error("unknown incoming call callback failure");
+        }
+    }
+
   private:
     SipOutgoingCallClient &owner_;
 };
@@ -38,6 +53,10 @@ class SipOutgoingCallClient::TrackedCall final : public pj::Call
   public:
     TrackedCall(pj::Account &account, SipOutgoingCallClient &owner)
         : pj::Call(account), owner_(owner)
+    {}
+
+    TrackedCall(pj::Account &account, SipOutgoingCallClient &owner, const int call_id)
+        : pj::Call(account, call_id), owner_(owner)
     {}
 
     void onCallState(pj::OnCallStateParam & /*parameter*/) override
@@ -91,6 +110,16 @@ SipOutgoingCallClient::~SipOutgoingCallClient()
     stop();
 }
 
+void SipOutgoingCallClient::reset_call_state()
+{
+    const std::lock_guard lock{call_mutex_};
+    call_result_ = {};
+    incoming_complete_ = false;
+    incoming_received_ = false;
+    call_complete_ = false;
+    call_disconnected_ = false;
+}
+
 void SipOutgoingCallClient::start()
 {
     if (started_) {
@@ -110,12 +139,7 @@ void SipOutgoingCallClient::start()
         registration_result_ = {};
         registration_complete_ = false;
     }
-    {
-        const std::lock_guard lock{call_mutex_};
-        call_result_ = {};
-        call_complete_ = false;
-        call_disconnected_ = false;
-    }
+    reset_call_state();
 
     try {
         endpoint_ = std::make_unique<pj::Endpoint>();
@@ -150,20 +174,18 @@ void SipOutgoingCallClient::start()
 
 void SipOutgoingCallClient::stop() noexcept
 {
+    if (endpoint_ == nullptr && !library_created_) {
+        return;
+    }
     hangup();
 
-    // wait_for_disconnection() may wake while PJSUA2 is still executing
-    // TrackedCall::onCallState() on its worker thread. Do not destroy the
-    // Call wrapper until that callback has fully returned.
     {
-        const std::lock_guard callback_lock{call_callback_mutex_};
+        const std::lock_guard incoming_callback_lock{incoming_callback_mutex_};
+        const std::lock_guard call_callback_lock{call_callback_mutex_};
+        const std::lock_guard call_object_lock{call_object_mutex_};
         call_.reset();
     }
 
-    // PJSUA reports DISCONNECTED before the hangup transaction and call-slot
-    // cleanup have necessarily completed. pjsua_call_get_count() includes
-    // calls that are no longer active but are still being torn down, so wait
-    // for the slot to be released before deleting the account.
     static_cast<void>(wait_for_call_cleanup(std::chrono::seconds{2}));
     static_cast<void>(shutdown_account_safely());
     account_.reset();
@@ -172,13 +194,14 @@ void SipOutgoingCallClient::stop() noexcept
         try {
             endpoint_->libDestroy();
         } catch (...) {
-            std::fputs("PJSIP cleanup failed during outgoing call shutdown\n", stderr);
+            std::fputs("PJSIP cleanup failed during call-session shutdown\n", stderr);
         }
     }
 
     endpoint_.reset();
     library_created_ = false;
     started_ = false;
+    reset_call_state();
 }
 
 RegistrationResult
@@ -220,17 +243,13 @@ void SipOutgoingCallClient::make_call(const std::string &destination_uri)
             throw std::logic_error("SIP account must be registered before placing a call");
         }
     }
+
+    const std::lock_guard call_object_lock{call_object_mutex_};
     if (call_ != nullptr) {
-        throw std::logic_error("an outgoing call is already active");
+        throw std::logic_error("a SIP call is already active");
     }
 
-    {
-        const std::lock_guard lock{call_mutex_};
-        call_result_ = {};
-        call_complete_ = false;
-        call_disconnected_ = false;
-    }
-
+    reset_call_state();
     call_ = std::make_unique<TrackedCall>(*account_, *this);
     try {
         const pj::CallOpParam parameter{true};
@@ -241,10 +260,85 @@ void SipOutgoingCallClient::make_call(const std::string &destination_uri)
     }
 }
 
+IncomingCallOfferResult
+SipOutgoingCallClient::wait_for_incoming_call(const std::chrono::milliseconds timeout)
+{
+    if (!started_) {
+        throw std::logic_error("SIP call client is not started");
+    }
+    if (timeout <= std::chrono::milliseconds::zero()) {
+        throw std::invalid_argument("incoming call timeout must be positive");
+    }
+
+    std::unique_lock lock{call_mutex_};
+    const auto completed =
+        call_changed_.wait_for(lock, timeout, [this] { return incoming_complete_; });
+
+    IncomingCallOfferResult result;
+    result.received = incoming_received_;
+    result.disconnected = call_result_.disconnected;
+    result.sip_status_code = call_result_.sip_status_code;
+    result.state = call_result_.state;
+    result.reason = call_result_.reason;
+    result.remote_uri = call_result_.remote_uri;
+    if (!completed) {
+        result.timed_out = true;
+        result.reason = "incoming call timed out";
+    }
+    return result;
+}
+
+void SipOutgoingCallClient::answer_incoming_call()
+{
+    {
+        const std::lock_guard lock{call_mutex_};
+        if (!incoming_received_) {
+            throw std::logic_error("no incoming call is waiting to be answered");
+        }
+        if (call_disconnected_) {
+            throw std::logic_error("incoming call disconnected before it could be answered");
+        }
+    }
+
+    const std::lock_guard call_object_lock{call_object_mutex_};
+    if (call_ == nullptr) {
+        throw std::logic_error("incoming call object is not available");
+    }
+
+    pj::CallOpParam parameter;
+    parameter.statusCode = PJSIP_SC_OK;
+    call_->answer(parameter);
+}
+
+void SipOutgoingCallClient::decline_incoming_call()
+{
+    {
+        const std::lock_guard lock{call_mutex_};
+        if (!incoming_received_) {
+            throw std::logic_error("no incoming call is waiting to be declined");
+        }
+        if (call_disconnected_) {
+            throw std::logic_error("incoming call disconnected before it could be declined");
+        }
+    }
+
+    const std::lock_guard call_object_lock{call_object_mutex_};
+    if (call_ == nullptr) {
+        throw std::logic_error("incoming call object is not available");
+    }
+
+    pj::CallOpParam parameter;
+    parameter.statusCode = PJSIP_SC_DECLINE;
+    call_->answer(parameter);
+}
+
 OutgoingCallResult SipOutgoingCallClient::wait_for_call(const std::chrono::milliseconds timeout)
 {
-    if (call_ == nullptr) {
-        throw std::logic_error("no outgoing call has been started");
+    {
+        const std::lock_guard call_object_lock{call_object_mutex_};
+        if (call_ == nullptr) {
+            throw std::logic_error("no SIP call is active");
+        }
     }
     if (timeout <= std::chrono::milliseconds::zero()) {
         throw std::invalid_argument("call timeout must be positive");
@@ -270,8 +364,9 @@ std::vector<RtpMediaDiagnostics> SipOutgoingCallClient::rtp_diagnostics()
     }
 
     const std::lock_guard callback_lock{call_callback_mutex_};
+    const std::lock_guard call_object_lock{call_object_mutex_};
     if (call_ == nullptr) {
-        throw std::logic_error("no outgoing call is available for RTP diagnostics");
+        throw std::logic_error("no call is available for RTP diagnostics");
     }
 
     return read_active_audio_rtp_diagnostics(*call_);
@@ -279,15 +374,16 @@ std::vector<RtpMediaDiagnostics> SipOutgoingCallClient::rtp_diagnostics()
 
 void SipOutgoingCallClient::hangup() noexcept
 {
-    if (call_ == nullptr) {
-        return;
-    }
-
     {
         const std::lock_guard lock{call_mutex_};
         if (call_disconnected_) {
             return;
         }
+    }
+
+    const std::lock_guard call_object_lock{call_object_mutex_};
+    if (call_ == nullptr) {
+        return;
     }
 
     try {
@@ -308,12 +404,40 @@ bool SipOutgoingCallClient::wait_for_disconnection(const std::chrono::millisecon
     return call_changed_.wait_for(lock, timeout, [this] { return call_disconnected_; });
 }
 
+bool SipOutgoingCallClient::release_disconnected_call()
+{
+    {
+        const std::lock_guard call_object_lock{call_object_mutex_};
+        if (call_ == nullptr) {
+            return true;
+        }
+    }
+    {
+        const std::lock_guard lock{call_mutex_};
+        if (!call_disconnected_) {
+            return false;
+        }
+    }
+    if (!wait_for_call_cleanup(std::chrono::seconds{2})) {
+        return false;
+    }
+
+    {
+        const std::lock_guard incoming_callback_lock{incoming_callback_mutex_};
+        const std::lock_guard callback_lock{call_callback_mutex_};
+        const std::lock_guard call_object_lock{call_object_mutex_};
+        call_.reset();
+    }
+    reset_call_state();
+    return true;
+}
+
 bool SipOutgoingCallClient::wait_for_call_cleanup(const std::chrono::milliseconds timeout) noexcept
 {
     const auto deadline = std::chrono::steady_clock::now() + timeout;
     while (pjsua_call_get_count() != 0U) {
         if (std::chrono::steady_clock::now() >= deadline) {
-            std::fputs("PJSIP call slot remained busy during outgoing call shutdown\n", stderr);
+            std::fputs("PJSIP call slot remained busy during call-session cleanup\n", stderr);
             return false;
         }
 
@@ -339,7 +463,7 @@ bool SipOutgoingCallClient::shutdown_account_safely() noexcept
         std::fprintf(stderr, "PJSIP account shutdown failed: %s\n", error.info().c_str());
         return false;
     } catch (...) {
-        std::fputs("PJSIP account shutdown failed during outgoing call cleanup\n", stderr);
+        std::fputs("PJSIP account shutdown failed during call-session cleanup\n", stderr);
         return false;
     }
 }
@@ -375,8 +499,83 @@ void SipOutgoingCallClient::on_registration_callback_error(std::string reason) n
         }
         registration_changed_.notify_all();
     } catch (...) {
-        std::fputs("PJSIP outgoing registration callback error handling failed\n", stderr);
+        std::fputs("PJSIP registration callback error handling failed\n", stderr);
         registration_changed_.notify_all();
+    }
+}
+
+void SipOutgoingCallClient::on_incoming_call(pj::Account &account, const int call_id)
+{
+    std::string remote_uri;
+    std::string state;
+    int status_code{0};
+    std::string reason;
+
+    {
+        const std::lock_guard call_object_lock{call_object_mutex_};
+        if (call_ != nullptr) {
+            pj::Call rejected_call{account, call_id};
+            pj::CallOpParam busy_parameter;
+            busy_parameter.statusCode = PJSIP_SC_BUSY_HERE;
+            rejected_call.answer(busy_parameter);
+            return;
+        }
+
+        reset_call_state();
+        call_ = std::make_unique<TrackedCall>(account, *this, call_id);
+        const auto info = call_->getInfo();
+        remote_uri = info.remoteUri;
+        state = info.stateText;
+        status_code = static_cast<int>(info.lastStatusCode);
+        reason = info.lastReason;
+
+        pj::CallOpParam ringing_parameter;
+        ringing_parameter.statusCode = PJSIP_SC_RINGING;
+        call_->answer(ringing_parameter);
+    }
+
+    {
+        const std::lock_guard lock{call_mutex_};
+        incoming_received_ = true;
+        incoming_complete_ = true;
+        call_result_.timed_out = false;
+        if (call_result_.sip_status_code == 0) {
+            call_result_.sip_status_code = status_code;
+        }
+        if (call_result_.state.empty()) {
+            call_result_.state = std::move(state);
+        }
+        if (call_result_.reason.empty()) {
+            call_result_.reason = std::move(reason);
+        }
+        if (call_result_.remote_uri.empty()) {
+            call_result_.remote_uri = std::move(remote_uri);
+        }
+    }
+
+    call_changed_.notify_all();
+}
+
+void SipOutgoingCallClient::on_incoming_callback_error(std::string reason) noexcept
+{
+    try {
+        {
+            const std::lock_guard lock{call_mutex_};
+            incoming_received_ = false;
+            incoming_complete_ = true;
+            call_result_.connected = false;
+            call_result_.disconnected = false;
+            call_result_.media_connected = false;
+            call_result_.timed_out = false;
+            call_result_.sip_status_code = 0;
+            call_result_.state = "ERROR";
+            call_result_.reason = std::move(reason);
+            call_complete_ = true;
+        }
+        call_changed_.notify_all();
+    } catch (...) {
+        std::fputs("PJSIP incoming callback error handling failed\n", stderr);
+        call_changed_.notify_all();
     }
 }
 

@@ -1,0 +1,38 @@
+Phase 7 live RTP/audio diagnostics — sanitized representative samples
+====================================================================
+
+Purpose
+-------
+Record representative values observed while validating the Qt `Live RTP / Audio` panel. These are snapshots from the local lab, not performance guarantees.
+
+Incoming/answered call sample
+-----------------------------
+Negotiated audio: PCMU @ 8 kHz, sendrecv
+Observed call time at teardown: approximately 50 seconds
+RX: approximately 2.4K packets, 394.2 KB payload accounting
+TX: approximately 2.2K packets, 367.3 KB payload accounting
+Reported receive packet loss: 0 (0.0%)
+Receive jitter: average approximately 1.246 ms, max approximately 6.750 ms
+RTT: average approximately 0.659 ms, max approximately 1.205 ms
+
+Outgoing/reuse call sample
+--------------------------
+Negotiated audio: PCMU @ 8 kHz, sendrecv
+Observed call time at snapshot: approximately 13 seconds
+RX: 640 packets, 102.4 KB payload accounting
+TX: 698 packets, 111.6 KB payload accounting
+Reported receive packet loss: 0 (0.0%)
+Receive jitter: average approximately 0.347 ms, max approximately 0.625 ms
+RTT: average approximately 0.694 ms, max approximately 1.037 ms
+
+UI behavior
+-----------
+The operator confirmed that RX/TX counters increased while speaking, codec/loss/jitter/RTT were displayed, the panel disappeared after teardown, and a later call on the same registration published a fresh snapshot.
+
+Limitations
+-----------
+These are application/PJSUA2 runtime snapshots, not a replacement for packet-level Wireshark analysis. Zero reported loss in these samples does not establish zero loss for all calls, all streams, or other networks.
+
+Security/redaction
+------------------
+Peer IP addresses, ports, raw SIP headers, credentials, and audio payloads are omitted.

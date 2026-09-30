@@ -82,6 +82,14 @@ bool CallStateMachine::handle(const Event &event)
                 last_error_ = failed.reason;
                 return transition_to(CallState::Failed);
             },
+            [this](const RecoverCallRequested &) {
+                if (!transition_to(CallState::Ready)) {
+                    return false;
+                }
+                peer_.reset();
+                last_error_.reset();
+                return true;
+            },
             [this](const ResetRequested &) {
                 if (!transition_to(CallState::Idle)) {
                     return false;

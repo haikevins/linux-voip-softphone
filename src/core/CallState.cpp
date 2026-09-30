@@ -49,7 +49,7 @@ bool can_transition(const StateTransition transition) noexcept
     case CallState::Terminating:
         return to == CallState::Ready || to == CallState::Failed;
     case CallState::Failed:
-        return to == CallState::Idle || to == CallState::Registering;
+        return to == CallState::Idle || to == CallState::Registering || to == CallState::Ready;
     }
 
     return false;

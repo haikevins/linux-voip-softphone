@@ -1,4 +1,5 @@
 add_executable(unit_tests
+    unit/test_call_manager.cpp
     unit/test_audio_device_selection.cpp
     unit/test_build_info.cpp
     unit/test_call_state.cpp
@@ -134,5 +135,38 @@ if(ENABLE_PJSIP)
     )
     set_tests_properties(PjsipCliContractIntegrationTest PROPERTIES
         LABELS "pjsip;integration;cli"
+    )
+endif()
+
+# Qt-only registration bridge tests use injected fake sessions; no network or
+# real SIP account is required, including with ENABLE_PJSIP=OFF.
+if(ENABLE_QT_GUI)
+    add_executable(qt_registration_backend_tests
+        qt/test_qt_registration_backend.cpp
+    )
+    target_link_libraries(qt_registration_backend_tests PRIVATE
+        voip_gui_bridge
+        Qt6::Core
+        GTest::gtest
+    )
+    project_set_warnings(qt_registration_backend_tests)
+    project_enable_sanitizers(qt_registration_backend_tests)
+    add_test(NAME QtRegistrationBackendTest
+        COMMAND $<TARGET_FILE:qt_registration_backend_tests>
+    )
+    set_tests_properties(QtRegistrationBackendTest PROPERTIES LABELS "qt;gui;unit" TIMEOUT 20)
+endif()
+
+# Qt's rendering backend is software-only for this short, non-network smoke test.
+# It checks QML loading and ViewModel binding; real calls belong to later commits.
+if(ENABLE_QT_GUI)
+    add_test(
+        NAME QtGuiShellSmokeTest
+        COMMAND $<TARGET_FILE:voip_qt_gui> --smoke-test
+    )
+    set_tests_properties(QtGuiShellSmokeTest PROPERTIES
+        LABELS "qt;gui;smoke"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+        TIMEOUT 15
     )
 endif()

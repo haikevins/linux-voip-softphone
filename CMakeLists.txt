@@ -17,6 +17,7 @@ option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
 option(ENABLE_CLANG_TIDY "Run clang-tidy during compilation" OFF)
 option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 option(ENABLE_PJSIP "Enable PJSIP/PJSUA2 integration" OFF)
+option(ENABLE_QT_GUI "Build the Phase 7 Qt/QML GUI shell" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -29,6 +30,10 @@ project_enable_clang_tidy()
 
 if(ENABLE_PJSIP)
     project_setup_pjsip_dependency()
+endif()
+
+if(ENABLE_QT_GUI)
+    find_package(Qt6 6.2 REQUIRED COMPONENTS Quick QuickControls2)
 endif()
 
 add_subdirectory(src)

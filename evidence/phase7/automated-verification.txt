@@ -1,0 +1,107 @@
+Phase 7 final automated verification summary
+============================================
+
+Implementation checkpoint: abb0b27
+Branch at test time: phase/7-qt-gui
+Scope: Commit 7 implementation before the separate Phase 7 closure documentation commit
+
+Documentation structure verification: PASS
+
+Qt-only selected gate:
+  18/18 tests passed
+  CallManager tests: PASS
+  QtRegistrationBackendTest: PASS
+  QtGuiShellSmokeTest: PASS
+
+Qt + PJSIP selected gate:
+  PJSIP dependency: libpjproject 2.17 detected
+  18/18 tests passed
+  CallManager tests: PASS
+  QtRegistrationBackendTest: PASS
+  QtGuiShellSmokeTest: PASS
+
+Inherited Phase 6 regression wrapper:
+  45/45 tests passed
+  133/133 tests passed
+  133/133 tests passed
+  88/88 tests passed
+  Phase 5 automated verification: PASS
+  4/4 tests passed
+  3/3 tests passed
+  Phase 6 automated verification: PASS
+
+git diff --check: PASS
+
+Observed non-blocking environment warnings:
+  XKB development library not found by Qt configure.
+  qmlimportscanner reported missing QtQml qmldir entries.
+  Neither warning prevented configure, link, or the selected tests from passing.
+
+This file records observed output only. It does not contain credentials or raw SIP traffic.
+
+===============================================================================
+PHASE7_POST_CLOSURE_UPDATE_2026-10-01
+OUTGOING REMOTE-REJECTION REGRESSION
+===============================================================================
+
+Production correction:
+
+    src/gui/QtRegistrationBackend.cpp
+
+Outgoing CallProgress::Disconnected is classified as a failure only when all
+of the following are true:
+
+    - the call was not locally cancelled;
+    - the call was not connected;
+    - Ringing was never reported.
+
+Final condition:
+
+    failed = !locally_cancelled && !connected && !ringing_reported;
+
+This preserves technical setup failures while treating:
+
+    Ringing -> remote rejection -> Disconnected
+
+as a normal call end.
+
+Regression coverage added:
+
+    QtRegistrationBackendTest.RemoteRejectAfterRingingIsNotReportedAsFailure
+
+The fake outgoing registration session explicitly models:
+
+    CallProgress::Ringing
+        ->
+    CallProgress::Disconnected
+
+Assertions verify:
+
+    - callEnded is emitted;
+    - callFailed is not emitted;
+    - registration is still Registered;
+    - call status returns to Ready to call;
+    - call actions are enabled;
+    - recovery actions are not enabled;
+    - no re-registration occurs.
+
+Dedicated regression test:
+
+    [ RUN      ] QtRegistrationBackendTest.RemoteRejectAfterRingingIsNotReportedAsFailure
+    [       OK ] QtRegistrationBackendTest.RemoteRejectAfterRingingIsNotReportedAsFailure
+    [  PASSED  ] 1 test.
+
+Full Qt/PJSIP debug test suite after rebuild:
+
+    100% tests passed, 0 tests failed out of 135
+
+Relevant CTest entries:
+
+    QtRegistrationBackendTest  Passed
+    QtGuiShellSmokeTest        Passed
+
+Hotfix implementation commit:
+
+    c068d2c fix(phase7): handle remote rejection after ringing
+
+RESULT: PASS

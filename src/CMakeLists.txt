@@ -1,4 +1,5 @@
 add_library(voip_core
+    application/CallManager.cpp
     audio/AudioDeviceSelection.cpp
     core/BuildInfo.cpp
     core/CallState.cpp
@@ -108,4 +109,53 @@ if(ENABLE_PJSIP)
 
     project_set_warnings(voip_sip_listen)
     project_enable_sanitizers(voip_sip_listen)
+endif()
+
+# Phase 7 Commit 3: Qt bridge is testable without an actual SIP server.
+# Production PJSIP registration is enabled only when both options are ON.
+if(ENABLE_QT_GUI)
+    add_library(voip_gui_bridge
+        gui/GuiViewModel.cpp
+        gui/GuiViewModel.hpp
+        gui/QtRegistrationBackend.cpp
+        gui/QtRegistrationBackend.hpp
+    )
+    set_target_properties(voip_gui_bridge PROPERTIES AUTOMOC ON)
+    target_link_libraries(voip_gui_bridge PUBLIC voip::core Qt6::Core)
+    target_include_directories(voip_gui_bridge PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    project_set_warnings(voip_gui_bridge)
+    project_enable_sanitizers(voip_gui_bridge)
+
+    qt_add_executable(voip_qt_gui
+        app/qt_gui_main.cpp
+    )
+
+    set_target_properties(voip_qt_gui PROPERTIES
+        OUTPUT_NAME "voip-qt-gui"
+        AUTOMOC ON
+    )
+
+    qt_add_resources(voip_qt_gui "phase7_gui_qml"
+        PREFIX "/"
+        FILES gui/Main.qml
+    )
+
+    target_link_libraries(voip_qt_gui
+        PRIVATE
+            voip_gui_bridge
+            Qt6::Quick
+            Qt6::QuickControls2
+    )
+
+    if(ENABLE_PJSIP)
+        target_sources(voip_qt_gui PRIVATE
+            gui/PjsipRegistrationSession.cpp
+            gui/PjsipRegistrationSession.hpp
+        )
+        target_link_libraries(voip_qt_gui PRIVATE voip::pjsip)
+        target_compile_definitions(voip_qt_gui PRIVATE VOIP_GUI_WITH_PJSIP=1)
+    endif()
+
+    project_set_warnings(voip_qt_gui)
+    project_enable_sanitizers(voip_qt_gui)
 endif()
