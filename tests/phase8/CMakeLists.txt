@@ -96,4 +96,10 @@ if(NOT PHASE8_ENABLE_TSAN)
     # from the six-C++-test TSan contract; it does not call live PJSUA2.
     phase8_add_test(phase8_pjsip_shutdown_failure_paths_tests
         test_pjsip_shutdown_failure_paths.cpp Phase8PjsipShutdownFailurePathsTest)
+
+    # Commit 16: separate a synthetic external callback-source drain from the
+    # existing local CallbackActivityGate. This is a model, not a PJSUA2 proof.
+    # Keep the isolated Clang18 TSan gate at six pre-existing C++ tests.
+    phase8_add_test(phase8_pjsip_callback_ingress_races_tests
+        test_pjsip_callback_ingress_races.cpp Phase8PjsipCallbackIngressRacesTest)
 endif()

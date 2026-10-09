@@ -1,0 +1,98 @@
+Phase 8 — Commit 16 synthetic external callback ingress race model
+====================================================================
+Baseline: Commit 15 subject test(phase8): cover PJSIP shutdown failure paths
+Parent of Commit 15: a9ba51f (Commit 14)
+Feature branch: phase/8-multithreading
+
+SCOPE:
+  One modified test CMake file; one new C++ test; one new executable
+  verification script; one new documentation file; this evidence file.
+  Production Sip*CallClient and PJSUA2 code unchanged.
+
+TEST-ONLY MODEL:
+  Independent external callback admission + drain and local gate closed/empty.
+  Four preconditions including call slots and account shutdown.
+  Nine scenarios including two deterministic threaded race schedules and
+  exhaustive sixteen-state fail-closed truth table.
+
+SANDBOX PREPARATION (not maintainer ThinkPad):
+  Baseline test CMake SHA: PASS (reconstructed Commit 15 overlay)
+  Focused standalone CMake configure/build + CTest 9/9: PASS
+  New synthetic callback ingress target: PASS
+  Clang++ -Wall/-Wextra/-Wpedantic/-Werror: PASS
+  Synthetic ingress test repeated 200 times: PASS
+  Final ZIP 5-file manifest/integrity: PASS
+  Synthetic fixture staged-content byte comparison: PASS
+  Synthetic fixture git diff --cached --check: PASS
+
+THINKPAD ACCEPTANCE (update ONLY from observed local logs):
+  Branch + HEAD/parent + origin parity and clean baseline: PASS
+  ZIP SHA256 / integrity / exact manifest: PASS
+  clang-format 18 CI gate: PASS
+  clang-tidy 18 CI preset: PASS
+  Focused+canonical ingress-race model gate: PASS
+  Commit 15 shutdown failure-path model gate: PASS
+  Focused Phase 8 CTest 9/9: PASS
+  Qt ownership gate: PASS
+  PJSIP regression 45/45: PASS
+  Clang18 isolated TSan 6 tests x 3 runs: PASS
+  Canonical configure/build + CTest 144/144: PASS
+  Commit/push + origin parity + clean tree: PENDING
+  GitHub Actions: PENDING
+
+LIMITATION:
+  This is a simulated source, not a real PJSUA2 callback delivery mechanism.
+  No claim of live callback quiescence, timeout safety, or PJ_EBUSY recovery.
+  No production shutdown risk removed by this commit.
+
+OBSERVED THINKPAD PRE-COMMIT FORMAT FAILURE AND V2 CORRECTION:
+  Original Commit 16 ZIP baseline/manifest/overlay: PASS.
+  Initial ThinkPad clang-format 18.1.3 CI gate: FAIL,
+    tests/phase8/test_pjsip_callback_ingress_races.cpp:112:69.
+  v2 repair: combine the first two parameters in the teardown_permitted
+    signature into one 100-column line, with NO logic changes.
+  v2 ThinkPad clang-format/clang-tidy/regression verification: PASS.
+  Git commit/push and GitHub Actions: PENDING.
+
+
+---
+
+THINKPAD VERIFIED PHASE 8 COMMIT 16 V2
+Recorded: 2026-10-10T00:47:44+07:00
+Branch: phase/8-multithreading
+Baseline HEAD: 7ca3247
+
+THINKPAD VERIFIED RESULTS:
+  Full clang-format 18.1.3: PASS
+  Full clang-tidy 18.1.3: PASS
+  Synthetic callback ingress model: PASS
+  Shutdown failure-path model: PASS
+  Focused Phase 8 CTest: PASS (9/9)
+  Clang 18 ThreadSanitizer: PASS (18/18)
+  Qt ownership regression: PASS
+  PJSIP regression: PASS (45/45)
+  Canonical configure/build: PASS
+  Canonical CTest: PASS (144/144)
+  Exact source manifest: PASS (1 modified + 4 added)
+
+LOG FILES:
+  /tmp/phase8-commit16-v2-format.log
+  /tmp/phase8-commit16-v2-tidy.log
+  /tmp/phase8-commit16-v2-ingress.log
+  /tmp/phase8-commit16-v2-failure-paths.log
+  /tmp/phase8-commit16-v2-focused.log
+  /tmp/phase8-commit16-v2-tsan.log
+  /tmp/phase8-commit16-v2-qt.log
+  /tmp/phase8-commit16-v2-pjsip.log
+  /tmp/phase8-commit16-v2-configure.log
+  /tmp/phase8-commit16-v2-build.log
+  /tmp/phase8-commit16-v2-canonical.log
+
+PENDING:
+  Git commit and push synchronization.
+  GitHub Actions verification.
+
+LIMITATIONS:
+  Synthetic ingress model only.
+  Live PJSUA2 callback quiescence: NOT TESTED.
+  Production shutdown lifetime risks: OPEN.
