@@ -12,6 +12,38 @@ endif()
 
 find_package(Threads REQUIRED)
 
+# TSan is opt-in and deliberately limited to the standalone concurrency
+# suite. It must not partially instrument a canonical Qt/PJSIP build or be
+# combined with its ASan/UBSan configuration.
+option(PHASE8_ENABLE_TSAN "Build standalone Phase 8 tests with ThreadSanitizer" OFF)
+if(PHASE8_ENABLE_TSAN)
+    if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+        message(FATAL_ERROR
+            "PHASE8_ENABLE_TSAN requires standalone -S tests/phase8; "
+            "do not enable it for the canonical Qt/PJSIP build")
+    endif()
+    if(NOT CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
+        message(FATAL_ERROR "Phase 8 TSan requires a GCC or Clang C++ compiler")
+    endif()
+    string(CONCAT _phase8_existing_flags "${CMAKE_CXX_FLAGS} "
+        "${CMAKE_EXE_LINKER_FLAGS} " "${CMAKE_SHARED_LINKER_FLAGS}")
+    if(_phase8_existing_flags MATCHES "-fsanitize=[^ ]*(address|undefined)")
+        message(FATAL_ERROR "TSan must use a separate build without ASan/UBSan")
+    endif()
+    # The compiler probe must link libtsan as well as instrument its object.
+    # check_cxx_compiler_flag() alone omits that link flag and falsely fails.
+    include(CheckCXXCompilerFlag)
+    include(CMakePushCheckState)
+    cmake_push_check_state(RESET)
+    set(CMAKE_REQUIRED_LINK_OPTIONS -fsanitize=thread)
+    check_cxx_compiler_flag("-fsanitize=thread" PHASE8_TSAN_COMPILER_SUPPORTED)
+    cmake_pop_check_state()
+    if(NOT PHASE8_TSAN_COMPILER_SUPPORTED)
+        message(FATAL_ERROR
+            "Compiler/linker cannot build -fsanitize=thread executables")
+    endif()
+endif()
+
 function(phase8_add_test target source ctest_name)
     add_executable(${target} ${source})
     target_compile_features(${target} PRIVATE cxx_std_20)
@@ -19,6 +51,11 @@ function(phase8_add_test target source ctest_name)
         "${CMAKE_CURRENT_SOURCE_DIR}/../../src"
     )
     target_link_libraries(${target} PRIVATE Threads::Threads)
+    if(PHASE8_ENABLE_TSAN)
+        target_compile_options(${target} PRIVATE
+            -fsanitize=thread -fno-omit-frame-pointer -O1 -g)
+        target_link_options(${target} PRIVATE -fsanitize=thread)
+    endif()
     add_test(NAME ${ctest_name} COMMAND ${target})
     set_tests_properties(${ctest_name} PROPERTIES TIMEOUT 30)
 endfunction()

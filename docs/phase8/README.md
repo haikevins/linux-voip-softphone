@@ -1,6 +1,6 @@
 # Phase 8 — Multithreading
 
-Status: **in progress — Commits 1–5 concurrency foundation, canonical CTest integration, and MPMC stress coverage**.
+Status: **in progress — Commits 1–5 verified on ThinkPad; Commit 6 standalone ThreadSanitizer verified with Clang 18 on ThinkPad**.
 
 Baseline: Phase 7 release `v0.8-qt-gui` (`main` at `2bd8740` in the
 handoff). Do not change the release tag or reopen Phase 7 behavior without
@@ -105,8 +105,7 @@ path to register the focused tests with the canonical top-level CTest.
      and all exceptions are contained.
 - `tests/phase8/CMakeLists.txt` registers a fourth CTest entry when included
   from the canonical project **or** configured as a standalone suite.
-  Expected canonical count is now **139** (previous verified 138 + 1).
-  This count remains a target until observed on the ThinkPad.
+  Canonical ThinkPad verification confirmed **139/139** CTest entries.
 - `scripts/phase8/verify-queue.sh` runs all four tests; the separate
   `scripts/phase8/verify-stress.sh` repeats the dedicated stress CTest ten
   times by default (`PHASE8_STRESS_REPEATS=1..100`).
@@ -114,17 +113,46 @@ path to register the focused tests with the canonical top-level CTest.
   `evidence/phase8/stress-test.txt`: 4/4 CTest, 100/100 repetitions of
   the stress binary, and 25 complete-suite cycles passed. Those results
   are **not** presented as ThinkPad/canonical results.
+- Maintainer terminal logs on 2026-10-09 confirm **4/4** focused tests,
+  **100/100** repeated stress runs, canonical **139/139**, and clean/pushed
+  `5979869` on `phase/8-multithreading`. The canonical evidence was appended
+  to the tracked `automated-verification.txt` and `stress-test.txt` on the
+  ThinkPad; do not overwrite those post-ZIP additions with old snapshots.
 - No Qt/PJSIP runtime code or behavior is changed by Commit 5.
+
+## Commit 6: independent ThreadSanitizer instrumentation
+
+- `tests/phase8/CMakeLists.txt` accepts **opt-in**
+  `-DPHASE8_ENABLE_TSAN=ON` in a **standalone** `tests/phase8` build only.
+  Each of the existing four Phase 8 test executables is compiled and linked
+  with `-fsanitize=thread` (GCC/Clang) plus debug/frame-pointer flags.
+  The normal canonical project keeps the default OFF, so its 139 CTest
+  entries and Qt/PJSIP binaries are not partially instrumented.
+- `scripts/phase8/verify-tsan.sh` builds in the separate
+  `build/phase8-tsan-debug` directory and fails if any TSan test fails. It
+  refuses known non-TSan build directories, validates repeat count, and
+  preserves the output under the disposable TSan build tree.
+- TSan must **not** be combined with ASan or UBSan in the same executable.
+  A sanitizer report fails the test gate; unsupported/runtime-incompatible
+  environments must be recorded as BLOCKED, **not** as a clean run.
+- On the isolated Linux environment, GCC 14.2 + `libtsan.so.2` passed four
+  instrumented CTest entries three times each without a reported race.
+  On the ThinkPad, GCC 13.3 TSan was BLOCKED by unexpected memory
+  mappings, including in a minimal reproduction (3/3 failures).
+  Clang 18.1.3 successfully ran the minimal probe 3/3 and all four
+  instrumented Phase 8 tests three times each. See
+  `evidence/phase8/tsan-report.txt`.
+- No SIP registration, Qt/QML, call lifecycle, PJSIP, or RTP code changes.
 
 ## Proposed follow-up sequence (not yet implemented)
 
-1. Audit actual Qt/PJSIP owner/callback boundaries before integration.
-2. Add independent ThreadSanitizer configuration, verify on supported
-   Linux toolchains, and record limitations if it cannot run.
+1. Preserve the ThinkPad Clang 18 TSan verification and rerun it
+   after future changes to concurrency code.
+2. Audit actual Qt/PJSIP owner/callback boundaries before integration.
 3. Consider minimal worker/event handoff integration only after dedicated
    lifetime/GUI/PJSIP ordering tests establish safe ownership.
-4. Run Phase 7 + Phase 8 regression gates and relevant manual SIP checks;
-   document final results before declaring milestone closure.
+4. Run full regressions and relevant manual SIP checks; document final
+   results before declaring milestone closure.
 
 ## In scope
 
@@ -146,13 +174,17 @@ Focused (no SIP, Qt, PJSIP, or GoogleTest dependency):
 ```bash
 bash scripts/phase8/verify-queue.sh
 bash scripts/phase8/verify-stress.sh
+CXX="$(command -v clang++-18)" \
+PHASE8_TSAN_BUILD_DIR="$PWD/build/phase8-tsan-clang18-debug" \
+PHASE8_TSAN_REPEATS=3 \
+    bash scripts/phase8/verify-tsan.sh
 ```
 
 The guarded `integrate-canonical-ctest.sh` script was executed during
 Commit 4 and its three-line CMake registration was committed. **Do not run
-it again** for Commit 5. Confirm that `tests/CMakeLists.txt` already includes
-`add_subdirectory(phase8)`; the fourth test is then discovered automatically
-by the updated `tests/phase8/CMakeLists.txt`.
+it again** for Commit 6. Confirm that `tests/CMakeLists.txt` includes
+`add_subdirectory(phase8)`. This commit adds no new canonical test entry,
+so the total should stay at **139**.
 
 Before committing the overlay on the canonical repository, also use its
 existing build and full regression gate, for example:
@@ -167,7 +199,7 @@ machines. Do not treat copied `build/` paths as a verified baseline.
 
 ## Manual matrix
 
-Commits 1–5 change no SIP or GUI runtime behavior. Manual SIP call checks
+Commits 1–6 change no SIP or GUI runtime behavior. Manual SIP call checks
 are **not executed** for these isolated concurrency slices. Before any future integration
 with registration/call workers, test registration, outgoing/incoming calls,
 remote rejection after Ringing, local/remote hangup, retry without
@@ -187,8 +219,10 @@ re-registration, and RTP diagnostics refresh/clear behavior.
   during a throwing `T` move do not remove the front queue entry.
 - Phase 8 queue/worker runtime integration remains unverified. Maintainer
   logs show the canonical regression passed after Commits 1–4 (135/135
-  through Commit 3, 138/138 after Commit 4). Commit 5 canonical 139-entry
-  verification is pending ThinkPad execution.
+  through Commit 3, 138/138 after Commit 4, **139/139** after Commit 5).
+  ThinkPad GCC 13 TSan was BLOCKED by runtime mapping failures;
+  ThinkPad Clang 18 TSan passed four tests three times each.
+  Neither result establishes Qt/PJSIP runtime thread safety.
 - `SerialTaskWorker` accepts `std::function<void()>`, not move-only callable
   objects. Task exceptions are counted, not forwarded to a UI error handler.
   Queue/task memory usage is unbounded. Calling shutdown from a callback is
@@ -196,9 +230,11 @@ re-registration, and RTP diagnostics refresh/clear behavior.
 
 ## Exit criteria (partial)
 
-Standalone worker stop/close, worker thread-ownership, and 100,000-event
-MPMC integrity have automated test evidence. The 100,000-event stress gate
-and final canonical regression must still pass on the maintainer's ThinkPad.
-Application-level Qt/PJSIP ownership, supported TSan evidence, relevant
-manual SIP/GUI checks (if runtime integration changes behavior), final
-architecture/interview docs, and Git/PR/release closure remain pending.
+Worker stop/close, thread-ownership, and 100,000-event MPMC integrity have
+ThinkPad evidence, including 100/100 stress repetitions and 139/139 canonical
+CTest entries (Commit 5). The ThinkPad Clang 18 TSan suite passed
+four instrumented tests three times each. Qt/PJSIP runtime thread
+ownership verification remains pending.
+Application-level Qt/PJSIP ownership, manual SIP/GUI checks if runtime code
+changes, final architecture/interview docs, and Git/PR/release closure remain
+pending.

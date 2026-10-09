@@ -12,11 +12,11 @@ The queue introduced in Phase 8 Commit 1 and extended in Commit 2 is an
 **isolated library component**. Commit 3 adds a standalone
 `SerialTaskWorker` that owns a thread and consumes callable tasks from the
 queue. Neither component is wired to Qt, `CallManager`, or PJSUA2.
-Commits 1–4 were tested in the canonical ThinkPad repository on
+Commits 1–5 were tested in the canonical ThinkPad repository on
 2026-10-09 (maintainer-supplied terminal logs); Commit 4 recorded 138/138
-canonical CTest entries and was pushed as `c7a4243`. Commit 5 adds isolated
-MPMC stress coverage but has not yet been tested on the ThinkPad. Nothing
-here establishes Qt/PJSIP callback thread affinity.
+canonical CTest entries at `c7a4243`, and Commit 5 recorded 139/139 plus
+100 stress repetitions at `5979869`. Nothing here establishes Qt/PJSIP
+callback thread affinity.
 
 ## Current vs. planned event paths
 
@@ -36,9 +36,12 @@ post(task) -> SerialTaskWorker [owns std::jthread]
                  queue + worker + ownership + 100k MPMC stress CTests
                  standalone or canonical CTest (registered in Commit 4)
 
+Phase 8 Commit 6 (standalone only)
+-fsanitize=thread -> 4 Phase 8 test executables (not Qt/PJSIP)
+
 Phase 8 future (planned, not implemented)
-actual Qt/PJSIP owner audit + independent TSan verification
-                              -> carefully scoped integration if safe
+actual Qt/PJSIP owner audit
+                   -> carefully scoped integration if safe
 ```
 
 ## `ThreadSafeQueue<T>` contract (implemented)
@@ -131,7 +134,26 @@ moves in concurrency-sensitive paths.
 - A separate 10,000-task worker scenario injects deterministic exceptions;
   `completed()` counts every accepted callback and `failures()` counts all
   injected exceptions. These are generic concurrency tests, not SIP/Qt
-  runtime ownership evidence. No ThreadSanitizer run is claimed yet.
+  runtime ownership evidence. Commit 5 was verified on the ThinkPad:
+  100/100 stress repeats, canonical 139/139, push `5979869` synchronized.
+
+## Commit 6: TSan scope and coverage
+
+- TSan is **opt-in** via `PHASE8_ENABLE_TSAN=ON` for a standalone
+  `tests/phase8` build, never by instrumenting only one portion of Qt/PJSIP.
+  All four standalone test translation units and their header-only queue /
+  worker implementations compile and link with `-fsanitize=thread`.
+- `scripts/phase8/verify-tsan.sh` uses its own build tree and runs CTest
+  serially. A failure or race report fails the gate; unsupported runtime
+  mappings are recorded as BLOCKED rather than passed.
+- Do not mix TSan with ASan/UBSan or reuse their build directories. Normal
+  canonical CTest builds leave TSan off, preserving the 139-entry baseline.
+- The isolated Linux GCC 14.2 TSan run completed four tests three times each
+  with no reported races. This cannot establish race freedom for unexercised
+  interleavings or any Qt/PJSIP callbacks. On the ThinkPad, GCC 13 TSan
+  was BLOCKED by memory mapping failures. Clang 18.1.3 successfully
+  completed four instrumented tests three times each. These results
+  are recorded separately in `evidence/phase8/tsan-report.txt`.
 
 ## Future acceptance checks
 
