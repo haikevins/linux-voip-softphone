@@ -73,5 +73,10 @@ phase8_add_test(phase8_mpmc_stress_tests
 phase8_add_test(phase8_pjsip_call_slot_cleanup_tests
     test_pjsip_call_slot_cleanup.cpp Phase8PjsipCallSlotCleanupTest)
 
+# Generic callback-in-flight accounting model; no PJSUA2 calls and no
+# production callback hook is wired in this commit.
+phase8_add_test(phase8_pjsip_callback_activity_tests
+    test_pjsip_callback_activity.cpp Phase8PjsipCallbackActivityTest)
+
 # Leave headroom for slower, instrumented contention runs.
 set_tests_properties(Phase8MpmcStressTest PROPERTIES TIMEOUT 90)

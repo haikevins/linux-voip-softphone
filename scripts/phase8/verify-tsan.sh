@@ -55,7 +55,7 @@ LOG="$BUILD_DIR/ctest-tsan.log"
 if TSAN_OPTIONS="${TSAN_OPTIONS:+$TSAN_OPTIONS:}halt_on_error=1:exitcode=66" \
     ctest --test-dir "$BUILD_DIR" --output-on-failure \
     --repeat "until-fail:$REPEATS" 2>&1 | tee "$LOG"; then
-    echo "PASS: Phase 8 TSan gate (five tests x $REPEATS run(s))"
+    echo "PASS: Phase 8 TSan gate (six tests x $REPEATS run(s))"
 else
     if grep -Eq 'unexpected memory mapping|failed to mmap' "$LOG"; then
         echo 'BLOCKED: TSan runtime incompatible with this execution environment.' >&2

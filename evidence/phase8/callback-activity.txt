@@ -1,0 +1,69 @@
+Phase 8 — Commit 11 callback activity model
+Baseline: phase/8-multithreading @ 8bef4c7
+Status: THINKPAD AUTOMATED VERIFICATION PASS; LIVE SIP CALLBACK VERIFICATION PENDING
+
+TEST DESIGN:
+  Seven pure C++20 callback activity scenarios, no PJSIP dependencies.
+  Moves, closes, waits, and concurrent permit releases.
+  Deliberately distinguishes zero call slots from callback drain.
+  One new CTest: Phase8PjsipCallbackActivityTest.
+
+ACCEPTANCE GATES (THINKPAD OBSERVATIONS):
+  Standalone + canonical callback model gate: PASS (1/1 each)
+  Existing PJSIP shutdown source-contract tests 6/6: PASS; PJSIP CTest 45/45 PASS
+  Qt ownership regression: PASS
+  Standalone Phase 8 CTest 6/6: PASS
+  Clang 18 standalone TSan 6 tests x 3: PASS (18/18 executions)
+  Canonical CTest 141/141: PASS
+  Git commit / push synchronization: PENDING
+
+LIMITATIONS:
+  No production callback has been instrumented.
+  No live SIP server or credentials used.
+  Callback gate closure does NOT stop PJSIP external callback dispatch.
+  Callback permit draining does NOT imply future callback impossibility.
+  A 2-second shutdown timeout remains a safety risk to evaluate.
+
+ISOLATED BUILD ENVIRONMENT (not canonical ThinkPad):
+  Standalone six-entry CTest: 6/6 PASS.
+  Callback activity CTest repetitions: 20/20 PASS.
+  Standalone GCC/TSan instrumented six-entry CTest:
+    six tests x three repeats = 18/18 observed executions PASS.
+  PJSIP/Qt canonical build and real SIP callbacks: NOT RUN HERE.
+  These isolated results do not satisfy ThinkPad acceptance gates.
+
+---
+
+Canonical ThinkPad Commit 11 verification
+Recorded: 2026-10-09T23:01:25+07:00
+Baseline: phase/8-multithreading @ 8bef4c7
+
+OBSERVED ON CANONICAL THINKPAD:
+
+  Callback activity standalone CTest: 1/1 PASS
+  Callback activity canonical CTest: 1/1 PASS
+  PJSIP shutdown structural tests: 6/6 PASS
+  PJSIP canonical CTest: 45/45 PASS
+  Qt ownership regression: PASS
+  Phase 8 focused CTest: 6/6 PASS
+  Clang 18 ThreadSanitizer: 18/18 executions PASS
+  Full canonical CTest: 141/141 PASS
+
+RESULT:
+  PASS — Commit 11 automated verification.
+
+SCOPE:
+  Independent callback activity model.
+  No production PJSIP callback instrumentation.
+  No modification to SIP call handling or Qt GUI.
+
+UNVERIFIED:
+  Live SIP callback dispatch during shutdown.
+  Callback activity after PJSUA2 account destruction.
+  Active-media teardown with concurrent callbacks.
+  Account shutdown returning PJ_EBUSY.
+  Two-second cleanup timeout with callbacks in flight.
+  Application-wide race freedom and use-after-free safety.
+
+GIT:
+  Commit/push pending at evidence capture.
