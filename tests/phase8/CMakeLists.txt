@@ -90,4 +90,10 @@ if(NOT PHASE8_ENABLE_TSAN)
         COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/test_pjsip_production_lifetime_audit.py")
     set_tests_properties(Phase8PjsipProductionAuditTest PROPERTIES TIMEOUT 30)
+
+    # Commit 15: deterministic failure-path contract model using the existing
+    # production polling and callback-activity helpers. Deliberately excluded
+    # from the six-C++-test TSan contract; it does not call live PJSUA2.
+    phase8_add_test(phase8_pjsip_shutdown_failure_paths_tests
+        test_pjsip_shutdown_failure_paths.cpp Phase8PjsipShutdownFailurePathsTest)
 endif()
