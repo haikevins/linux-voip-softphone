@@ -1,6 +1,6 @@
 # Phase 8 — Multithreading
 
-Status: **in progress — Commit 1 isolated queue foundation only**.
+Status: **in progress — Commits 1–2 isolated queue/shutdown foundation**.
 
 Baseline: Phase 7 release `v0.8-qt-gui` (`main` at `2bd8740` in the
 handoff). Do not change the release tag or reopen Phase 7 behavior without
@@ -29,17 +29,31 @@ This slice is intentionally stand-alone: the Phase 8 test is **not yet**
 registered with the repository's top-level CTest. Registration and integration
 must be reviewed against the actual top-level CMake files in a later commit.
 
+## Commit 2: implemented here
+
+- `wait_pop(std::stop_token)` uses C++20 `std::condition_variable_any` for
+  cancellation-aware waiting. Existing `wait_pop()` and `close()` behavior
+  is unchanged.
+- Cancellation is **local to the waiting consumer**: it does not close the
+  shared queue, reject pushes, or discard queued items. A stop observed
+  before dequeue wins; concurrent stop/dequeue may resolve either way.
+- Five additional standalone test scenarios cover pre-requested stop,
+  blocked waiter wake-up, queue reuse after one worker stops, draining
+  after close, and close/join of multiple stoppable workers. Total: **11
+  executable scenarios**.
+- Commit 1's canonical ThinkPad test evidence (1/1 focused, 135/135
+  existing regression) is recorded from the maintainer's 2026-10-09 log;
+  Commit 2's canonical verification remains pending until overlay applied.
+
 ## Proposed follow-up sequence (not yet implemented)
 
-1. Define close/stop behavior under blocked waits and worker teardown;
-   add deterministic lifecycle tests and, if justified, `std::stop_token`.
-2. Introduce worker/event dispatch only where an ownership boundary is
-   already documented and tests can preserve Phase 7 behavior.
-3. Integrate the focused tests into the canonical repository test gate.
-4. Expand to reproducible 100,000-event MPMC stress and failure injection.
-5. Add independent ThreadSanitizer configuration, verify on a supported
+1. Introduce a narrowly scoped worker/event dispatch abstraction only
+   where an ownership boundary is documented and testable.
+2. Integrate the focused tests into the canonical repository test gate.
+3. Expand to reproducible 100,000-event MPMC stress and failure injection.
+4. Add independent ThreadSanitizer configuration, verify on a supported
    Linux toolchain, and record limitations if it cannot run.
-6. Run Phase 7 + Phase 8 regression gates; document final observed results
+5. Run Phase 7 + Phase 8 regression gates; document final observed results
    and close milestone only after manual checks.
 
 ## In scope
@@ -85,14 +99,16 @@ re-registration, and RTP diagnostics refresh/clear behavior.
 ## Risks and limitations
 
 - Queue is unbounded; producers can outrun consumers and grow memory.
-- Blocking pop currently has no `stop_token`; `close()` is the wake-up path.
+- `wait_pop(stop_token)` supports per-wait cancellation; the legacy
+  `wait_pop()` still needs push/close to wake.
 - Destruction while any thread calls `push`/`pop`/`close` is not safe; owner
   must first join all users.
 - FIFO is the serialization order of successful pushes, not an ordering
   guarantee across independent producers.
 - `std::optional<T>` construction requires move-constructible `T`; failures
   during a throwing `T` move do not remove the front queue entry.
-- Integration and full-repository regression remain **unverified here**.
+- Phase 8 queue integration remains unverified; the canonical Phase 7
+  regression passed for Commit 1, but must be rerun for Commit 2.
 
 ## Exit criteria (all pending)
 

@@ -5,6 +5,7 @@
 #include <mutex>
 #include <optional>
 #include <queue>
+#include <stop_token>
 #include <utility>
 
 namespace voip::concurrency {
@@ -16,11 +17,11 @@ namespace voip::concurrency {
 // - close() is idempotent and wakes all blocked consumers.
 // - Consumers may drain queued items after close().
 // - wait_pop() returns nullopt only when closed AND drained.
-// - No user callbacks are invoked while the mutex is held.
+// - wait_pop(stop_token) also returns nullopt on cancellation, leaving pending
+//   items untouched when cancellation is observed before the dequeue.
+// - A cancelled waiter does not close the queue or stop other consumers.
 // - The queue must outlive every producer/consumer calling into it.
-//
-// Blocking cancellation via stop_token and bounded capacity are explicitly
-// out of scope for the Phase 8 Commit 1 slice.
+// - Bounded capacity and worker ownership remain out of scope.
 template <typename T>
 class ThreadSafeQueue final {
 public:
@@ -57,6 +58,21 @@ public:
         return pop_locked();
     }
 
+    // Cancellation is local to this wait, not a global queue shutdown.
+    // If stop is observed before dequeue (even with pending data), no item
+    // is consumed. A concurrent stop/dequeue race may resolve either way.
+    // The owning thread must still join before destroying this queue.
+    [[nodiscard]] std::optional<T> wait_pop(std::stop_token stop) {
+        std::unique_lock lock(mutex_);
+        const bool ready = available_.wait(lock, stop, [this] {
+            return closed_ || !queue_.empty();
+        });
+        if (!ready || stop.stop_requested()) {
+            return std::nullopt;
+        }
+        return pop_locked();
+    }
+
     void close() {
         {
             std::lock_guard lock(mutex_);
@@ -87,7 +103,8 @@ private:
     }
 
     mutable std::mutex mutex_;
-    std::condition_variable available_;
+    // C++20 stop_token-aware waits require condition_variable_any.
+    std::condition_variable_any available_;
     std::queue<T> queue_;
     bool closed_ = false;
 };

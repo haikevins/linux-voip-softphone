@@ -49,3 +49,80 @@ NOT RUN / NOT CLAIMED:
 
 These checks are not Phase 8 closure evidence. Repeat focused verification
 and the canonical project's full available regression gates before commit.
+
+---
+Phase 8 Commit 1 — canonical ThinkPad verification (maintainer-provided log)
+Date: 2026-10-09
+Git: branch phase/8-multithreading; commit 9f22bdd
+
+COMMAND:
+  bash scripts/phase8/verify-queue.sh
+OBSERVED:
+  GNU C++ 13.3.0; standalone CMake configure/build completed.
+  CTest: 1/1 passed, 0 failed.
+RESULT: PASS
+
+COMMAND:
+  cmake --build build/qt-pjsip-gui-debug -j"$(nproc)"
+OBSERVED:
+  PJSIP 2.17 enabled; build completed, linking voip-qt-gui.
+  XKB optional dependency was not found.
+RESULT: PASS
+
+COMMAND:
+  ctest --test-dir build/qt-pjsip-gui-debug --output-on-failure
+OBSERVED:
+  CTest: 135/135 passed, 0 failed.
+  The standalone Phase 8 CTest (1/1) is a separate build tree.
+RESULT: PASS
+
+COMMAND:
+  git push -u origin phase/8-multithreading &&
+  git fetch origin phase/8-multithreading &&
+  test "$(git rev-parse HEAD)" =
+       "$(git rev-parse origin/phase/8-multithreading)"
+OBSERVED:
+  Commit 9f22bdd pushed; local and origin branch heads matched; tree clean.
+RESULT: PASS
+
+Source: maintainer's terminal log shared in conversation, not re-executed
+against the canonical ThinkPad clone in the assistant environment.
+
+Commit 2 stop-token / lifecycle additions: canonical verification pending.
+100,000-event MPMC stress, ThreadSanitizer, and SIP manual checks: NOT RUN.
+
+---
+Phase 8 Commit 2 — assistant isolated overlay verification
+Date: 2026-10-09
+Source: copied Commit 1 overlay plus the Commit 2 file edits;
+        not the canonical ThinkPad Git repository.
+Toolchain: CMake 3.31.6; Debian GNU C++ 14.2.0.
+
+COMMAND:
+  PHASE8_BUILD_DIR=<temporary-build-path> bash scripts/phase8/verify-queue.sh
+OBSERVED:
+  CMake configure/build succeeded.
+  Standalone CTest: 1/1 passed, 0 failed.
+RESULT: PASS
+
+COMMAND:
+  c++ -std=c++20 -pthread -Wall -Wextra -Wpedantic -Werror \
+    -Isrc tests/phase8/test_thread_safe_queue.cpp -o <temp-binary>
+  <temp-binary>
+OBSERVED:
+  Warnings-as-errors compile succeeded.
+  PASS: 11 Phase 8 ThreadSafeQueue scenarios.
+RESULT: PASS
+
+COMMAND:
+  Run standalone phase8_thread_safe_queue_tests 100 additional times
+OBSERVED:
+  100/100 invocations exited 0.
+RESULT: PASS
+
+NOT RUN / NOT CLAIMED FOR COMMIT 2:
+  Canonical ThinkPad full project CMake build/135-entry regression
+  Qt/PJSIP GUI/SIP/Asterisk manual scenarios
+  100,000-event stress run
+  ThreadSanitizer
+  Git commit, push, origin synchronization
