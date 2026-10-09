@@ -76,7 +76,7 @@ void moved_permit_releases_exactly_once()
     require(first.has_value(), "permit missing");
     auto second = std::move(first);
     require(gate.admitted_callbacks() == 1, "moving permit changed count");
-    first.reset();
+    first = std::nullopt;
     require(gate.admitted_callbacks() == 1, "moved-from release counted twice");
     second.reset();
     require(gate.admitted_callbacks() == 0, "move-assigned permit leaked");
@@ -113,6 +113,7 @@ void concurrent_admission_then_close_rejects_late_entries()
     std::latch start{1};
     std::atomic<int> admitted{0};
     std::vector<std::jthread> threads;
+    threads.reserve(4);
     for (int n = 0; n < 4; ++n) {
         threads.emplace_back([&] {
             start.wait();

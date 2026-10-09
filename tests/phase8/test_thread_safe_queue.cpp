@@ -125,7 +125,7 @@ void test_stop_wakes_blocked_waiter_without_closing_queue()
     auto started_result = started.get_future();
     auto result = outcome.get_future();
 
-    std::jthread consumer([&](std::stop_token stop) {
+    std::jthread consumer([&](const std::stop_token &stop) {
         started.set_value();
         outcome.set_value(queue.wait_pop(stop));
     });
@@ -151,7 +151,7 @@ void test_stopping_one_worker_keeps_queue_open_for_others()
     std::promise<std::optional<int>> first_result;
     auto first = first_result.get_future();
     std::jthread first_worker(
-        [&](std::stop_token stop) { first_result.set_value(queue.wait_pop(stop)); });
+        [&](const std::stop_token &stop) { first_result.set_value(queue.wait_pop(stop)); });
     first_worker.request_stop();
     // A stopped worker must leave the queue usable by a different worker.
     // Close is a fallback wake-up if stop propagation breaks.
@@ -168,7 +168,7 @@ void test_stopping_one_worker_keeps_queue_open_for_others()
     std::promise<std::optional<int>> second_result;
     auto second = second_result.get_future();
     std::jthread second_worker(
-        [&](std::stop_token stop) { second_result.set_value(queue.wait_pop(stop)); });
+        [&](const std::stop_token &stop) { second_result.set_value(queue.wait_pop(stop)); });
     const bool accepted = queue.push(23);
     const auto second_status = second.wait_for(std::chrono::seconds(3));
     queue.close();
@@ -200,7 +200,7 @@ void test_close_wakes_multiple_stoppable_workers()
     std::vector<std::jthread> workers;
     workers.reserve(worker_count);
     for (int i = 0; i < worker_count; ++i) {
-        workers.emplace_back([&](std::stop_token stop) {
+        workers.emplace_back([&](const std::stop_token &stop) {
             if (!queue.wait_pop(stop)) {
                 ++finished;
             }

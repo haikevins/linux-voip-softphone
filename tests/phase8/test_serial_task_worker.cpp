@@ -182,6 +182,7 @@ void test_concurrent_producers_no_lost_tasks()
     std::vector<int> seen(total, 0); // Only accessed on worker, then after join.
     std::atomic<int> rejected{0};
     std::vector<std::jthread> writers;
+    writers.reserve(producers);
     for (int producer = 0; producer < producers; ++producer) {
         writers.emplace_back([&, producer] {
             for (int index = 0; index < per_producer; ++index) {
@@ -210,6 +211,7 @@ void test_close_races_with_posts()
     std::atomic<int> rejected{0};
     std::atomic<int> reached{0};
     std::vector<std::jthread> writers;
+    writers.reserve(producers);
     for (int producer = 0; producer < producers; ++producer) {
         writers.emplace_back([&] {
             for (int index = 0; index < per_producer; ++index) {
