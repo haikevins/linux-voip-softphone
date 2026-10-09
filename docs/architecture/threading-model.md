@@ -9,9 +9,11 @@ handoff to the GUI. `CallManager` has an owner-thread contract. These are
 trace or code audit of the canonical clone was completed for Commit 1.
 
 The queue introduced in Phase 8 Commit 1 and extended in Commit 2 is an
-**isolated library component**. It is not wired to the GUI, `CallManager`, or
-PJSUA2 yet. Commit 1's standalone tests were also run in the canonical
-ThinkPad repository on 2026-10-09 (reported by the maintainer).
+**isolated library component**. Commit 3 adds a standalone
+`SerialTaskWorker` that owns a thread and consumes callable tasks from the
+queue. Neither component is wired to Qt, `CallManager`, or PJSUA2.
+Commits 1 and 2 were tested in the canonical ThinkPad repository on
+2026-10-09 (maintainer-supplied terminal logs).
 
 ## Current vs. planned event paths
 
@@ -20,14 +22,19 @@ Phase 7 baseline (reported in release handoff)
 PJSUA2/session worker -> Qt queued handoff -> GUI state/UI thread
                   CallManager: owner-thread affinity
 
-Phase 8 Commits 1–2 (implemented)
+Phase 8 Commits 1–3 (implemented; independent of the app)
 producer(s) -> ThreadSafeQueue<T> -> consumer(s)
                  close() / drain
                  stop_token-local cancellation for waiters
-                 standalone CTest
+
+post(task) -> SerialTaskWorker [owns std::jthread]
+                     -> ThreadSafeQueue<Task> -> single worker callback
+                          request_close() -> drain -> join
+                 independent queue + worker CTests
 
 Phase 8 future (planned, not implemented)
-worker/event adapter -> owning thread + 100k MPMC stress / TSan verification
+actual Qt/PJSIP owner audit + 100k MPMC stress / TSan verification
+                              -> carefully scoped integration if safe
 ```
 
 ## `ThreadSafeQueue<T>` contract (implemented)
@@ -62,6 +69,31 @@ push or `close()` to unblock. If `T` throws during
 its move into an optional result, the queue entry is not popped; `T` may
 nevertheless have been modified by a throwing move. Avoid throwing payload
 moves in concurrency-sensitive paths.
+
+## `SerialTaskWorker` contract (Commit 3; implemented in isolation)
+
+- The owner constructs a worker thread, posts callable `std::function<void()>`
+  tasks, and invokes `shutdown()` from outside the worker to close, drain, and
+  join. Destruction also closes/drains/joins. A worker callback may safely
+  invoke `request_close()` but not `shutdown()`.
+- Only one callback executes at a time. Tasks accepted by the queue are
+  executed exactly once, in queue order, before `shutdown()` returns.
+  Concurrent producers have no wall-clock submission ordering guarantee.
+- `post()` returns `false` for an empty callable or after close. As with any
+  allocating queue, allocation failures can throw rather than returning
+  `false`. There is no bounded backpressure or abort-pending-work mode yet.
+- Task exceptions are caught at the worker boundary; `failures()` reports
+  throwing callbacks and `completed()` counts all finished callbacks. The
+  error payload is not retained. Application code must not mistake these
+  counters for a UI error-handling policy.
+- Concurrent external `shutdown()` calls serialize their join. Caller must
+  still ensure that object destruction cannot race with active `post()`,
+  `request_close()`, `shutdown()`, or callbacks capturing owner resources.
+  Self-destruction from the worker callback is unsupported.
+- Worker callbacks run on the owned C++ thread, **not** automatically on the
+  Qt GUI thread or the PJSIP endpoint-owner thread. Never access Qt UI state
+  or PJSIP objects through this worker without an independently verified
+  ownership and queued-handoff contract.
 
 ## Future acceptance checks
 

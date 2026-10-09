@@ -1,6 +1,6 @@
 # Phase 8 — Multithreading
 
-Status: **in progress — Commits 1–2 isolated queue/shutdown foundation**.
+Status: **in progress — Commits 1–3 isolated concurrency foundation**.
 
 Baseline: Phase 7 release `v0.8-qt-gui` (`main` at `2bd8740` in the
 handoff). Do not change the release tag or reopen Phase 7 behavior without
@@ -41,20 +41,41 @@ must be reviewed against the actual top-level CMake files in a later commit.
   blocked waiter wake-up, queue reuse after one worker stops, draining
   after close, and close/join of multiple stoppable workers. Total: **11
   executable scenarios**.
-- Commit 1's canonical ThinkPad test evidence (1/1 focused, 135/135
-  existing regression) is recorded from the maintainer's 2026-10-09 log;
-  Commit 2's canonical verification remains pending until overlay applied.
+- Commit 2's canonical ThinkPad test evidence (1/1 focused, 135/135
+  existing regression) and pushed commit `a936437` are recorded from the
+  maintainer's 2026-10-09 terminal log.
+
+## Commit 3: implemented here
+
+- `src/concurrency/SerialTaskWorker.hpp`: one owned `std::jthread` and FIFO
+  task handoff using the existing `ThreadSafeQueue<std::function<void()>>`.
+- `post()` accepts callable tasks until `request_close()` / `shutdown()`;
+  accepted tasks execute once in serial FIFO order. Empty callables are
+  rejected. `shutdown()` closes the queue, drains work, and joins; the
+  destructor performs the same orderly teardown.
+- `request_close()` may be called by the worker callback, but `shutdown()`
+  refuses a self-join. Concurrent **external** shutdown callers serialize
+  their join. The owner must synchronize destruction with concurrent API
+  users; destruction from within a callback is unsupported.
+- Throwing callbacks do not terminate the worker: `failures()` counts their
+  exceptions and `completed()` counts every finished callback, including
+  failed ones. Exception details are not retained.
+- Dedicated independent worker CTest adds 10 behavioral scenarios. Focused
+  verification now registers two CTest entries (queue + worker), with 21
+  executable scenarios. No Qt or PJSUA2 runtime integration is claimed.
+- `scripts/phase8/verify-queue.sh` retains its path and runs both targets.
 
 ## Proposed follow-up sequence (not yet implemented)
 
-1. Introduce a narrowly scoped worker/event dispatch abstraction only
-   where an ownership boundary is documented and testable.
-2. Integrate the focused tests into the canonical repository test gate.
-3. Expand to reproducible 100,000-event MPMC stress and failure injection.
-4. Add independent ThreadSanitizer configuration, verify on a supported
-   Linux toolchain, and record limitations if it cannot run.
-5. Run Phase 7 + Phase 8 regression gates; document final observed results
-   and close milestone only after manual checks.
+1. Audit actual Qt/PJSIP owner/callback boundaries before any integration;
+   integrate the focused tests into the canonical top-level CTest gate.
+2. Add reproducible 100,000-event MPMC stress and failure injection.
+3. Add independent ThreadSanitizer configuration, verify on supported
+   Linux toolchains, and record limitations if it cannot run.
+4. Consider minimal worker/event handoff integration only after dedicated
+   lifetime/GUI/PJSIP ordering tests establish safe ownership.
+5. Run Phase 7 + Phase 8 regression gates and relevant manual SIP checks;
+   document final results before declaring milestone closure.
 
 ## In scope
 
@@ -90,8 +111,8 @@ machines. Do not treat copied `build/` paths as a verified baseline.
 
 ## Manual matrix
 
-Commit 1 changes no SIP or GUI runtime behavior. Manual SIP call checks are
-**not executed** for the isolated queue slice. Before any future integration
+Commits 1–3 change no SIP or GUI runtime behavior. Manual SIP call checks
+are **not executed** for these isolated concurrency slices. Before any future integration
 with registration/call workers, test registration, outgoing/incoming calls,
 remote rejection after Ringing, local/remote hangup, retry without
 re-registration, and RTP diagnostics refresh/clear behavior.
@@ -100,15 +121,21 @@ re-registration, and RTP diagnostics refresh/clear behavior.
 
 - Queue is unbounded; producers can outrun consumers and grow memory.
 - `wait_pop(stop_token)` supports per-wait cancellation; the legacy
-  `wait_pop()` still needs push/close to wake.
+  `wait_pop()` still needs push/close to wake. `SerialTaskWorker` chooses
+  graceful queue close-and-drain rather than stop-token cancellation.
 - Destruction while any thread calls `push`/`pop`/`close` is not safe; owner
   must first join all users.
 - FIFO is the serialization order of successful pushes, not an ordering
   guarantee across independent producers.
 - `std::optional<T>` construction requires move-constructible `T`; failures
   during a throwing `T` move do not remove the front queue entry.
-- Phase 8 queue integration remains unverified; the canonical Phase 7
-  regression passed for Commit 1, but must be rerun for Commit 2.
+- Phase 8 queue/worker runtime integration remains unverified; the
+  canonical Phase 7 regression passed after Commits 1 and 2 (maintainer
+  logs). Commit 3 must be checked in the canonical clone before commit.
+- `SerialTaskWorker` accepts `std::function<void()>`, not move-only callable
+  objects. Task exceptions are counted, not forwarded to a UI error handler.
+  Queue/task memory usage is unbounded. Calling shutdown from a callback is
+  rejected; destroying the owner from a callback is a contract violation.
 
 ## Exit criteria (all pending)
 

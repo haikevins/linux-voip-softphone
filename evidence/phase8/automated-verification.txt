@@ -126,3 +126,84 @@ NOT RUN / NOT CLAIMED FOR COMMIT 2:
   100,000-event stress run
   ThreadSanitizer
   Git commit, push, origin synchronization
+
+---
+Phase 8 Commit 2 — canonical ThinkPad verification (maintainer-provided log)
+Date: 2026-10-09
+Git: phase/8-multithreading; commit a936437
+
+COMMAND:
+  bash scripts/phase8/verify-queue.sh
+OBSERVED:
+  Standalone queue CMake configure/build succeeded; 1/1 CTest passed.
+RESULT: PASS
+
+COMMAND:
+  cmake --build build/qt-pjsip-gui-debug -j"$(nproc)"
+OBSERVED:
+  ninja: no work to do. No existing Qt/PJSIP build input changed in Commit 2.
+RESULT: PASS (existing target up to date, not a rebuild of Phase 8 code)
+
+COMMAND:
+  ctest --test-dir build/qt-pjsip-gui-debug --output-on-failure
+OBSERVED:
+  Existing project CTest: 135/135 passed, 0 failed.
+  Phase 8 focused test remains in its independent build directory.
+RESULT: PASS
+
+COMMAND:
+  git push origin phase/8-multithreading &&
+  git fetch origin phase/8-multithreading &&
+  test "$(git rev-parse HEAD)" =
+       "$(git rev-parse origin/phase/8-multithreading)"
+OBSERVED:
+  a936437 pushed; local and origin HEAD matched; working tree clean.
+RESULT: PASS
+
+Source: maintainer's pasted terminal log, not a command executed by the
+assistant in the canonical ThinkPad repository. No manual SIP tests claimed.
+
+---
+Phase 8 Commit 3 — assistant isolated overlay verification
+Date: 2026-10-09
+Scope: SerialTaskWorker infrastructure and standalone focused tests.
+Source: regenerated isolated workspace from the verified Commit 2 ZIP;
+        not the canonical ThinkPad Git repository.
+Toolchain: CMake 3.31.6; Debian GNU C++ 14.2.0.
+
+COMMAND:
+  bash -n scripts/phase8/verify-queue.sh
+OBSERVED:
+  Shell syntax check exited 0.
+RESULT: PASS
+
+COMMAND:
+  PHASE8_BUILD_DIR=<isolated-build-path> bash scripts/phase8/verify-queue.sh
+OBSERVED:
+  Configure and compilation succeeded.
+  CTest: Phase8ThreadSafeQueueTest 1/1; Phase8SerialTaskWorkerTest 1/1.
+  Total standalone CTest: 2/2 passed, 0 failed.
+  Executable scenarios: queue 11, worker 10 (21 total).
+RESULT: PASS
+
+COMMAND:
+  c++ -std=c++20 -pthread -Wall -Wextra -Wpedantic -Werror \
+    -Isrc tests/phase8/test_serial_task_worker.cpp -o <isolated-binary>
+  <isolated-binary>
+OBSERVED:
+  Warnings-as-errors build succeeded.
+  PASS: 10 Phase 8 SerialTaskWorker scenarios.
+RESULT: PASS
+
+COMMAND:
+  Run both standalone executables 100 additional times each
+OBSERVED:
+  phase8_thread_safe_queue_tests: 100/100 exited 0.
+  phase8_serial_task_worker_tests: 100/100 exited 0.
+RESULT: PASS
+
+NOT RUN / NOT CLAIMED FOR COMMIT 3:
+  Canonical ThinkPad full CMake build / existing 135 CTest entries
+  Real SIP/Asterisk/Qt GUI manual scenarios
+  100,000-event MPMC stress and ThreadSanitizer
+  Git commit, push, and origin synchronization
