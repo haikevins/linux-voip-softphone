@@ -1,0 +1,51 @@
+Phase 8 Commit 1 — automated verification
+Date: 2026-10-09
+
+Scope: isolated queue header, standalone CMake target, and script only.
+Source location in test session: temporary overlay workspace, NOT canonical Git clone.
+
+Toolchain observed:
+  cmake version 3.31.6
+  c++ (Debian 14.2.0-19) 14.2.0
+
+COMMAND:
+  bash -n scripts/phase8/verify-queue.sh
+OBSERVED:
+  exit status 0
+RESULT: PASS
+
+COMMAND:
+  PHASE8_BUILD_DIR=<temporary-build-path> bash scripts/phase8/verify-queue.sh
+OBSERVED:
+  configure: success
+  build: phase8_thread_safe_queue_tests succeeded
+  CTest: 1/1 passed, 0 failed
+  executable scenarios: 6 (FIFO, close/drain/reject, wake-on-push,
+                         wake-on-close, move-only, 4P/4C 4000-item integrity)
+RESULT: PASS
+
+COMMAND:
+  Run compiled phase8_thread_safe_queue_tests 30 additional times
+OBSERVED:
+  30/30 invocations exited 0
+RESULT: PASS
+
+COMMAND:
+  c++ -std=c++20 -pthread -Wall -Wextra -Wpedantic -Werror \
+    -Isrc tests/phase8/test_thread_safe_queue.cpp -o <temp-binary>
+  <temp-binary>
+OBSERVED:
+  compile succeeded with all listed warning flags
+  PASS: 6 Phase 8 ThreadSafeQueue scenarios
+RESULT: PASS
+
+NOT RUN / NOT CLAIMED:
+  top-level canonical project CMake/CTest (prior handoff ZIP not available
+  to this execution session)
+  Qt/PJSUA2 builds and GUI/SIP/Asterisk manual scenarios
+  100,000-event stress run
+  ThreadSanitizer
+  Git commit, push, origin synchronization
+
+These checks are not Phase 8 closure evidence. Repeat focused verification
+and the canonical project's full available regression gates before commit.

@@ -1,0 +1,9 @@
+Phase 8 Commit 1 — manual verification
+
+Status: NOT RUN (not required for this isolated, no-runtime-integration slice).
+
+Reason: Commit 1 adds a generic C++ queue and isolated unit-test runner.
+It does not change Qt UI, CallManager, PJSIP, SIP, or RTP behavior.
+
+Before any future runtime integration, perform the manual matrix described
+in docs/phase8/README.md and record observed outcomes here.
