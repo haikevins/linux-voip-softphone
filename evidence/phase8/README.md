@@ -24,4 +24,8 @@ auth, PCAP, SRTP keys, or passwords.
 
 - `ownership-source-review.txt`: Commit 8 source-level Qt/PJSIP audit findings,
   risks requiring runtime confirmation, and the focused Qt regression gate.
-  **Prepared only** until maintainer reports canonical results.
+  ThinkPad Qt regression and canonical 139/139 were verified in Commit 8.
+
+- `pjsip-shutdown-order.txt`: Commit 9 bounded PJSUA2 Call cleanup ordering,
+  ThinkPad structural tests 6/6, PJSIP CTest 45/45 and canonical CTest 139/139;
+  real SIP timeout/callback-lifetime validation remains open.

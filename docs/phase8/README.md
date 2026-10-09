@@ -239,7 +239,7 @@ Application-level Qt/PJSIP ownership, manual SIP/GUI checks if runtime code
 changes, final architecture/interview docs, and Git/PR/release closure remain
 pending.
 
-## Commit 8 — Qt/PJSIP source ownership review (pending maintainer verification)
+## Commit 8 — Qt/PJSIP source ownership review (ThinkPad regression verified; live SIP pending)
 
 See `docs/phase8/commit8-source-ownership-review.md` for the source-level
 path/line audit based on `cf31e2a`. `scripts/phase8/verify-qt-ownership.sh`
@@ -247,3 +247,13 @@ executes the existing Qt registration CTest entry with two additional
 fake-session ownership/lifetime regressions. This slice does not alter Qt/SIP
 production code, PJSUA2 shutdown or the 139-entry CTest registration.
 The production PJSUA2 callback lifetime review remains open.
+
+
+## Commit 9 — PJSUA2 call shutdown-order hardening (ThinkPad build/CTest verified; live SIP pending)
+
+See `docs/phase8/commit9-pjsip-shutdown-order.md`. Both outgoing and incoming
+`stop()` paths now wait for bounded call-slot cleanup **before** destroying the
+derived Call callback target. The timeout fallback is not proven safe with
+in-flight PJSIP callbacks. `scripts/phase8/verify-pjsip-shutdown-order.sh`
+provides static contract tests plus a required canonical PJSIP build/CTest
+gate; test-account SIP runtime validation remains separate and pending.

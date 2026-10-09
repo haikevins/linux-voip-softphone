@@ -168,14 +168,18 @@ void SipIncomingCallClient::stop() noexcept
 {
     hangup();
 
+    // PJSUA2 may still deliver call callbacks until the call slot is released.
+    // Preserve the derived callback target during the bounded cleanup wait.
+    // A timeout retains the pre-existing forced-shutdown behavior; the
+    // timeout path still requires a live-SIP lifetime regression.
+    static_cast<void>(wait_for_call_cleanup(std::chrono::seconds{2}));
+
     {
         const std::lock_guard incoming_callback_lock{incoming_callback_mutex_};
         const std::lock_guard call_callback_lock{call_callback_mutex_};
         const std::lock_guard call_object_lock{call_object_mutex_};
         call_.reset();
     }
-
-    static_cast<void>(wait_for_call_cleanup(std::chrono::seconds{2}));
     static_cast<void>(shutdown_account_safely());
     account_.reset();
 
