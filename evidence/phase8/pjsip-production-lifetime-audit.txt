@@ -1,0 +1,107 @@
+Phase 8 Commit 12 — Production callback lifetime audit
+Baseline: phase/8-multithreading @ f77d0b3
+Status: THINKPAD AUTOMATED VERIFICATION PASS; LIVE SIP CALLBACK QUIESCENCE INCONCLUSIVE
+
+SCOPE:
+  src/pjsip/SipOutgoingCallClient.cpp (Commit 10 version)
+  src/pjsip/SipIncomingCallClient.cpp (Commit 10 version)
+  No production runtime code changes.
+
+LOCAL STATIC AUDIT OBSERVED (not ThinkPad):
+  Both production clients found and parsed.
+  Four callback overrides per client found.
+  Incoming and Call callback mutex anchors found.
+  Call slot wait precedes call_.reset().
+  Account shutdown remains non-forced (force=false).
+  stop() then frees Call, Account, Endpoint in audited order.
+  Structural contract: PASS
+  Live PJSUA2 callback quiescence: INCONCLUSIVE
+
+OPEN RISKS IN BOTH CLIENTS:
+  CALL_SLOT_WAIT_RESULT_DISCARDED
+  ACCOUNT_SHUTDOWN_RESULT_DISCARDED
+  ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE
+  CALLBACKS_BORROW_OWNER_BY_REFERENCE
+  REGISTRATION_CALLBACK_NO_TEARDOWN_GATE
+  NO_PRODUCTION_CALLBACK_ACTIVITY_GATE
+
+LOCAL MUTATION TESTS (not ThinkPad):
+  9/9 PASS
+
+THINKPAD ACCEPTANCE (OBSERVED):
+  Commit 12 source audit + mutation tests: PASS (9/9)
+  Phase8PjsipProductionAuditTest focused + canonical: PASS (1/1 each)
+  Focused Phase 8 CTest 7/7: PASS
+  Clang 18 isolated TSan six C++ tests x three: PASS (18/18 executions)
+  PJSIP CTest 45/45: PASS
+  Qt owner-thread regression: PASS
+  Canonical build and CTest 142/142: PASS
+  Commit/push sync: PENDING
+
+LIMITATIONS:
+  Static structure checks cannot guarantee callback quiescence.
+  No real SIP signaling or callback was run.
+  No observed UAF or race is claimed.
+  No live account shutdown/timeout behavior is asserted safe.
+  Avoid recording usernames/passwords or SIP packet captures.
+
+---
+
+Canonical ThinkPad Commit 12 verification
+Recorded: 2026-10-09T23:17:06+07:00
+Baseline: phase/8-multithreading @ f77d0b3
+
+ENVIRONMENT:
+  Linux ThinkPad
+  PJSIP: libpjproject 2.17
+  Canonical build: build/qt-pjsip-gui-debug
+
+VERIFIED COMMANDS:
+  bash scripts/phase8/verify-pjsip-production-lifetime-audit.sh
+  bash scripts/phase8/verify-queue.sh
+  Clang 18 standalone ThreadSanitizer with 3 repetitions
+  bash scripts/phase8/verify-pjsip-shutdown-order.sh
+  bash scripts/phase8/verify-qt-ownership.sh
+  cmake -S . -B build/qt-pjsip-gui-debug
+  cmake --build build/qt-pjsip-gui-debug
+  ctest --test-dir build/qt-pjsip-gui-debug --output-on-failure
+
+OBSERVED:
+  Production callback structural audit: PASS
+  Mutation-oriented regressions: 9/9 PASS
+  New audit CTest in focused build: 1/1 PASS
+  New audit CTest in canonical build: 1/1 PASS
+  Focused Phase 8 CTest: 7/7 PASS
+  Clang 18 TSan: 18/18 executions PASS
+  Shutdown structural tests: 6/6 PASS
+  PJSIP CTest: 45/45 PASS
+  Qt ownership regression: PASS
+  Full canonical CTest: 142/142 PASS
+
+RESULT:
+  PASS — Commit 12 automated verification on ThinkPad.
+
+PRODUCTION:
+  No production SIP/Qt code changed in Commit 12.
+
+LIMITATIONS:
+  Static source contract PASS does not establish
+  real PJSUA2 callback quiescence.
+
+  No live SIP registration or active call was exercised.
+  No callback-in-flight during account destruction was tested.
+  No two-second timeout with active callbacks was tested.
+  No live PJ_EBUSY shutdown recovery was verified.
+  No absence of data races or use-after-free is claimed.
+
+OPEN RISKS:
+  CALL_SLOT_WAIT_RESULT_DISCARDED
+  ACCOUNT_SHUTDOWN_RESULT_DISCARDED
+  ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE
+  CALLBACKS_BORROW_OWNER_BY_REFERENCE
+  REGISTRATION_CALLBACK_NO_TEARDOWN_GATE
+  NO_PRODUCTION_CALLBACK_ACTIVITY_GATE
+
+GIT:
+  Commit and remote synchronization pending
+  at evidence capture.

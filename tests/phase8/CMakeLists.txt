@@ -80,3 +80,14 @@ phase8_add_test(phase8_pjsip_callback_activity_tests
 
 # Leave headroom for slower, instrumented contention runs.
 set_tests_properties(Phase8MpmcStressTest PROPERTIES TIMEOUT 90)
+
+# Commit 12: inspect the actual production SIP callback entry points and
+# teardown ordering. Run this Python source audit without TSan: it neither
+# links nor instruments PJSUA2 and must not inflate the TSan six-C++-test gate.
+if(NOT PHASE8_ENABLE_TSAN)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    add_test(NAME Phase8PjsipProductionAuditTest
+        COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/test_pjsip_production_lifetime_audit.py")
+    set_tests_properties(Phase8PjsipProductionAuditTest PROPERTIES TIMEOUT 30)
+endif()
