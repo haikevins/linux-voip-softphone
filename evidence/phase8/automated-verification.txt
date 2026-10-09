@@ -310,36 +310,139 @@ NOT RUN / NOT CLAIMED:
   Qt/PJSIP callback thread-affinity audit, and real SIP/GUI manual tests.
 
 ---
-Phase 8 Commit 4 — canonical ThinkPad verification
+Phase 8 Commit 4 — observed canonical ThinkPad follow-up (maintainer log)
 Date: 2026-10-09
-Git baseline: phase/8-multithreading @ 9358f8b
-
+Git baseline: phase/8-multithreading @ 9358f8b (pre-Commit 4)
 COMMAND:
   bash scripts/phase8/integrate-canonical-ctest.sh
 OBSERVED:
-  Phase 8 CTest registration added to tests/CMakeLists.txt.
+  Added only the following to tests/CMakeLists.txt:
+    # Phase 8 concurrency CTest registration
+    add_subdirectory(phase8)
 RESULT: PASS
 
 COMMAND:
   bash scripts/phase8/verify-queue.sh
 OBSERVED:
-  Focused CTest: 3/3 passed, 0 failed.
+  Focused Phase 8 CTest: 3/3 passed, 0 failed.
+RESULT: PASS
+
+COMMAND:
+  cmake --build build/qt-pjsip-gui-debug -j"$(nproc)"
+  ctest --test-dir build/qt-pjsip-gui-debug --output-on-failure
+OBSERVED:
+  Build successful, canonical CTest: 138/138 passed, 0 failed.
+  Three Phase 8 entries registered as #136–#138.
+RESULT: PASS
+
+COMMAND:
+  git commit -m "test(phase8): integrate concurrency tests into canonical CTest"
+  git push origin phase/8-multithreading
+  git fetch origin phase/8-multithreading
+  compare local HEAD with origin/phase/8-multithreading
+OBSERVED:
+  Commit c7a4243, 9 files changed; push and HEAD synchronization PASS;
+  working tree clean.
+RESULT: PASS
+
+---
+Phase 8 Commit 5 — isolated Linux environment, NOT canonical ThinkPad
+Date: 2026-10-09
+Toolchain: Debian GCC 14.2.0, CMake 3.31.6; C++20
+COMMAND:
+  cmake -S tests/phase8 -B <isolated-build> -DCMAKE_BUILD_TYPE=Debug
+  cmake --build <isolated-build> --parallel 4
+  ctest --test-dir <isolated-build> --output-on-failure
+OBSERVED:
+  Four Phase 8 CTest entries; 4/4 passed, 0 failed.
+  New Phase8MpmcStressTest passed four scenarios.
+RESULT: PASS (isolated)
+
+COMMAND:
+  ctest --test-dir <isolated-build> \
+    -R '^Phase8MpmcStressTest$' --repeat until-fail:100 --output-on-failure
+OBSERVED:
+  100/100 runs passed, 0 failures.
+RESULT: PASS (isolated)
+
+COMMAND:
+  ctest --test-dir <isolated-build> \
+    --repeat until-fail:25 --output-on-failure
+OBSERVED:
+  Each of four tests completed 25 times; 100 passing test executions.
+RESULT: PASS (isolated)
+
+COMMAND:
+  c++ -std=c++20 -O1 -g -Wall -Wextra -Wpedantic -Werror -pthread \
+    -I src tests/phase8/test_mpmc_stress.cpp -o <isolated-binary>
+  bash -n scripts/phase8/{verify-queue,verify-stress}.sh
+OBSERVED:
+  Strict compile and Bash syntax checks passed.
+RESULT: PASS (isolated)
+
+COMMAND:
+  PHASE8_STRESS_REPEATS=10 bash scripts/phase8/verify-stress.sh
+OBSERVED:
+  Repeatable script configured and built standalone test; 10/10 stress
+  executions passed (isolated environment).
+RESULT: PASS (isolated)
+
+DETAILS: evidence/phase8/stress-test.txt
+
+NOT RUN / NOT CLAIMED FOR COMMIT 5:
+  Canonical ThinkPad 139-test regression; ThreadSanitizer;
+  Qt/PJSIP ownership audit; real SIP/GUI manual call scenarios.
+
+---
+Phase 8 Commit 5 — canonical ThinkPad verification
+Recorded: 2026-10-09T16:16:28+07:00
+Git baseline: phase/8-multithreading @ c7a4243
+
+COMMAND:
+  bash scripts/phase8/verify-queue.sh
+OBSERVED:
+  Focused Phase 8 CTest: 4/4 passed.
+RESULT: PASS
+
+COMMAND:
+  bash scripts/phase8/verify-stress.sh
+OBSERVED:
+  10 repeated stress executions passed.
+RESULT: PASS
+
+COMMAND:
+  PHASE8_STRESS_REPEATS=100 \
+    bash scripts/phase8/verify-stress.sh
+OBSERVED:
+  100 repeated stress executions passed.
+RESULT: PASS
+
+COMMAND:
+  cmake -S . -B build/qt-pjsip-gui-debug
+OBSERVED:
+  CMake configuration completed successfully.
 RESULT: PASS
 
 COMMAND:
   cmake --build build/qt-pjsip-gui-debug -j"$(nproc)"
 OBSERVED:
-  Canonical project build completed successfully.
+  Canonical build completed successfully.
+  Phase 8 MPMC stress executable linked.
+RESULT: PASS
+
+COMMAND:
+  ctest --test-dir build/qt-pjsip-gui-debug -N -R '^Phase8'
+OBSERVED:
+  Four Phase 8 tests registered.
 RESULT: PASS
 
 COMMAND:
   ctest --test-dir build/qt-pjsip-gui-debug --output-on-failure
 OBSERVED:
-  Canonical CTest: 138/138 passed, 0 failed.
-  Existing 135 regression entries preserved.
-  Three Phase 8 CTest entries registered.
+  Canonical CTest: 139/139 passed, 0 failed.
+  All existing 138 entries preserved.
 RESULT: PASS
 
 Manual SIP/GUI runtime tests: NOT RUN.
 ThreadSanitizer: NOT RUN.
-100,000-event stress test: NOT RUN.
+Qt/PJSIP thread-affinity audit: NOT RUN.

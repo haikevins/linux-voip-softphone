@@ -29,3 +29,7 @@ phase8_add_test(phase8_serial_task_worker_tests
     test_serial_task_worker.cpp Phase8SerialTaskWorkerTest)
 phase8_add_test(phase8_thread_ownership_tests
     test_thread_ownership.cpp Phase8ThreadOwnershipTest)
+phase8_add_test(phase8_mpmc_stress_tests
+    test_mpmc_stress.cpp Phase8MpmcStressTest)
+# Leave headroom for slower, instrumented contention runs.
+set_tests_properties(Phase8MpmcStressTest PROPERTIES TIMEOUT 90)

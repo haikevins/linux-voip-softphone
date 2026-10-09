@@ -1,6 +1,6 @@
 # Phase 8 — Multithreading
 
-Status: **in progress — Commits 1–4 concurrency foundation and test integration**.
+Status: **in progress — Commits 1–5 concurrency foundation, canonical CTest integration, and MPMC stress coverage**.
 
 Baseline: Phase 7 release `v0.8-qt-gui` (`main` at `2bd8740` in the
 handoff). Do not change the release tag or reopen Phase 7 behavior without
@@ -84,16 +84,46 @@ path to register the focused tests with the canonical top-level CTest.
   count is not claimed until it is observed in the canonical clone.
 - Commit 3 canonical results were supplied by the maintainer: focused
   **2/2** and existing regression **135/135**, commit `9358f8b` pushed.
+- The maintainer subsequently provided the Commit 4 ThinkPad log: focused
+  **3/3**, canonical **138/138**, `c7a4243` pushed, remote HEAD matching
+  and clean working tree on 2026-10-09. See `evidence/phase8/automated-verification.txt`.
+
+## Commit 5: 100,000-event MPMC stress and failure injection
+
+- `Phase8MpmcStressTest` adds four independent stress scenarios:
+  1. **100,000 distinct events**, four producers and four consumers, verified
+     against atomic per-ID occurrence counts (no missing, duplicate, malformed,
+     or prematurely rejected events); close and drain after producers join.
+  2. 20,000 events across four producers and one consumer to verify FIFO for
+     each producer. Delivery order is **not** inferred from the scheduling of
+     separate consumer callbacks in the 4x4 test.
+  3. Queue closure with producers still live and four consumers, accounting
+     for each accepted/rejected push and draining all accepted IDs exactly
+     once; close races may produce different acceptance counts per run.
+  4. 10,000 tasks from four producers through `SerialTaskWorker`, including
+     deterministic injected exceptions; every task is counted as completed
+     and all exceptions are contained.
+- `tests/phase8/CMakeLists.txt` registers a fourth CTest entry when included
+  from the canonical project **or** configured as a standalone suite.
+  Expected canonical count is now **139** (previous verified 138 + 1).
+  This count remains a target until observed on the ThinkPad.
+- `scripts/phase8/verify-queue.sh` runs all four tests; the separate
+  `scripts/phase8/verify-stress.sh` repeats the dedicated stress CTest ten
+  times by default (`PHASE8_STRESS_REPEATS=1..100`).
+- Isolated Linux toolchain verification is recorded in
+  `evidence/phase8/stress-test.txt`: 4/4 CTest, 100/100 repetitions of
+  the stress binary, and 25 complete-suite cycles passed. Those results
+  are **not** presented as ThinkPad/canonical results.
+- No Qt/PJSIP runtime code or behavior is changed by Commit 5.
 
 ## Proposed follow-up sequence (not yet implemented)
 
-1. Audit actual Qt/PJSIP owner/callback boundaries before any integration.
-2. Add reproducible 100,000-event MPMC stress and failure injection.
-3. Add independent ThreadSanitizer configuration, verify on supported
+1. Audit actual Qt/PJSIP owner/callback boundaries before integration.
+2. Add independent ThreadSanitizer configuration, verify on supported
    Linux toolchains, and record limitations if it cannot run.
-4. Consider minimal worker/event handoff integration only after dedicated
+3. Consider minimal worker/event handoff integration only after dedicated
    lifetime/GUI/PJSIP ordering tests establish safe ownership.
-5. Run Phase 7 + Phase 8 regression gates and relevant manual SIP checks;
+4. Run Phase 7 + Phase 8 regression gates and relevant manual SIP checks;
    document final results before declaring milestone closure.
 
 ## In scope
@@ -115,15 +145,14 @@ Focused (no SIP, Qt, PJSIP, or GoogleTest dependency):
 
 ```bash
 bash scripts/phase8/verify-queue.sh
+bash scripts/phase8/verify-stress.sh
 ```
 
-After verifying the ZIP hash and overlay paths, run the guarded
-registration script once and inspect its resulting Git diff:
-
-```bash
-bash scripts/phase8/integrate-canonical-ctest.sh
-git diff -- tests/CMakeLists.txt
-```
+The guarded `integrate-canonical-ctest.sh` script was executed during
+Commit 4 and its three-line CMake registration was committed. **Do not run
+it again** for Commit 5. Confirm that `tests/CMakeLists.txt` already includes
+`add_subdirectory(phase8)`; the fourth test is then discovered automatically
+by the updated `tests/phase8/CMakeLists.txt`.
 
 Before committing the overlay on the canonical repository, also use its
 existing build and full regression gate, for example:
@@ -138,7 +167,7 @@ machines. Do not treat copied `build/` paths as a verified baseline.
 
 ## Manual matrix
 
-Commits 1–4 change no SIP or GUI runtime behavior. Manual SIP call checks
+Commits 1–5 change no SIP or GUI runtime behavior. Manual SIP call checks
 are **not executed** for these isolated concurrency slices. Before any future integration
 with registration/call workers, test registration, outgoing/incoming calls,
 remote rejection after Ringing, local/remote hangup, retry without
@@ -156,18 +185,20 @@ re-registration, and RTP diagnostics refresh/clear behavior.
   guarantee across independent producers.
 - `std::optional<T>` construction requires move-constructible `T`; failures
   during a throwing `T` move do not remove the front queue entry.
-- Phase 8 queue/worker runtime integration remains unverified; the
-  canonical Phase 7 regression passed after Commits 1, 2 and 3 (maintainer
-  logs). Commit 4's top-level registration remains pending canonical verification.
+- Phase 8 queue/worker runtime integration remains unverified. Maintainer
+  logs show the canonical regression passed after Commits 1–4 (135/135
+  through Commit 3, 138/138 after Commit 4). Commit 5 canonical 139-entry
+  verification is pending ThinkPad execution.
 - `SerialTaskWorker` accepts `std::function<void()>`, not move-only callable
   objects. Task exceptions are counted, not forwarded to a UI error handler.
   Queue/task memory usage is unbounded. Calling shutdown from a callback is
   rejected; destroying the owner from a callback is a contract violation.
 
-## Exit criteria (all pending)
+## Exit criteria (partial)
 
-Worker stop/close semantics verified; correct event ownership preserved;
-100,000-event MPMC integrity/stress result observed; supported TSan gate
-recorded; canonical full regression passes; necessary manual SIP scenarios
-pass; architecture/interview docs, sanitized evidence, and Git/PR closure
-completed.
+Standalone worker stop/close, worker thread-ownership, and 100,000-event
+MPMC integrity have automated test evidence. The 100,000-event stress gate
+and final canonical regression must still pass on the maintainer's ThinkPad.
+Application-level Qt/PJSIP ownership, supported TSan evidence, relevant
+manual SIP/GUI checks (if runtime integration changes behavior), final
+architecture/interview docs, and Git/PR/release closure remain pending.

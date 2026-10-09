@@ -11,8 +11,9 @@ test -f "$SOURCE_DIR/CMakeLists.txt"
 test -f "$REPO_ROOT/src/concurrency/ThreadSafeQueue.hpp"
 test -f "$REPO_ROOT/src/concurrency/SerialTaskWorker.hpp"
 test -f "$SOURCE_DIR/test_thread_ownership.cpp"
+test -f "$SOURCE_DIR/test_mpmc_stress.cpp"
 
-printf 'Phase 8 queue, worker and ownership verification\nSource: %s\nBuild:  %s\n' "$SOURCE_DIR" "$BUILD_DIR"
+printf 'Phase 8 queue, worker, ownership and MPMC stress verification\nSource: %s\nBuild:  %s\n' "$SOURCE_DIR" "$BUILD_DIR"
 cmake -S "$SOURCE_DIR" -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug
 cmake --build "$BUILD_DIR" --parallel 2
 ctest --test-dir "$BUILD_DIR" --output-on-failure

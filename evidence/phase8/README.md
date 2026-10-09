@@ -1,15 +1,18 @@
 # Phase 8 evidence index
 
-Phase 8 is **in progress**. Evidence is not a milestone-closure claim.
+Phase 8 remains **in progress**. Test evidence does not close the milestone.
 
-- `automated-verification.txt`: observed isolated tests for Commits 1–4;
-  maintainer-reported ThinkPad verification for Commits 1–3, including
-  Commit 3 focused 2/2, full regression 135/135, and pushed `9358f8b`.
-  Commit 4's canonical 138-entry regression is *not yet observed*.
-- `manual-verification.txt`: SIP/GUI manual scope and untested status.
+- `automated-verification.txt`: preserved isolated verification for Commits
+  1–4 and maintainer-observed ThinkPad gates. Commit 4 focused CTest 3/3,
+  canonical 138/138, `c7a4243` pushed/synchronized (2026-10-09 log).
+  Additional Commit 5 *isolated* results are recorded separately from the
+  ThinkPad results; expected canonical count after this ZIP is 139.
+- `stress-test.txt`: Commit 5 observed 100,000-event/4x4 MPMC integrity,
+  FIFO, close/drain, failure injection, and repeated-stress test evidence.
+- `manual-verification.txt`: SIP/GUI manual testing status; unchanged by
+  these isolated concurrency tests.
 
-The 100,000-event stress run, ThreadSanitizer report, and real SIP/GUI manual
-verification are **not yet performed**. Commit 4 adds three standalone CTest entries and a
-guarded script to register those entries in the canonical suite; the script
-has not been run on the ThinkPad in this evidence. Record observed results
-after each new gate. Do not include raw SIP auth material, PCAP, or passwords.
+Commit 5 canonical ThinkPad regression, ThreadSanitizer, Qt/PJSIP callback
+thread-affinity audit, and real SIP/GUI manual verification are **not yet
+performed/confirmed**. Record results only after running the corresponding
+gates. Never include raw SIP auth, PCAP, SRTP keys, or passwords.
