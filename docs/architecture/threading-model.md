@@ -12,8 +12,10 @@ The queue introduced in Phase 8 Commit 1 and extended in Commit 2 is an
 **isolated library component**. Commit 3 adds a standalone
 `SerialTaskWorker` that owns a thread and consumes callable tasks from the
 queue. Neither component is wired to Qt, `CallManager`, or PJSUA2.
-Commits 1 and 2 were tested in the canonical ThinkPad repository on
-2026-10-09 (maintainer-supplied terminal logs).
+Commits 1–3 were tested in the canonical ThinkPad repository on
+2026-10-09 (maintainer-supplied terminal logs). Commit 4 adds an explicit
+worker thread-ownership test and a guarded canonical CTest registration step.
+It does **not** establish Qt/PJSIP callback thread affinity.
 
 ## Current vs. planned event paths
 
@@ -22,7 +24,7 @@ Phase 7 baseline (reported in release handoff)
 PJSUA2/session worker -> Qt queued handoff -> GUI state/UI thread
                   CallManager: owner-thread affinity
 
-Phase 8 Commits 1–3 (implemented; independent of the app)
+Phase 8 Commits 1–4 (implemented; independent of the app)
 producer(s) -> ThreadSafeQueue<T> -> consumer(s)
                  close() / drain
                  stop_token-local cancellation for waiters
@@ -30,7 +32,8 @@ producer(s) -> ThreadSafeQueue<T> -> consumer(s)
 post(task) -> SerialTaskWorker [owns std::jthread]
                      -> ThreadSafeQueue<Task> -> single worker callback
                           request_close() -> drain -> join
-                 independent queue + worker CTests
+                 queue + worker + ownership CTests
+                 standalone or canonical CTest (after guarded registration)
 
 Phase 8 future (planned, not implemented)
 actual Qt/PJSIP owner audit + 100k MPMC stress / TSan verification
@@ -94,6 +97,21 @@ moves in concurrency-sensitive paths.
   Qt GUI thread or the PJSIP endpoint-owner thread. Never access Qt UI state
   or PJSIP objects through this worker without an independently verified
   ownership and queued-handoff contract.
+
+## Commit 4 test ownership and CTest boundary
+
+- The ownership test exercises four concurrent *external* task producers
+  and asserts that their callbacks execute only on the `SerialTaskWorker`
+  thread. A nested post from a running callback must execute later, after
+  an already-queued task, and on that same owned thread. These checks are
+  not a general replacement for race detection or the planned MPMC stress.
+- Standalone `tests/phase8` retains a separately configurable CMake project.
+  When entered from the canonical parent, the file avoids a nested project
+  and registers three `Phase8*` CTest entries. The guarded integration
+  script appends `add_subdirectory(phase8)` to `tests/CMakeLists.txt` in the
+  canonical checkout. It does not edit Qt or PJSIP runtime code.
+- The app-level ownership/callback audit is still pending; nothing here
+  authorizes PJSUA2 access from the general-purpose worker thread.
 
 ## Future acceptance checks
 

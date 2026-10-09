@@ -1,6 +1,6 @@
 # Phase 8 — Multithreading
 
-Status: **in progress — Commits 1–3 isolated concurrency foundation**.
+Status: **in progress — Commits 1–4 concurrency foundation and test integration**.
 
 Baseline: Phase 7 release `v0.8-qt-gui` (`main` at `2bd8740` in the
 handoff). Do not change the release tag or reopen Phase 7 behavior without
@@ -25,9 +25,8 @@ work to new threads.
   handoff and proposed Phase 8 extensions.
 
 **No existing PJSIP, Qt, GUI, call-state, or call-media source is modified.**
-This slice is intentionally stand-alone: the Phase 8 test is **not yet**
-registered with the repository's top-level CTest. Registration and integration
-must be reviewed against the actual top-level CMake files in a later commit.
+Commit 1 was intentionally standalone. Commit 4 adds a guarded, reviewable
+path to register the focused tests with the canonical top-level CTest.
 
 ## Commit 2: implemented here
 
@@ -65,10 +64,30 @@ must be reviewed against the actual top-level CMake files in a later commit.
   executable scenarios. No Qt or PJSUA2 runtime integration is claimed.
 - `scripts/phase8/verify-queue.sh` retains its path and runs both targets.
 
+## Commit 4: canonical CTest registration and worker ownership tests
+
+- `tests/phase8/CMakeLists.txt` supports both standalone configuration and
+  inclusion via `add_subdirectory(phase8)` under the canonical `tests/` tree;
+  it does not create a nested CMake project when included by the app.
+- New `Phase8ThreadOwnershipTest` verifies that callbacks from four
+  producer threads run only on one stable worker thread and that nested
+  `post()` operations are queued, not executed reentrantly. This verifies
+  **SerialTaskWorker ownership only**, not Qt/PJSIP `CallManager` ownership.
+- `scripts/phase8/integrate-canonical-ctest.sh` makes one guarded append to
+  the existing `tests/CMakeLists.txt` **on the canonical ThinkPad clone**.
+  That file is not shipped as an unverifiable overwrite in the ZIP; the
+  script requires branch `phase/8-multithreading`, baseline HEAD `9358f8b`,
+  a tracked/unchanged tests/CMakeLists.txt, and the new test files.
+- Once the script has run, inspect `git diff -- tests/CMakeLists.txt` and
+  reconfigure/rebuild the canonical project before running `ctest`. Based
+  on the prior 135-entry suite, **138** entries are expected, but the exact
+  count is not claimed until it is observed in the canonical clone.
+- Commit 3 canonical results were supplied by the maintainer: focused
+  **2/2** and existing regression **135/135**, commit `9358f8b` pushed.
+
 ## Proposed follow-up sequence (not yet implemented)
 
-1. Audit actual Qt/PJSIP owner/callback boundaries before any integration;
-   integrate the focused tests into the canonical top-level CTest gate.
+1. Audit actual Qt/PJSIP owner/callback boundaries before any integration.
 2. Add reproducible 100,000-event MPMC stress and failure injection.
 3. Add independent ThreadSanitizer configuration, verify on supported
    Linux toolchains, and record limitations if it cannot run.
@@ -98,6 +117,14 @@ Focused (no SIP, Qt, PJSIP, or GoogleTest dependency):
 bash scripts/phase8/verify-queue.sh
 ```
 
+After verifying the ZIP hash and overlay paths, run the guarded
+registration script once and inspect its resulting Git diff:
+
+```bash
+bash scripts/phase8/integrate-canonical-ctest.sh
+git diff -- tests/CMakeLists.txt
+```
+
 Before committing the overlay on the canonical repository, also use its
 existing build and full regression gate, for example:
 
@@ -111,7 +138,7 @@ machines. Do not treat copied `build/` paths as a verified baseline.
 
 ## Manual matrix
 
-Commits 1–3 change no SIP or GUI runtime behavior. Manual SIP call checks
+Commits 1–4 change no SIP or GUI runtime behavior. Manual SIP call checks
 are **not executed** for these isolated concurrency slices. Before any future integration
 with registration/call workers, test registration, outgoing/incoming calls,
 remote rejection after Ringing, local/remote hangup, retry without
@@ -130,8 +157,8 @@ re-registration, and RTP diagnostics refresh/clear behavior.
 - `std::optional<T>` construction requires move-constructible `T`; failures
   during a throwing `T` move do not remove the front queue entry.
 - Phase 8 queue/worker runtime integration remains unverified; the
-  canonical Phase 7 regression passed after Commits 1 and 2 (maintainer
-  logs). Commit 3 must be checked in the canonical clone before commit.
+  canonical Phase 7 regression passed after Commits 1, 2 and 3 (maintainer
+  logs). Commit 4's top-level registration remains pending canonical verification.
 - `SerialTaskWorker` accepts `std::function<void()>`, not move-only callable
   objects. Task exceptions are counted, not forwarded to a UI error handler.
   Queue/task memory usage is unbounded. Calling shutdown from a callback is

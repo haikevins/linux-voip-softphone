@@ -207,3 +207,139 @@ NOT RUN / NOT CLAIMED FOR COMMIT 3:
   Real SIP/Asterisk/Qt GUI manual scenarios
   100,000-event MPMC stress and ThreadSanitizer
   Git commit, push, and origin synchronization
+
+---
+Phase 8 Commit 3 — canonical ThinkPad verification (maintainer-provided log)
+Date: 2026-10-09
+Git: phase/8-multithreading; commit 9358f8b
+
+COMMAND:
+  bash scripts/phase8/verify-queue.sh
+OBSERVED:
+  Both focused standalone CTests passed: 2/2, 0 failed.
+RESULT: PASS
+
+COMMAND:
+  cmake --build build/qt-pjsip-gui-debug -j"$(nproc)"
+OBSERVED:
+  ninja: no work to do. No existing application build inputs changed.
+RESULT: PASS (existing targets up-to-date, not a rebuild of Phase 8 code)
+
+COMMAND:
+  ctest --test-dir build/qt-pjsip-gui-debug --output-on-failure
+OBSERVED:
+  Existing project CTest: 135/135 passed, 0 failed.
+  Phase 8 focused tests remained in their separate CTest build tree.
+RESULT: PASS
+
+COMMAND:
+  git push origin phase/8-multithreading &&
+  git fetch origin phase/8-multithreading &&
+  test "$(git rev-parse HEAD)" =
+       "$(git rev-parse origin/phase/8-multithreading)"
+OBSERVED:
+  9358f8b pushed; local/remote HEAD matched; working tree clean.
+RESULT: PASS
+
+Source: maintainer-supplied terminal output, not a run by the assistant
+inside the canonical ThinkPad repository. No SIP manual checks claimed.
+
+---
+Phase 8 Commit 4 — assistant isolated overlay verification
+Date: 2026-10-09
+Scope: standalone/parent-compatible Phase 8 CMake and worker ownership tests.
+Source: isolated workspace based on supplied Commits 1–3 overlay archives,
+        NOT the canonical ThinkPad Git repository.
+Toolchain: CMake 3.31.6; Debian GNU C++ 14.2.0.
+
+COMMAND:
+  bash -n scripts/phase8/integrate-canonical-ctest.sh
+  bash -n scripts/phase8/verify-queue.sh
+OBSERVED:
+  Shell syntax checks passed.
+RESULT: PASS
+
+COMMAND:
+  PHASE8_BUILD_DIR=<isolated-build-dir> bash scripts/phase8/verify-queue.sh
+OBSERVED:
+  Configure/build passed; CTest queue + worker + ownership: 3/3 passed.
+  New ownership executable: 2 scenarios passed.
+RESULT: PASS
+
+COMMAND:
+  c++ -std=c++20 -pthread -Wall -Wextra -Wpedantic -Werror \
+    -Isrc tests/phase8/test_thread_ownership.cpp -o <isolated-binary>
+  <isolated-binary>
+OBSERVED:
+  Warnings-as-errors compilation passed; 2 ownership scenarios passed.
+RESULT: PASS
+
+NOT RUN / NOT CLAIMED FOR COMMIT 4:
+  Guarded integration script against canonical tests/CMakeLists.txt
+  Canonical ThinkPad top-level CTest count or full project regression
+  Qt/PJSIP owner-thread audit, manual SIP/Asterisk/GUI tests
+  100,000-event MPMC stress and ThreadSanitizer
+  Git commit, push, remote synchronization
+
+ADDITIONAL COMMIT 4 ISOLATED CHECKS:
+
+COMMAND:
+  Build synthetic CMake parent project with 135 dummy legacy CTests plus
+  add_subdirectory(tests) -> add_subdirectory(phase8).
+  ctest --test-dir <synthetic-parent-build> --output-on-failure
+OBSERVED:
+  138/138 CTest entries passed (135 dummy legacy + 3 real Phase 8 entries).
+RESULT: PASS (synthetic integration, NOT the canonical project regression)
+
+COMMAND:
+  Run queue, worker, and ownership executables 100 additional times each.
+OBSERVED:
+  Each binary: 100/100 successful invocations, 0 observed failures.
+RESULT: PASS
+
+COMMAND:
+  Run integration appender in a temporary Git fixture with a synthetic
+  HEAD guard matching that fixture (without changing production script).
+OBSERVED:
+  Original tests/CMakeLists.txt preserved byte-for-byte; exactly one
+  add_subdirectory(phase8) line appended. Second invocation safely aborted.
+RESULT: PASS (temporary Git fixture; canonical CMake not inspected)
+
+NOT RUN / NOT CLAIMED:
+  ThreadSanitizer, the actual ThinkPad's 138-test canonical suite,
+  Qt/PJSIP callback thread-affinity audit, and real SIP/GUI manual tests.
+
+---
+Phase 8 Commit 4 — canonical ThinkPad verification
+Date: 2026-10-09
+Git baseline: phase/8-multithreading @ 9358f8b
+
+COMMAND:
+  bash scripts/phase8/integrate-canonical-ctest.sh
+OBSERVED:
+  Phase 8 CTest registration added to tests/CMakeLists.txt.
+RESULT: PASS
+
+COMMAND:
+  bash scripts/phase8/verify-queue.sh
+OBSERVED:
+  Focused CTest: 3/3 passed, 0 failed.
+RESULT: PASS
+
+COMMAND:
+  cmake --build build/qt-pjsip-gui-debug -j"$(nproc)"
+OBSERVED:
+  Canonical project build completed successfully.
+RESULT: PASS
+
+COMMAND:
+  ctest --test-dir build/qt-pjsip-gui-debug --output-on-failure
+OBSERVED:
+  Canonical CTest: 138/138 passed, 0 failed.
+  Existing 135 regression entries preserved.
+  Three Phase 8 CTest entries registered.
+RESULT: PASS
+
+Manual SIP/GUI runtime tests: NOT RUN.
+ThreadSanitizer: NOT RUN.
+100,000-event stress test: NOT RUN.
