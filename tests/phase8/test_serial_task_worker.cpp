@@ -16,13 +16,15 @@ namespace {
 using voip::concurrency::SerialTaskWorker;
 using namespace std::chrono_literals;
 
-void require(bool condition, std::string_view description) {
+void require(bool condition, std::string_view description)
+{
     if (!condition) {
         throw std::runtime_error(std::string(description));
     }
 }
 
-void test_fifo_single_worker_thread() {
+void test_fifo_single_worker_thread()
+{
     SerialTaskWorker worker;
     std::vector<int> order;
     std::vector<std::thread::id> observed_threads;
@@ -31,7 +33,8 @@ void test_fifo_single_worker_thread() {
         require(worker.post([&, i] {
             order.push_back(i);
             observed_threads.push_back(std::this_thread::get_id());
-        }), "post FIFO work");
+        }),
+                "post FIFO work");
     }
     worker.shutdown();
     require(order.size() == 100, "all FIFO work executed");
@@ -42,11 +45,11 @@ void test_fifo_single_worker_thread() {
         require(observed_threads[static_cast<std::size_t>(i)] == observed_threads[0],
                 "every task executes on one owned worker thread");
     }
-    require(worker.completed() == 100 && worker.failures() == 0,
-            "successful task counters");
+    require(worker.completed() == 100 && worker.failures() == 0, "successful task counters");
 }
 
-void test_shutdown_drains_rejects_and_is_idempotent() {
+void test_shutdown_drains_rejects_and_is_idempotent()
+{
     SerialTaskWorker worker;
     require(!worker.post({}), "empty callable rejected even before close");
     std::atomic<int> received{0};
@@ -61,7 +64,8 @@ void test_shutdown_drains_rejects_and_is_idempotent() {
     require(!worker.post({}), "empty task rejected");
 }
 
-void test_exception_containment_and_accounting() {
+void test_exception_containment_and_accounting()
+{
     SerialTaskWorker worker;
     std::atomic<int> reached{0};
     require(worker.post([] { throw std::runtime_error("intentional test error"); }),
@@ -73,7 +77,8 @@ void test_exception_containment_and_accounting() {
     require(worker.failures() == 1, "exception counted without terminating");
 }
 
-void test_request_close_from_callback() {
+void test_request_close_from_callback()
+{
     SerialTaskWorker worker;
     std::atomic<bool> later_post_rejected{false};
     std::promise<void> callback_closed;
@@ -82,7 +87,8 @@ void test_request_close_from_callback() {
         worker.request_close();
         later_post_rejected = !worker.post([] {});
         callback_closed.set_value();
-    }), "post self-closing task");
+    }),
+            "post self-closing task");
     const bool closed_by_callback = closed.wait_for(3s) == std::future_status::ready;
     worker.shutdown();
     require(closed_by_callback, "callback did not close the queue");
@@ -90,22 +96,25 @@ void test_request_close_from_callback() {
     require(worker.completed() == 1, "self-closing task completed");
 }
 
-void test_shutdown_from_callback_is_refused_without_deadlock() {
+void test_shutdown_from_callback_is_refused_without_deadlock()
+{
     SerialTaskWorker worker;
     std::atomic<bool> refused{false};
     require(worker.post([&] {
         try {
             worker.shutdown();
-        } catch (const std::logic_error&) {
+        } catch (const std::logic_error &) {
             refused = true;
         }
-    }), "post self-shutdown attempt");
+    }),
+            "post self-shutdown attempt");
     worker.shutdown();
     require(refused, "self-shutdown explicitly refused");
     require(worker.failures() == 0, "handled rejection not a failed task");
 }
 
-void test_shutdown_waits_for_running_task() {
+void test_shutdown_waits_for_running_task()
+{
     SerialTaskWorker worker;
     std::promise<void> entered;
     auto entered_future = entered.get_future();
@@ -116,7 +125,8 @@ void test_shutdown_waits_for_running_task() {
         entered.set_value();
         release_future.wait();
         ++reached;
-    }), "post blocked task");
+    }),
+            "post blocked task");
     const bool started = entered_future.wait_for(3s) == std::future_status::ready;
     if (!started) {
         // Release in all error paths to keep the worker destructor joinable.
@@ -136,7 +146,8 @@ void test_shutdown_waits_for_running_task() {
     require(reached == 2, "shutdown drains pending work after in-flight task");
 }
 
-void test_destructor_drains_outstanding_work() {
+void test_destructor_drains_outstanding_work()
+{
     std::atomic<int> reached{0};
     {
         SerialTaskWorker worker;
@@ -147,7 +158,8 @@ void test_destructor_drains_outstanding_work() {
     require(reached == 300, "destructor joins and drains accepted tasks");
 }
 
-void test_concurrent_shutdown_calls() {
+void test_concurrent_shutdown_calls()
+{
     SerialTaskWorker worker;
     std::atomic<int> reached{0};
     for (int i = 0; i < 200; ++i) {
@@ -161,7 +173,8 @@ void test_concurrent_shutdown_calls() {
     require(worker.completed() == 200, "shutdown completion count");
 }
 
-void test_concurrent_producers_no_lost_tasks() {
+void test_concurrent_producers_no_lost_tasks()
+{
     constexpr int producers = 4;
     constexpr int per_producer = 500;
     constexpr int total = producers * per_producer;
@@ -188,7 +201,8 @@ void test_concurrent_producers_no_lost_tasks() {
     }
 }
 
-void test_close_races_with_posts() {
+void test_close_races_with_posts()
+{
     SerialTaskWorker worker;
     constexpr int producers = 4;
     constexpr int per_producer = 500;
@@ -218,9 +232,10 @@ void test_close_races_with_posts() {
             "completed count equals accepted tasks");
 }
 
-}  // namespace
+} // namespace
 
-int main() {
+int main()
+{
     try {
         test_fifo_single_worker_thread();
         test_shutdown_drains_rejects_and_is_idempotent();
@@ -234,7 +249,7 @@ int main() {
         test_close_races_with_posts();
         std::cout << "PASS: 10 Phase 8 SerialTaskWorker scenarios\n";
         return 0;
-    } catch (const std::exception& error) {
+    } catch (const std::exception &error) {
         std::cerr << "FAIL: " << error.what() << '\n';
         return 1;
     }

@@ -11,10 +11,10 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <mutex>
 #include <condition_variable>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <string_view>
 #include <thread>
 #include <utility>
@@ -684,7 +684,6 @@ TEST(QtRegistrationBackendTest, RejectedCallAllowsExplicitRecoveryWithoutReregis
     EXPECT_EQ(state->registration_count.load(), 1);
 }
 
-
 // This seam deliberately blocks a registration result while the GUI owner is
 // destroyed. No Qt event loop is pumped before the queued result is discarded.
 struct RegistrationShutdownGate
@@ -767,7 +766,7 @@ TEST(QtRegistrationBackendTest, DestructionJoinsInFlightSessionWithoutDelivering
     {
         std::unique_lock lock{gate->mutex};
         entered = gate->changed.wait_for(lock, std::chrono::seconds{2},
-                                        [&gate] { return gate->in_wait; });
+                                         [&gate] { return gate->in_wait; });
     }
     if (!entered) {
         // Release on every failure path: never leave the destructor waiting on

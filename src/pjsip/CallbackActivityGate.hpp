@@ -34,7 +34,10 @@ class CallbackActivityGate final
             return *this;
         }
 
-        ~Permit() { release(); }
+        ~Permit()
+        {
+            release();
+        }
 
         void release() noexcept
         {

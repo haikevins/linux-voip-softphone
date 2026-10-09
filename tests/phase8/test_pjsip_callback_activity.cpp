@@ -144,7 +144,8 @@ int main()
         moved_permit_releases_exactly_once();
         concurrent_wait_unblocks_after_last_callback();
         concurrent_admission_then_close_rejects_late_entries();
-        std::cout << "PASS: seven callback activity scenarios (admission, drain, timeout, concurrency)\n";
+        std::cout
+            << "PASS: seven callback activity scenarios (admission, drain, timeout, concurrency)\n";
         return 0;
     } catch (const std::exception &error) {
         std::cerr << "FAIL: " << error.what() << '\n';

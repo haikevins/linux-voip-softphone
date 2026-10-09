@@ -25,37 +25,42 @@ namespace voip::concurrency {
 // - Task exceptions are contained so subsequent tasks still run; failures()
 //   records the number of throwing tasks. The exception itself is not stored.
 // - No Qt or PJSIP thread-safety/ownership guarantee is implied here.
-class SerialTaskWorker final {
-public:
+class SerialTaskWorker final
+{
+  public:
     using Task = std::function<void()>;
 
-    SerialTaskWorker()
-        : worker_([this] { run(); }), worker_id_(worker_.get_id()) {}
+    SerialTaskWorker() : worker_([this] { run(); }), worker_id_(worker_.get_id()) {}
 
-    ~SerialTaskWorker() {
+    ~SerialTaskWorker()
+    {
         // Destruction from a worker callback cannot be supported: doing so
         // would destroy the queue before run() has finished using it.
         shutdown();
     }
 
-    SerialTaskWorker(const SerialTaskWorker&) = delete;
-    SerialTaskWorker& operator=(const SerialTaskWorker&) = delete;
-    SerialTaskWorker(SerialTaskWorker&&) = delete;
-    SerialTaskWorker& operator=(SerialTaskWorker&&) = delete;
+    SerialTaskWorker(const SerialTaskWorker &) = delete;
+    SerialTaskWorker &operator=(const SerialTaskWorker &) = delete;
+    SerialTaskWorker(SerialTaskWorker &&) = delete;
+    SerialTaskWorker &operator=(SerialTaskWorker &&) = delete;
 
-    [[nodiscard]] bool post(Task task) {
+    [[nodiscard]] bool post(Task task)
+    {
         if (!task) {
             return false;
         }
         return tasks_.push(std::move(task));
     }
 
-    void request_close() { tasks_.close(); }
+    void request_close()
+    {
+        tasks_.close();
+    }
 
-    void shutdown() {
+    void shutdown()
+    {
         if (std::this_thread::get_id() == worker_id_) {
-            throw std::logic_error(
-                "SerialTaskWorker::shutdown cannot join its own worker thread");
+            throw std::logic_error("SerialTaskWorker::shutdown cannot join its own worker thread");
         }
         request_close();
         // Protect std::jthread::join against concurrent external shutdowns.
@@ -65,16 +70,19 @@ public:
         }
     }
 
-    [[nodiscard]] std::uint64_t completed() const noexcept {
+    [[nodiscard]] std::uint64_t completed() const noexcept
+    {
         return completed_.load(std::memory_order_relaxed);
     }
 
-    [[nodiscard]] std::uint64_t failures() const noexcept {
+    [[nodiscard]] std::uint64_t failures() const noexcept
+    {
         return failures_.load(std::memory_order_relaxed);
     }
 
-private:
-    void run() noexcept {
+  private:
+    void run() noexcept
+    {
         while (auto task = tasks_.wait_pop()) {
             try {
                 (*task)();
@@ -93,4 +101,4 @@ private:
     std::mutex join_mutex_;
 };
 
-}  // namespace voip::concurrency
+} // namespace voip::concurrency

@@ -16,7 +16,8 @@ namespace {
 using voip::concurrency::SerialTaskWorker;
 using namespace std::chrono_literals;
 
-void require(bool condition, std::string_view description) {
+void require(bool condition, std::string_view description)
+{
     if (!condition) {
         throw std::runtime_error(std::string(description));
     }
@@ -24,7 +25,8 @@ void require(bool condition, std::string_view description) {
 
 // An external producer never executes a submitted callback, even under
 // concurrent posting. All callbacks must run on one stable owned thread.
-void test_multi_producer_handoff_preserves_single_execution_owner() {
+void test_multi_producer_handoff_preserves_single_execution_owner()
+{
     constexpr std::size_t producers = 4;
     constexpr std::size_t per_producer = 250;
     constexpr std::size_t total = producers * per_producer;
@@ -71,7 +73,8 @@ void test_multi_producer_handoff_preserves_single_execution_owner() {
 
 // A task that posts another task cannot execute it reentrantly on the
 // posting call stack. The nested task must be queued behind prior work.
-void test_nested_handoff_remains_serial_and_fifo() {
+void test_nested_handoff_remains_serial_and_fifo()
+{
     SerialTaskWorker worker;
     std::promise<void> entered;
     auto started = entered.get_future();
@@ -93,7 +96,8 @@ void test_nested_handoff_remains_serial_and_fifo() {
             observed_threads.push_back(std::this_thread::get_id());
         }));
         nested_posted.set_value();
-    }), "post first blocking task");
+    }),
+            "post first blocking task");
 
     if (started.wait_for(5s) != std::future_status::ready) {
         release.set_value();
@@ -123,13 +127,14 @@ void test_nested_handoff_remains_serial_and_fifo() {
 
 } // namespace
 
-int main() {
+int main()
+{
     try {
         test_multi_producer_handoff_preserves_single_execution_owner();
         test_nested_handoff_remains_serial_and_fifo();
         std::cout << "PASS: 2 Phase 8 worker thread-ownership scenarios\n";
         return 0;
-    } catch (const std::exception& error) {
+    } catch (const std::exception &error) {
         std::cerr << "FAIL: " << error.what() << '\n';
         return 1;
     }

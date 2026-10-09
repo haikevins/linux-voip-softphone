@@ -18,13 +18,15 @@ namespace {
 
 using voip::concurrency::ThreadSafeQueue;
 
-void require(bool condition, std::string_view description) {
+void require(bool condition, std::string_view description)
+{
     if (!condition) {
         throw std::runtime_error(std::string(description));
     }
 }
 
-void test_fifo_and_empty() {
+void test_fifo_and_empty()
+{
     ThreadSafeQueue<int> queue;
     require(!queue.try_pop().has_value(), "empty queue must not produce an item");
     require(queue.push(1) && queue.push(2) && queue.push(3), "push failed");
@@ -35,7 +37,8 @@ void test_fifo_and_empty() {
     require(!queue.try_pop(), "queue should be empty");
 }
 
-void test_close_drains_and_rejects() {
+void test_close_drains_and_rejects()
+{
     ThreadSafeQueue<int> queue;
     require(queue.push(9) && queue.push(10), "pre-close pushes failed");
     queue.close();
@@ -48,7 +51,8 @@ void test_close_drains_and_rejects() {
     require(!queue.try_pop(), "try_pop on closed and empty queue");
 }
 
-void test_wait_pop_wakes_on_push() {
+void test_wait_pop_wakes_on_push()
+{
     ThreadSafeQueue<int> queue;
     std::promise<std::optional<int>> outcome;
     std::promise<void> started;
@@ -62,16 +66,16 @@ void test_wait_pop_wakes_on_push() {
     const auto before_push = result.wait_for(std::chrono::milliseconds(20));
     const bool accepted = queue.push(42);
     const auto after_push = result.wait_for(std::chrono::seconds(3));
-    queue.close();  // Also ensures the worker can exit if an assertion fails.
+    queue.close(); // Also ensures the worker can exit if an assertion fails.
     require(before_push == std::future_status::timeout,
             "wait_pop should block when open and empty");
     require(accepted, "push to waiting consumer");
-    require(after_push == std::future_status::ready,
-            "waiting consumer did not wake on push");
+    require(after_push == std::future_status::ready, "waiting consumer did not wake on push");
     require(result.get() == 42, "woken consumer got wrong item");
 }
 
-void test_wait_pop_wakes_on_close() {
+void test_wait_pop_wakes_on_close()
+{
     ThreadSafeQueue<int> queue;
     std::promise<std::optional<int>> outcome;
     std::promise<void> started;
@@ -85,14 +89,13 @@ void test_wait_pop_wakes_on_close() {
     const auto before_close = result.wait_for(std::chrono::milliseconds(20));
     queue.close();
     const auto after_close = result.wait_for(std::chrono::seconds(3));
-    require(before_close == std::future_status::timeout,
-            "wait_pop should block before close");
-    require(after_close == std::future_status::ready,
-            "waiting consumer did not wake on close");
+    require(before_close == std::future_status::timeout, "wait_pop should block before close");
+    require(after_close == std::future_status::ready, "waiting consumer did not wake on close");
     require(!result.get(), "closed empty queue must return nullopt");
 }
 
-void test_move_only_items() {
+void test_move_only_items()
+{
     ThreadSafeQueue<std::unique_ptr<int>> queue;
     require(queue.push(std::make_unique<int>(7)), "move-only push");
     auto item = queue.wait_pop();
@@ -100,13 +103,13 @@ void test_move_only_items() {
     queue.close();
 }
 
-void test_pre_requested_stop_preserves_pending_item() {
+void test_pre_requested_stop_preserves_pending_item()
+{
     ThreadSafeQueue<int> queue;
     require(queue.push(17), "push before cancellation");
     std::stop_source stop;
     require(stop.request_stop(), "request_stop should succeed");
-    require(!queue.wait_pop(stop.get_token()),
-            "already-cancelled wait must not consume an item");
+    require(!queue.wait_pop(stop.get_token()), "already-cancelled wait must not consume an item");
     require(queue.try_pop() == 17, "cancelled wait must preserve queued item");
     require(!queue.is_closed(), "request_stop must not close the queue");
     require(queue.push(18), "queue remains usable after cancellation");
@@ -114,7 +117,8 @@ void test_pre_requested_stop_preserves_pending_item() {
     queue.close();
 }
 
-void test_stop_wakes_blocked_waiter_without_closing_queue() {
+void test_stop_wakes_blocked_waiter_without_closing_queue()
+{
     ThreadSafeQueue<int> queue;
     std::promise<void> started;
     std::promise<std::optional<int>> outcome;
@@ -141,13 +145,13 @@ void test_stop_wakes_blocked_waiter_without_closing_queue() {
     require(!result.get(), "stopped waiter must return nullopt");
 }
 
-void test_stopping_one_worker_keeps_queue_open_for_others() {
+void test_stopping_one_worker_keeps_queue_open_for_others()
+{
     ThreadSafeQueue<int> queue;
     std::promise<std::optional<int>> first_result;
     auto first = first_result.get_future();
-    std::jthread first_worker([&](std::stop_token stop) {
-        first_result.set_value(queue.wait_pop(stop));
-    });
+    std::jthread first_worker(
+        [&](std::stop_token stop) { first_result.set_value(queue.wait_pop(stop)); });
     first_worker.request_stop();
     // A stopped worker must leave the queue usable by a different worker.
     // Close is a fallback wake-up if stop propagation breaks.
@@ -163,20 +167,19 @@ void test_stopping_one_worker_keeps_queue_open_for_others() {
 
     std::promise<std::optional<int>> second_result;
     auto second = second_result.get_future();
-    std::jthread second_worker([&](std::stop_token stop) {
-        second_result.set_value(queue.wait_pop(stop));
-    });
+    std::jthread second_worker(
+        [&](std::stop_token stop) { second_result.set_value(queue.wait_pop(stop)); });
     const bool accepted = queue.push(23);
     const auto second_status = second.wait_for(std::chrono::seconds(3));
     queue.close();
     second_worker.join();
     require(accepted, "new work must be accepted after local stop");
-    require(second_status == std::future_status::ready,
-            "second worker did not receive work");
+    require(second_status == std::future_status::ready, "second worker did not receive work");
     require(second.get() == 23, "second worker must receive the queued item");
 }
 
-void test_stoppable_wait_drains_after_close() {
+void test_stoppable_wait_drains_after_close()
+{
     ThreadSafeQueue<int> queue;
     std::stop_source source;
     require(queue.push(31), "queue item before close");
@@ -186,11 +189,11 @@ void test_stoppable_wait_drains_after_close() {
             "stop-aware pop must drain first item after close");
     require(queue.wait_pop(source.get_token()) == 32,
             "stop-aware pop must drain second item after close");
-    require(!queue.wait_pop(source.get_token()),
-            "closed and drained stop-aware pop must end");
+    require(!queue.wait_pop(source.get_token()), "closed and drained stop-aware pop must end");
 }
 
-void test_close_wakes_multiple_stoppable_workers() {
+void test_close_wakes_multiple_stoppable_workers()
+{
     constexpr int worker_count = 12;
     ThreadSafeQueue<int> queue;
     std::atomic<int> finished = 0;
@@ -204,15 +207,15 @@ void test_close_wakes_multiple_stoppable_workers() {
         });
     }
     queue.close();
-    for (auto& worker : workers) {
+    for (auto &worker : workers) {
         worker.join();
     }
-    require(finished == worker_count,
-            "close must wake and terminate all stoppable waiters");
+    require(finished == worker_count, "close must wake and terminate all stoppable waiters");
     require(!queue.wait_pop(), "closed and drained queue remains exhausted");
 }
 
-void test_multi_producer_multi_consumer_integrity() {
+void test_multi_producer_multi_consumer_integrity()
+{
     constexpr int producers = 4;
     constexpr int consumers = 4;
     constexpr int items_per_producer = 1000;
@@ -220,7 +223,7 @@ void test_multi_producer_multi_consumer_integrity() {
 
     ThreadSafeQueue<int> queue;
     std::vector<std::atomic<int>> seen(total_items);
-    for (auto& counter : seen) {
+    for (auto &counter : seen) {
         counter.store(0);
     }
     std::atomic<int> received = 0;
@@ -263,14 +266,15 @@ void test_multi_producer_multi_consumer_integrity() {
     require(rejected == 0, "unexpected rejected producer item");
     require(out_of_range == 0, "out-of-range item");
     require(received == total_items, "lost item in MPMC run");
-    for (const auto& count : seen) {
+    for (const auto &count : seen) {
         require(count == 1, "duplicate or missing item in MPMC run");
     }
 }
 
-}  // namespace
+} // namespace
 
-int main() {
+int main()
+{
     try {
         test_fifo_and_empty();
         test_close_drains_and_rejects();
@@ -285,7 +289,7 @@ int main() {
         test_multi_producer_multi_consumer_integrity();
         std::cout << "PASS: 11 Phase 8 ThreadSafeQueue scenarios\n";
         return 0;
-    } catch (const std::exception& error) {
+    } catch (const std::exception &error) {
         std::cerr << "FAIL: " << error.what() << '\n';
         return 1;
     }

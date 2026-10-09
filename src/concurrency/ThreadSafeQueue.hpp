@@ -22,18 +22,19 @@ namespace voip::concurrency {
 // - A cancelled waiter does not close the queue or stop other consumers.
 // - The queue must outlive every producer/consumer calling into it.
 // - Bounded capacity and worker ownership remain out of scope.
-template <typename T>
-class ThreadSafeQueue final {
-public:
+template <typename T> class ThreadSafeQueue final
+{
+  public:
     ThreadSafeQueue() = default;
     ~ThreadSafeQueue() = default;
 
-    ThreadSafeQueue(const ThreadSafeQueue&) = delete;
-    ThreadSafeQueue& operator=(const ThreadSafeQueue&) = delete;
-    ThreadSafeQueue(ThreadSafeQueue&&) = delete;
-    ThreadSafeQueue& operator=(ThreadSafeQueue&&) = delete;
+    ThreadSafeQueue(const ThreadSafeQueue &) = delete;
+    ThreadSafeQueue &operator=(const ThreadSafeQueue &) = delete;
+    ThreadSafeQueue(ThreadSafeQueue &&) = delete;
+    ThreadSafeQueue &operator=(ThreadSafeQueue &&) = delete;
 
-    [[nodiscard]] bool push(T item) {
+    [[nodiscard]] bool push(T item)
+    {
         {
             std::lock_guard lock(mutex_);
             if (closed_) {
@@ -45,16 +46,16 @@ public:
         return true;
     }
 
-    [[nodiscard]] std::optional<T> try_pop() {
+    [[nodiscard]] std::optional<T> try_pop()
+    {
         std::lock_guard lock(mutex_);
         return pop_locked();
     }
 
-    [[nodiscard]] std::optional<T> wait_pop() {
+    [[nodiscard]] std::optional<T> wait_pop()
+    {
         std::unique_lock lock(mutex_);
-        available_.wait(lock, [this] {
-            return closed_ || !queue_.empty();
-        });
+        available_.wait(lock, [this] { return closed_ || !queue_.empty(); });
         return pop_locked();
     }
 
@@ -62,18 +63,19 @@ public:
     // If stop is observed before dequeue (even with pending data), no item
     // is consumed. A concurrent stop/dequeue race may resolve either way.
     // The owning thread must still join before destroying this queue.
-    [[nodiscard]] std::optional<T> wait_pop(std::stop_token stop) {
+    [[nodiscard]] std::optional<T> wait_pop(std::stop_token stop)
+    {
         std::unique_lock lock(mutex_);
-        const bool ready = available_.wait(lock, stop, [this] {
-            return closed_ || !queue_.empty();
-        });
+        const bool ready =
+            available_.wait(lock, stop, [this] { return closed_ || !queue_.empty(); });
         if (!ready || stop.stop_requested()) {
             return std::nullopt;
         }
         return pop_locked();
     }
 
-    void close() {
+    void close()
+    {
         {
             std::lock_guard lock(mutex_);
             closed_ = true;
@@ -81,19 +83,22 @@ public:
         available_.notify_all();
     }
 
-    [[nodiscard]] bool is_closed() const {
+    [[nodiscard]] bool is_closed() const
+    {
         std::lock_guard lock(mutex_);
         return closed_;
     }
 
-    [[nodiscard]] std::size_t size() const {
+    [[nodiscard]] std::size_t size() const
+    {
         std::lock_guard lock(mutex_);
         return queue_.size();
     }
 
-private:
+  private:
     // Caller must hold mutex_. If moving T throws, the item is not removed.
-    [[nodiscard]] std::optional<T> pop_locked() {
+    [[nodiscard]] std::optional<T> pop_locked()
+    {
         if (queue_.empty()) {
             return std::nullopt;
         }
@@ -109,4 +114,4 @@ private:
     bool closed_ = false;
 };
 
-}  // namespace voip::concurrency
+} // namespace voip::concurrency
