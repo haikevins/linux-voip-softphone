@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <mutex>
+#include <condition_variable>
 #include <functional>
 #include <memory>
 #include <string_view>
@@ -680,6 +682,124 @@ TEST(QtRegistrationBackendTest, RejectedCallAllowsExplicitRecoveryWithoutReregis
     ASSERT_TRUE(model.recoverCall());
     EXPECT_TRUE(model.callActionsEnabled());
     EXPECT_EQ(state->registration_count.load(), 1);
+}
+
+
+// This seam deliberately blocks a registration result while the GUI owner is
+// destroyed. No Qt event loop is pumped before the queued result is discarded.
+struct RegistrationShutdownGate
+{
+    std::mutex mutex;
+    std::condition_variable changed;
+    bool in_wait{false};
+    bool release_wait{false};
+    std::atomic<int> stops{0};
+    std::atomic<bool> stopped_on_worker{false};
+};
+
+class GatedRegistrationSession final : public RegistrationSession
+{
+  public:
+    explicit GatedRegistrationSession(std::shared_ptr<RegistrationShutdownGate> gate)
+        : gate_(std::move(gate))
+    {}
+
+    void start() override {}
+
+    [[nodiscard]] bool wait_for_registration(std::chrono::milliseconds /*timeout*/) override
+    {
+        std::unique_lock lock{gate_->mutex};
+        gate_->in_wait = true;
+        gate_->changed.notify_all();
+        return gate_->changed.wait_for(lock, std::chrono::seconds{2},
+                                       [this] { return gate_->release_wait; });
+    }
+
+    void stop() noexcept override
+    {
+        gate_->stopped_on_worker =
+            QThread::currentThread() != QCoreApplication::instance()->thread();
+        ++gate_->stops;
+    }
+
+  private:
+    std::shared_ptr<RegistrationShutdownGate> gate_;
+};
+
+TEST(QtRegistrationBackendTest, RejectsAllRequestEntryPointsFromForeignThread)
+{
+    auto state = std::make_shared<FakeSessionState>();
+    QtRegistrationBackend backend(make_factory(state), true);
+    bool registration = true;
+    bool outgoing = true;
+    bool answer = true;
+    bool decline = true;
+    bool hangup = true;
+
+    std::thread foreign([&] {
+        registration = backend.begin_registration();
+        outgoing = backend.begin_outgoing_call("1001");
+        answer = backend.begin_answer();
+        decline = backend.begin_decline();
+        hangup = backend.begin_hangup();
+    });
+    foreign.join();
+
+    EXPECT_FALSE(registration);
+    EXPECT_FALSE(outgoing);
+    EXPECT_FALSE(answer);
+    EXPECT_FALSE(decline);
+    EXPECT_FALSE(hangup);
+    EXPECT_EQ(state->started.load(), 0);
+}
+
+TEST(QtRegistrationBackendTest, DestructionJoinsInFlightSessionWithoutDeliveringQueuedResult)
+{
+    auto gate = std::make_shared<RegistrationShutdownGate>();
+    auto backend = std::make_unique<QtRegistrationBackend>(
+        [gate] { return std::make_unique<GatedRegistrationSession>(gate); });
+    int delivered = 0;
+    QObject::connect(backend.get(), &QtRegistrationBackend::registrationFinished,
+                     QCoreApplication::instance(), [&delivered](bool) { ++delivered; });
+    ASSERT_TRUE(backend->begin_registration());
+
+    bool entered = false;
+    {
+        std::unique_lock lock{gate->mutex};
+        entered = gate->changed.wait_for(lock, std::chrono::seconds{2},
+                                        [&gate] { return gate->in_wait; });
+    }
+    if (!entered) {
+        // Release on every failure path: never leave the destructor waiting on
+        // this fake session if CI scheduling is unusually slow.
+        {
+            const std::lock_guard lock{gate->mutex};
+            gate->release_wait = true;
+        }
+        gate->changed.notify_all();
+        backend.reset();
+        FAIL() << "fake registration worker never entered its wait";
+        return;
+    }
+
+    std::thread release([gate] {
+        std::this_thread::sleep_for(std::chrono::milliseconds{20});
+        {
+            const std::lock_guard lock{gate->mutex};
+            gate->release_wait = true;
+        }
+        gate->changed.notify_all();
+    });
+
+    // The destructor requests stop, waits for the worker, and stops the fake
+    // session. A queued result must not signal after its QObject is gone.
+    backend.reset();
+    release.join();
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+
+    EXPECT_EQ(gate->stops.load(), 1);
+    EXPECT_TRUE(gate->stopped_on_worker.load());
+    EXPECT_EQ(delivered, 0);
 }
 
 } // namespace

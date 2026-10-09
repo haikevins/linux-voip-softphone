@@ -21,3 +21,7 @@ Qt/PJSIP callback thread-affinity audit and real SIP/GUI manual
 verification are **not yet performed/confirmed**. Record
 results only after running the corresponding gates. Never include raw SIP
 auth, PCAP, SRTP keys, or passwords.
+
+- `ownership-source-review.txt`: Commit 8 source-level Qt/PJSIP audit findings,
+  risks requiring runtime confirmation, and the focused Qt regression gate.
+  **Prepared only** until maintainer reports canonical results.

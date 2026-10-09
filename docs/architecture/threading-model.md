@@ -162,3 +162,15 @@ actual GUI/PJSUA2 callback context and verify ordering, cancellation,
 `std::jthread` teardown, account lifetime, post-ring rejection semantics,
 GUI queued signal delivery, and RTP diagnostic updates. Use a separate TSan
 build; do not combine TSan with ASan in one executable.
+
+## Commit 8 source-review update (runtime validation pending)
+
+Static inspection of canonical `cf31e2a` identifies Qt queued worker-to-GUI
+handoffs and a joined registration-session worker. It also confirms PJSUA2
+callback overrides perform library operations, so "all PJSUA2 operations run
+on the Qt session worker" must not be treated as a verified invariant.
+`SipOutgoingCallClient::stop()` and the independent incoming client release
+the call object before waiting for zero active call slots. This is a
+**lifetime verification risk**, not an observed data race or UAF. See
+`docs/phase8/commit8-source-ownership-review.md`. A Qt-only fake-session
+lifetime regression is pending canonical ThinkPad verification.

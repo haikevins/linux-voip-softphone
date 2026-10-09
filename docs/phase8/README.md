@@ -238,3 +238,12 @@ ownership verification remains pending.
 Application-level Qt/PJSIP ownership, manual SIP/GUI checks if runtime code
 changes, final architecture/interview docs, and Git/PR/release closure remain
 pending.
+
+## Commit 8 — Qt/PJSIP source ownership review (pending maintainer verification)
+
+See `docs/phase8/commit8-source-ownership-review.md` for the source-level
+path/line audit based on `cf31e2a`. `scripts/phase8/verify-qt-ownership.sh`
+executes the existing Qt registration CTest entry with two additional
+fake-session ownership/lifetime regressions. This slice does not alter Qt/SIP
+production code, PJSUA2 shutdown or the 139-entry CTest registration.
+The production PJSUA2 callback lifetime review remains open.
