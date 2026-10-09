@@ -1,5 +1,6 @@
 #include "pjsip/SipIncomingCallClient.hpp"
 
+#include "pjsip/PjsipCallSlotCleanup.hpp"
 #include "pjsip/Pjsua2AudioDeviceManager.hpp"
 #include "pjsip/Pjsua2CallAudioBridge.hpp"
 
@@ -341,17 +342,14 @@ bool SipIncomingCallClient::wait_for_disconnection(const std::chrono::millisecon
 
 bool SipIncomingCallClient::wait_for_call_cleanup(const std::chrono::milliseconds timeout) noexcept
 {
-    const auto deadline = std::chrono::steady_clock::now() + timeout;
-    while (pjsua_call_get_count() != 0U) {
-        if (std::chrono::steady_clock::now() >= deadline) {
-            std::fputs("PJSIP call slot remained busy during incoming call shutdown\n", stderr);
-            return false;
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds{10});
+    const bool slots_drained = detail::wait_for_zero_call_slots(
+        timeout, [] { return pjsua_call_get_count(); },
+        [] { return std::chrono::steady_clock::now(); },
+        [](const std::chrono::milliseconds delay) { std::this_thread::sleep_for(delay); });
+    if (!slots_drained) {
+        std::fputs("PJSIP call slot remained busy during incoming call shutdown\n", stderr);
     }
-
-    return true;
+    return slots_drained;
 }
 
 bool SipIncomingCallClient::shutdown_account_safely() noexcept

@@ -174,3 +174,13 @@ the call object before waiting for zero active call slots. This is a
 **lifetime verification risk**, not an observed data race or UAF. See
 `docs/phase8/commit8-source-ownership-review.md`. A Qt-only fake-session
 lifetime regression is pending canonical ThinkPad verification.
+
+## Commit 10 — bounded PJSIP call-slot polling (not callback quiescence)
+
+The two PJSIP clients now share a deterministic, injected polling policy
+for the existing 10ms/2s call-slot wait. Six direct C++ cases exercise its
+success and timeout decisions. `pjsua_call_get_count() == 0` is only an
+observed call-slot count, **not proof of callback thread quiescence**. On
+`shutdown2(force=false)` failure, account cleanup remains an open risk.
+Do not infer runtime callback lifetime correctness or broad PJSIP TSan coverage
+from the added standalone fifth CTest.

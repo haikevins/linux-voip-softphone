@@ -29,3 +29,8 @@ auth, PCAP, SRTP keys, or passwords.
 - `pjsip-shutdown-order.txt`: Commit 9 bounded PJSUA2 Call cleanup ordering,
   ThinkPad structural tests 6/6, PJSIP CTest 45/45 and canonical CTest 139/139;
   real SIP timeout/callback-lifetime validation remains open.
+
+- `pjsip-cleanup-timeout.txt`: Commit 10 deterministic C++ polling policy
+  verification, isolated five-test TSan run, and ThinkPad focused 5/5,
+  PJSIP 45/45, Clang 18 TSan 15/15 executions, and canonical 140/140.
+  No live SIP callback proof is claimed.

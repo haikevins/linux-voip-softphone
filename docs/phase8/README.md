@@ -106,7 +106,8 @@ path to register the focused tests with the canonical top-level CTest.
 - `tests/phase8/CMakeLists.txt` registers a fourth CTest entry when included
   from the canonical project **or** configured as a standalone suite.
   Canonical ThinkPad verification confirmed **139/139** CTest entries.
-- `scripts/phase8/verify-queue.sh` runs all four tests; the separate
+- `scripts/phase8/verify-queue.sh` ran four tests through Commit 9;
+  Commit 10 adds a fifth deterministic polling policy CTest. The separate
   `scripts/phase8/verify-stress.sh` repeats the dedicated stress CTest ten
   times by default (`PHASE8_STRESS_REPEATS=1..100`).
 - Isolated Linux toolchain verification is recorded in
@@ -257,3 +258,15 @@ derived Call callback target. The timeout fallback is not proven safe with
 in-flight PJSIP callbacks. `scripts/phase8/verify-pjsip-shutdown-order.sh`
 provides static contract tests plus a required canonical PJSIP build/CTest
 gate; test-account SIP runtime validation remains separate and pending.
+
+## Commit 10 — deterministic call-slot timeout policy (ThinkPad verified; live SIP pending)
+
+The shared `PjsipCallSlotCleanup.hpp` policy replaces duplicated polling loops
+in the two SIP clients without changing their external `stop()` behavior.
+Six deterministic C++ cases validate zero slots, delayed cleanup, timeout,
+and deadline boundary. A fifth Phase 8 CTest increases expected focused count
+to **5/5**, canonical total to **140/140**, and TSan coverage to five tests.
+See `docs/phase8/commit10-pjsip-cleanup-timeout.md` and
+`evidence/phase8/pjsip-cleanup-timeout.txt`. This is NOT a genuine callback
+quiescence test: the two-second timeout path and account shutdown after
+`shutdown2(force=false)` failure are still open runtime concerns.

@@ -68,5 +68,10 @@ phase8_add_test(phase8_thread_ownership_tests
     test_thread_ownership.cpp Phase8ThreadOwnershipTest)
 phase8_add_test(phase8_mpmc_stress_tests
     test_mpmc_stress.cpp Phase8MpmcStressTest)
+# Pure C++ polling policy shared with production PJSIP wait_for_call_cleanup().
+# The deterministic test never creates an Endpoint or opens a network socket.
+phase8_add_test(phase8_pjsip_call_slot_cleanup_tests
+    test_pjsip_call_slot_cleanup.cpp Phase8PjsipCallSlotCleanupTest)
+
 # Leave headroom for slower, instrumented contention runs.
 set_tests_properties(Phase8MpmcStressTest PROPERTIES TIMEOUT 90)
