@@ -102,4 +102,10 @@ if(NOT PHASE8_ENABLE_TSAN)
     # Keep the isolated Clang18 TSan gate at six pre-existing C++ tests.
     phase8_add_test(phase8_pjsip_callback_ingress_races_tests
         test_pjsip_callback_ingress_races.cpp Phase8PjsipCallbackIngressRacesTest)
+
+    # Commit 17: synthetic epoch-bound shutdown ownership policy. Every
+    # verification belongs to one attempt; stale completions cannot authorize
+    # resource release. This is not wired to real PJSUA2 shutdown.
+    phase8_add_test(phase8_pjsip_shutdown_ownership_policy_tests
+        test_pjsip_shutdown_ownership_policy.cpp Phase8PjsipShutdownOwnershipPolicyTest)
 endif()
