@@ -107,7 +107,6 @@ void concurrent_wait_unblocks_after_last_callback()
     require(result.get(), "drain failed after final callback completed");
 }
 
-
 void tracked_entry_after_close_is_counted_until_return()
 {
     CallbackActivityGate gate;

@@ -293,8 +293,13 @@ void SipOutgoingCallClient::stop() noexcept
 
     if (call_present) {
         hangup();
-        if (!wait_for_disconnection(std::chrono::seconds{2})) {
-            std::fputs("PJSIP call did not reach DISCONNECTED during shutdown\n", stderr);
+        try {
+            if (!wait_for_disconnection(std::chrono::seconds{2})) {
+                std::fputs("PJSIP call did not reach DISCONNECTED during shutdown\n", stderr);
+                return;
+            }
+        } catch (...) {
+            std::fputs("PJSIP call disconnection wait failed during shutdown\n", stderr);
             return;
         }
     }
