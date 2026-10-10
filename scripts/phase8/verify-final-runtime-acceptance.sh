@@ -43,7 +43,7 @@ printf 'EVIDENCE_DIR=%s\n' "$LOG_DIR"
 if [[ "$MODE" == '--manual' ]]; then
     [[ -x "$GUI" ]] || { echo "ABORT: GUI executable missing: $GUI" >&2; exit 1; }
     echo '===== MANUAL GUI USABILITY / IDLE SOAK ====='
-    python3 -B scripts/phase8/gui-runtime-probe.py manual \
+    PYTHONUNBUFFERED=1 python3 -B scripts/phase8/gui-runtime-probe.py manual \
         --binary "$GUI" --log-dir "$LOG_DIR" \
         --observe-seconds "${PHASE8_MANUAL_OBSERVE_SECONDS:-90}" \
         --close-timeout "${PHASE8_MANUAL_CLOSE_TIMEOUT:-45}" \

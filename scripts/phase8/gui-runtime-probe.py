@@ -166,10 +166,11 @@ def manual(args: argparse.Namespace) -> int:
         process = subprocess.Popen(
             [str(args.binary)], stdout=output, stderr=subprocess.STDOUT, env=env
         )
-        print(f"GUI PID={process.pid}; resource samples: {monitor_path}")
-        print("Check: window paints; keypad 0-9/*/#; Delete/Clear; type destination; scroll/resize.")
-        print("Check: Register/Call/Hang up remain disabled in preview mode; no freeze/lag/crash.")
-        print("Keep interacting for at least the observation period, then answer the prompt.")
+        print(f"GUI PID={process.pid}; resource samples: {monitor_path}", flush=True)
+        print("Check: window paints; keypad 0-9/*/#; Delete/Clear; type destination; scroll/resize.", flush=True)
+        print("Check: Register/Call/Hang up remain disabled in preview mode; no freeze/lag/crash.", flush=True)
+        print("Interact now and answer the prompt after checking the listed UI behavior.", flush=True)
+        print("After acceptance, keep the GUI open until the harness explicitly asks you to close it.", flush=True)
 
         def sampler() -> None:
             with monitor_path.open("w", encoding="utf-8") as file:
@@ -191,7 +192,7 @@ def manual(args: argparse.Namespace) -> int:
                 return 1
             remaining = args.observe_seconds - (time.monotonic() - start)
             if remaining > 0:
-                print(f"Continue using the GUI for {remaining:.0f}s before closure check...")
+                print(f"Continue using the GUI for {remaining:.0f}s before closure check...", flush=True)
                 end = time.monotonic() + remaining
                 while time.monotonic() < end:
                     if process.poll() is not None:
@@ -201,7 +202,7 @@ def manual(args: argparse.Namespace) -> int:
             if process.poll() is not None:
                 print("FAIL: GUI exited before requested normal window close")
                 return 1
-            print(f"Close the GUI using the window X (not kill/CTRL+C), within {args.close_timeout}s.")
+            print(f"Close the GUI using the window X (not kill/CTRL+C), within {args.close_timeout}s.", flush=True)
             try:
                 code = process.wait(timeout=args.close_timeout)
             except subprocess.TimeoutExpired:
