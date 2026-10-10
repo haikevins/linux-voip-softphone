@@ -1,5 +1,23 @@
 # Phase 8 Evidence — Multithreading
 
+**Final Commit 31 runtime evidence**
+
+`final-runtime-acceptance-6b19d5e.txt` records final current-head runtime
+acceptance for Commit 31
+`6b19d5ebcbd56991aa3c0e97b163780942b6a54e`.
+
+It records automated PASS, the successful 93.77-second manual GUI retry, and
+three production registration/teardown live runs performed on the exact Commit
+31 source bytes.
+
+`final-runtime-acceptance-8c78677.txt` remains historical evidence and is not
+rewritten.
+
+The controlled vendor-level busy-recovery experiment remains in
+`pjsip-live-lifecycle.txt`. Neither record proves universal external callback
+quiescence or production-client recovery from every actual `PJ_EBUSY`.
+
+
 ## Status
 
 Phase 8 evidence is **closure-candidate evidence, not final release sign-off**.

@@ -1,5 +1,28 @@
 # Phase 8 — Final runtime acceptance (ThinkPad execution required)
 
+**Final observed current-head run**
+
+Final acceptance was completed on Commit 31
+`6b19d5ebcbd56991aa3c0e97b163780942b6a54e` after local and remote branch
+synchronization.
+
+Automated current-head acceptance: **PASS**.
+
+The first manual attempt was preserved as a failed protocol attempt because the
+GUI was closed too early. The retry passed with `accepted=true`, 93.77 seconds
+of observation, 187 samples, and normal process exit `0`.
+
+Three separate production registration/teardown runs also observed SIP `200`,
+`active=yes`, and exit `0` on the exact canonical source bytes later committed
+as Commit 31.
+
+See `evidence/phase8/final-runtime-acceptance-6b19d5e.txt`.
+
+External callback quiescence remains **UNPROVEN**, production-client real
+`PJ_EBUSY` recovery remains **UNPROVEN**, and PJSUA2 integration readiness
+remains **BLOCKED**.
+
+
 **Scope:** Final user-visible GUI responsiveness and repeatable *offline* regression after Phase 8 multithreading roadmap closure. This test is a **candidate**, not an assertion that the app is fully operational or that Phase 8 has been signed off.
 
 Baseline: branch `phase/8-multithreading`, ancestor commit `0cd1a7bdb6b0de8e9ed6d1efef0d9722309436a7` (roadmap closure). No production source, QML, CMake target, or existing CTest registration is changed by this overlay. The pre-existing canonical suite should remain **147** tests.

@@ -1,5 +1,28 @@
 # Phase 8 — roadmap exit audit (Commit 19 baseline)
 
+**Current evidence update — final Commit 31 candidate**
+
+The final production candidate is Commit 31
+`6b19d5ebcbd56991aa3c0e97b163780942b6a54e`.
+
+On that committed/pushed HEAD, automated final runtime acceptance passed and the
+manual GUI retry passed with 93.77 seconds of observation and clean normal
+exit. Separately, three production registration/teardown runs passed on the
+exact canonical source bytes later committed as Commit 31.
+
+Current boundary:
+
+- controlled PJSUA2 `PJ_EBUSY` recovery: **LIVE OBSERVED / EVIDENCED**;
+- final automated runtime acceptance: **PASS**;
+- final manual GUI acceptance: **PASS**;
+- production registration/teardown live 3x: **PASS**;
+- live external callback quiescence: **UNPROVEN**;
+- production-client real `PJ_EBUSY` recovery: **UNPROVEN**;
+- PJSUA2 integration readiness: **BLOCKED**.
+
+Final Phase 8 acceptance remains an explicit maintainer decision.
+
+
 **Status: PENDING FINAL MAINTAINER ACCEPTANCE.** This is an evidence/architecture
 closure candidate, **not** a claim that live PJSUA2 teardown is safe.
 
