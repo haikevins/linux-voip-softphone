@@ -2,9 +2,9 @@
 
 ## Status
 
-Phase 8 is a **closure candidate, not yet merged or released**. The current
-branch baseline for this documentation pass is `phase/8-multithreading` at
-`f353283`, with Phase 7 release `v0.8-qt-gui` as the starting milestone.
+Phase 8 is a **closure candidate, not yet merged or released**. The latest
+final offline acceptance was rerun on `phase/8-multithreading` at committed
+HEAD `8c78677`, with Phase 7 release `v0.8-qt-gui` as the starting milestone.
 
 The multithreading roadmap implementation, stress coverage, standalone
 ThreadSanitizer coverage, ownership audits, and final offline GUI runtime
@@ -109,6 +109,19 @@ focused Phase 8 tests, MPMC stress, Clang 18 TSan, non-live PJSIP regression,
 roadmap audit, GUI headless startup/exit, and human preview-mode GUI
 interaction. Live SIP shutdown is explicitly outside that acceptance scope.
 
+### Closure compliance and acceptance hardening — Commits 22–25
+
+- `ac6f95f` — align Phase 8 closure documentation/evidence structure.
+- `be8022c` — enforce docs/evidence quality gates and add the Phase 8 aggregate
+  verifier.
+- `2ca50e2` — keep verification from polluting the source checkout with Python
+  bytecode.
+- `8c78677` — flush manual-acceptance prompts so the normal X-close instruction
+  is visible while output is piped through `tee`.
+
+The final automated and 90-second manual GUI acceptance were rerun after these
+corrections on committed HEAD `8c78677`; the source checkout remained clean.
+
 ## Architecture and design
 
 The authoritative architecture document is
@@ -178,8 +191,12 @@ the GUI without `--sip-register` and therefore does not require SIP secrets.
 
 ## Verification
 
-Recorded ThinkPad results at the final offline acceptance include:
+Recorded ThinkPad results from the final rerun on committed HEAD `8c78677`
+include:
 
+- documentation structure: **PASS**;
+- evidence structure: **PASS**;
+- source checkout cleanliness after verification: **PASS**;
 - canonical CTest: **147/147 PASS**;
 - Qt worker/event-handoff repeat: **10/10 PASS**;
 - Phase 8 focused tests: **12/12 PASS**;
@@ -187,9 +204,12 @@ Recorded ThinkPad results at the final offline acceptance include:
   earlier 100/100 repeated stress evidence retained;
 - Clang 18 standalone TSan: **18/18 PASS** (six tests × three executions);
 - PJSIP non-live regression: **45/45 PASS**;
-- GUI headless startup/exit: **40/40 PASS**;
-- human preview-mode GUI interaction: **PASS**;
-- normal window X-close with exit code 0: **PASS**.
+- GUI headless startup/exit: **40/40 PASS** (median 192.75 ms, P95 202.69 ms,
+  maximum 214.44 ms);
+- human preview-mode GUI interaction: **PASS** over 111.47 seconds;
+- normal window X-close with exit code 0: **PASS**;
+- manual resource observation: 222 samples, RSS 193376/198280/199628 KiB
+  first/last/peak, FD range 30–33, thread range 23–24.
 
 These results are scoped. They do not prove:
 
@@ -261,7 +281,7 @@ Roadmap implementation/evidence criteria currently have these states:
 | `evidence/07-threading/tsan-report.txt` | Present |
 | `evidence/07-threading/threading-diagram.png` | Present |
 | Offline GUI/runtime acceptance | PASS evidence |
-| Phase documentation/evidence structure gates | Must PASS before closure |
+| Phase documentation/evidence structure gates | PASS on final rerun |
 | Final maintainer Phase 8 sign-off | PENDING |
 | Merge to `main` / release tag | NOT STARTED |
 

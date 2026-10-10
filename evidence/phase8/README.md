@@ -72,7 +72,9 @@ The chronological automated evidence files are:
 - `pjsip-shutdown-integration-contract.txt` — fail-closed integration gate.
 
 Roadmap closure and final offline runtime evidence are indexed from
-`evidence/07-threading/` rather than copied here.
+`evidence/07-threading/`. The final post-hardening rerun is also preserved as
+`final-runtime-acceptance-8c78677.txt` so the exact committed HEAD and observed
+manual metrics remain explicit without rewriting earlier chronological files.
 
 ## Manual verification
 
@@ -92,7 +94,8 @@ tested by that gate.
 
 ## Artifacts
 
-Historical Phase 8 artifacts are the files listed in this directory.
+Historical Phase 8 artifacts are the files listed in this directory. The latest
+sanitized final rerun summary is `final-runtime-acceptance-8c78677.txt`.
 Roadmap-required final artifacts are:
 
 ```text
@@ -109,8 +112,11 @@ The diagram is descriptive code-level architecture derived from
 
 ## Results
 
-Recorded final offline acceptance reports:
+Recorded final offline acceptance rerun on committed HEAD `8c78677` reports:
 
+- documentation structure: PASS;
+- evidence structure: PASS;
+- source checkout cleanliness: PASS;
 - canonical CTest: 147/147 PASS;
 - Qt worker repeat: 10/10 PASS;
 - focused Phase 8: 12/12 PASS;
@@ -118,9 +124,12 @@ Recorded final offline acceptance reports:
   repeated-stress evidence retained;
 - Clang 18 TSan: 18/18 PASS;
 - PJSIP non-live regression: 45/45 PASS;
-- GUI headless startup/exit: 40/40 PASS;
-- human preview GUI interaction: PASS;
-- normal X-close: PASS, exit code 0.
+- GUI headless startup/exit: 40/40 PASS (median 192.75 ms, P95 202.69 ms,
+  maximum 214.44 ms);
+- human preview GUI interaction: PASS over 111.47 seconds;
+- normal X-close: PASS, exit code 0;
+- manual observation: 222 samples, RSS 193376/198280/199628 KiB
+  first/last/peak, FD range 30–33, thread range 23–24.
 
 Results must be read with their scope. Integration readiness for unresolved
 live PJSUA2 shutdown remains BLOCKED; external callback quiescence and actual

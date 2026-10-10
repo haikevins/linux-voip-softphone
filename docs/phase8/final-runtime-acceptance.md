@@ -92,3 +92,33 @@ Normal X-close: PASS, exit code 0.
 Live SIP/PJSUA2 shutdown safety: NOT VERIFIED.
 
 Final Phase 8 maintainer sign-off: PENDING.
+
+## THINKPAD FINAL REVALIDATION — HEAD `8c78677`
+
+Recorded from the committed `phase/8-multithreading` checkout on 2026-10-10.
+
+- Automated offline acceptance: **PASS**.
+- Canonical CTest: **147/147 PASS**.
+- Qt worker repeat: **10/10 PASS**.
+- Phase 8 focused: **12/12 PASS**.
+- 100,000-event MPMC stress: **30/30 PASS**.
+- Clang 18 TSan: **18/18 PASS**.
+- PJSIP non-live regression: **45/45 PASS**.
+- Harness unit/mutation tests: **6/6 PASS**.
+- GUI headless startup/exit: **40/40 PASS**; median 192.75 ms, P95 202.69 ms,
+  maximum 214.44 ms.
+- Manual graphical GUI acceptance: **PASS**; observation 111.47 seconds,
+  222 samples.
+- Normal window X-close: **PASS**, exit code 0.
+- Source checkout cleanliness after automated/manual verification: **PASS**.
+- Security scan of retained `/tmp` acceptance logs: no SIP Digest authorization
+  or SRTP inline key material matched the project redaction check.
+
+The manual resource values are observations, not leak proof: RSS first/last/peak
+was 193376/198280/199628 KiB, FD range 30–33, and thread range 23–24.
+
+Scope boundaries remain unchanged: live SIP registration/calls are
+**NOT TESTED**;
+production PJSUA2 shutdown safety is **BLOCKED/UNPROVEN**; memory leak freedom is
+**NOT PROVEN**; sustained FPS performance is **NOT MEASURED**. Final maintainer
+Phase 8 sign-off remains **PENDING**.
