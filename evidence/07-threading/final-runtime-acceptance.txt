@@ -1,0 +1,53 @@
+THINKPAD VERIFIED FINAL RUNTIME ACCEPTANCE
+Recorded: 2026-10-10T22:18:50+07:00
+
+Baseline: 0cd1a7bdb6b0de8e9ed6d1efef0d9722309436a7
+Branch: phase/8-multithreading
+
+AUTOMATED ACCEPTANCE:
+  Method: VERIFIED_RESUME
+  Canonical CTest: 147/147 PASS
+  Qt worker repeat: 10/10 PASS
+  Phase 8 focused: 12/12 PASS
+  MPMC 100000-event stress: 30/30 PASS
+  Clang18 TSan: 18/18 PASS
+  PJSIP non-live regression: 45/45 PASS
+  Harness v2: 6/6 PASS
+  GUI headless startup/exit: 40/40 PASS
+
+GUI STARTUP:
+  Median: 186.41 ms
+  P95: 194.59 ms
+  Maximum: 196.1 ms
+
+MANUAL GUI:
+  Human interaction: PASS
+  Observation: 104.53 seconds
+  Normal window X-close: PASS
+  Exit code: 0
+  Resource samples: 208
+  RSS first: 194160 KiB
+  RSS last: 197000 KiB
+  RSS peak: 197000 KiB
+  FD maximum: 31
+  Threads maximum: 25
+
+EVIDENCE LOCATIONS:
+  Automated: /tmp/phase8-runtime-acceptance.QfIAitFl
+  Manual: /tmp/phase8-manual-retest.RMdDjy55
+
+HISTORY:
+  Original manual attempt: NOT ACCEPTED.
+  Reason: window X was not clicked within timeout.
+  Subsequent manual retest: PASS.
+  Original failure evidence retained separately.
+
+LIMITATIONS:
+  Offline GUI and multithreading acceptance only.
+  Live SIP registration/calls: NOT TESTED.
+  Production PJSUA2 shutdown: BLOCKED/UNPROVEN.
+  Memory leak freedom: NOT PROVEN.
+  Sustained FPS performance: NOT MEASURED.
+
+FINAL MAINTAINER PHASE SIGN-OFF: PENDING
+CLOSURE COMMIT/PUSH/CI: PENDING
