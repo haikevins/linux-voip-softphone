@@ -1,0 +1,75 @@
+Phase 8 — current-head final offline runtime acceptance after Static Analysis hotfix
+
+HEAD
+  b6c84ac48f9dbb9d442a446dc05bdd47ec1f08ca
+
+PARENT
+  07ad46c46d905fab25b44ba660693c0468d2abe7
+
+SUBJECT
+  fix(phase8): close noexcept shutdown wait escapes
+
+GITHUB CI
+  Build: SUCCESS
+  Static Analysis: SUCCESS
+  Tests and Sanitizers: SUCCESS
+  Aggregate: 3/3 SUCCESS
+
+FINAL OFFLINE STATUS
+  Automated current-head acceptance: PASS
+  Manual GUI acceptance: PASS
+  Repository clean after acceptance: YES
+  HEAD equals origin/phase/8-multithreading: YES
+
+AUTOMATED CURRENT-HEAD OBSERVATIONS
+  Canonical CTest: 147/147 PASS
+  Qt registration worker regression: 10/10 PASS
+  Phase 8 focused CTest: 12/12 PASS
+  100,000-event MPMC stress: PASS
+  Clang 18 isolated TSan: 18/18 PASS
+  PJSIP non-live regression: 45/45 PASS
+  Runtime acceptance harness self-tests: PASS
+  Headless GUI startup/normal exit: 40/40 PASS
+  GUI startup median: 191.04 ms
+  GUI startup P95: 202.22 ms
+  GUI startup max: 207.21 ms
+
+MANUAL GUI
+  Accepted: true
+  Observation seconds: 92.97
+  Samples: 185
+  Exit code: 0
+  RSS first/last/peak KiB: 193320 / 195792 / 200352
+  FD min/max: 30 / 31
+  Threads min/max: 23 / 24
+  Limits: Human UI observation, no SIP authentication, no production teardown claim
+
+HISTORICAL LIVE OBSERVATIONS — NOT RERUN ON THIS HEAD
+  Commit 31 production registration/teardown live 3x: PASS
+  Controlled PJSUA2 PJ_EBUSY recovery: LIVE OBSERVED / EVIDENCED
+
+CURRENT SAFETY BOUNDARIES
+  Live external callback quiescence: UNPROVEN
+  Production-client real PJ_EBUSY recovery: UNPROVEN
+  PJSUA2 integration readiness: BLOCKED
+
+PROVENANCE
+  Frozen summary SHA256:
+    ba18bc197c402ee977a8db47ed8393cbf43ea3f6d0d2c4c9529b80288a5f0d3f
+  Automated run log SHA256:
+    c990e60789f867fc6e9fc6b74eea0dde7fca4c326b95607af2bbe9fe91156cd4
+  Acceptance status SHA256:
+    db137a7c8d0be734a0638e429fb695f6d68ba86209639e141f8fec72fa08b959
+  GUI smoke SHA256:
+    77c54f00626e300dad533f27cb4bbeb5313902e3f305a15b3cb28c95e7b23a06
+  GUI manual results SHA256:
+    1a5afeb63923c84fffc89fc5959d3a3c8d04fc9647b0e04c41c6d8e951d6dd0e
+  GUI manual samples SHA256:
+    d0fde7911af5c87928073c25f3515c95db689c7bc72998a25ea2fd7726a87d97
+  Manual log SHA256:
+    67f882f9a04b65e360c27fa81ae37fff032418f8d9105e9a91dac39542e664d9
+
+MAINTAINER STATUS
+  Phase 8 acceptance: PENDING
+  Merge: NOT PERFORMED
+  Release/tag: NOT PERFORMED

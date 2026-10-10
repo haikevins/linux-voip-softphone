@@ -2,26 +2,32 @@
 
 **Final observed current-head run**
 
-Final acceptance was completed on Commit 31
-`6b19d5ebcbd56991aa3c0e97b163780942b6a54e` after local and remote branch
-synchronization.
+The final offline runtime acceptance was refreshed on hotfix HEAD
+`b6c84ac48f9dbb9d442a446dc05bdd47ec1f08ca` after local/remote synchronization and GitHub CI completion.
+
+GitHub CI on that exact HEAD: **3/3 SUCCESS**.
 
 Automated current-head acceptance: **PASS**.
 
-The first manual attempt was preserved as a failed protocol attempt because the
-GUI was closed too early. The retry passed with `accepted=true`, 93.77 seconds
-of observation, 187 samples, and normal process exit `0`.
+Observed automated gates include canonical CTest **147/147**, Qt worker
+regression **10/10**, focused Phase 8 CTest **12/12**, repeated 100,000-event
+MPMC stress, Clang 18 TSan **18/18**, PJSIP non-live regression **45/45**,
+runtime harness self-tests, and headless GUI startup/normal exit **40/40**.
 
-Three separate production registration/teardown runs also observed SIP `200`,
-`active=yes`, and exit `0` on the exact canonical source bytes later committed
-as Commit 31.
+The manual GUI gate passed with `accepted=true`, **92.97 seconds** of
+observation, **185 samples**, and normal process exit `0`. Observed resource
+values were RSS first/last/peak **193320 / 195792 / 200352 KiB**, FD min/max
+**30 / 31**, and thread min/max **23 / 24**.
 
-See `evidence/phase8/final-runtime-acceptance-6b19d5e.txt`.
+See `evidence/phase8/final-runtime-acceptance-b6c84ac.txt`.
+
+The earlier Commit 31 live registration 3x observation and Commit 30 controlled
+PJSUA2 busy-recovery experiment remain historical evidence; they were not
+rerun as part of this offline current-head acceptance.
 
 External callback quiescence remains **UNPROVEN**, production-client real
 `PJ_EBUSY` recovery remains **UNPROVEN**, and PJSUA2 integration readiness
 remains **BLOCKED**.
-
 
 **Scope:** Final user-visible GUI responsiveness and repeatable *offline* regression after Phase 8 multithreading roadmap closure. This test is a **candidate**, not an assertion that the app is fully operational or that Phase 8 has been signed off.
 

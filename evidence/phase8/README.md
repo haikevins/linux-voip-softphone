@@ -1,22 +1,28 @@
 # Phase 8 Evidence — Multithreading
 
-**Final Commit 31 runtime evidence**
+**Current hotfix runtime evidence**
 
-`final-runtime-acceptance-6b19d5e.txt` records final current-head runtime
-acceptance for Commit 31
-`6b19d5ebcbd56991aa3c0e97b163780942b6a54e`.
+`final-runtime-acceptance-b6c84ac.txt` records current-head offline runtime
+acceptance for
+`b6c84ac48f9dbb9d442a446dc05bdd47ec1f08ca`.
 
-It records automated PASS, the successful 93.77-second manual GUI retry, and
-three production registration/teardown live runs performed on the exact Commit
-31 source bytes.
+It records GitHub CI **3/3 SUCCESS**, automated acceptance PASS, and manual GUI
+acceptance PASS with **92.97 seconds**, **185 samples**, and normal exit `0`.
 
-`final-runtime-acceptance-8c78677.txt` remains historical evidence and is not
-rewritten.
+`final-runtime-acceptance-6b19d5e.txt` remains the historical Commit 31
+acceptance record, including the production registration/teardown 3x
+observation tied to the exact Commit 31 source bytes.
+`final-runtime-acceptance-8c78677.txt` also remains unchanged historical
+evidence.
 
-The controlled vendor-level busy-recovery experiment remains in
-`pjsip-live-lifecycle.txt`. Neither record proves universal external callback
-quiescence or production-client recovery from every actual `PJ_EBUSY`.
+The controlled vendor-level PJSUA2 busy-recovery experiment remains historical
+evidence in `pjsip-live-lifecycle.txt`. Neither that experiment nor the Commit
+31 live-registration observation was rerun by the `b6c84ac` offline
+acceptance.
 
+Live external callback quiescence and production-client real `PJ_EBUSY`
+recovery remain **UNPROVEN**; PJSUA2 integration readiness remains
+**BLOCKED**.
 
 ## Status
 

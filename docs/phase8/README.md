@@ -1,22 +1,29 @@
 # Phase 8 — Multithreading
 
-**Current final evidence — Commit 31 / Commit 32 documentation**
+**Current final evidence — hotfix HEAD / Commit 34 documentation candidate**
 
-The final production candidate is Commit 31
-`6b19d5ebcbd56991aa3c0e97b163780942b6a54e`. Automated current-head
-acceptance passed, and the final manual GUI retry passed after 93.77 seconds
-with a normal window close. Three production registration/teardown runs also
-passed on the exact canonical source bytes later committed as Commit 31.
+The current Phase 8 branch HEAD is
+`b6c84ac48f9dbb9d442a446dc05bdd47ec1f08ca`, the static-analysis hotfix whose parent is Commit 32
+`07ad46c46d905fab25b44ba660693c0468d2abe7`.
 
-The current record is
-`evidence/phase8/final-runtime-acceptance-6b19d5e.txt`; the older
-`final-runtime-acceptance-8c78677.txt` remains unchanged historical evidence.
+GitHub CI completed **3/3 SUCCESS** on this exact HEAD: Build, Static Analysis,
+and Tests and Sanitizers all passed. Automated offline final runtime acceptance
+also passed. The manual GUI gate passed with `accepted=true`, **92.97 seconds**
+of observation, **185 samples**, and normal process exit `0`.
 
-This evidence does not establish universal PJSUA2 callback quiescence or
-production-client recovery from every real `PJ_EBUSY`. PJSUA2 shutdown
-integration remains **BLOCKED/UNPROVEN**. Final milestone sign-off, merge, and
-release remain explicit maintainer decisions.
+The current runtime record is
+`evidence/phase8/final-runtime-acceptance-b6c84ac.txt`.
 
+The earlier `final-runtime-acceptance-6b19d5e.txt` and
+`final-runtime-acceptance-8c78677.txt` records remain unchanged historical
+evidence. The Commit 31 production registration 3x observation and Commit 30
+controlled PJSUA2 `PJ_EBUSY` experiment were not rerun by this current-head
+offline acceptance.
+
+Live external callback quiescence remains **UNPROVEN**, production-client real
+`PJ_EBUSY` recovery remains **UNPROVEN**, and PJSUA2 integration readiness
+remains **BLOCKED**. Final milestone sign-off, merge, and release remain
+explicit maintainer decisions.
 
 ## Status
 

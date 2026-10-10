@@ -1,27 +1,32 @@
 # Phase 8 — roadmap exit audit (Commit 19 baseline)
 
-**Current evidence update — final Commit 31 candidate**
+**Current evidence update — hotfix HEAD `b6c84ac`**
 
-The final production candidate is Commit 31
-`6b19d5ebcbd56991aa3c0e97b163780942b6a54e`.
+The current committed/pushed Phase 8 candidate is
+`b6c84ac48f9dbb9d442a446dc05bdd47ec1f08ca`.
 
-On that committed/pushed HEAD, automated final runtime acceptance passed and the
-manual GUI retry passed with 93.77 seconds of observation and clean normal
-exit. Separately, three production registration/teardown runs passed on the
-exact canonical source bytes later committed as Commit 31.
+On that exact HEAD:
 
-Current boundary:
-
-- controlled PJSUA2 `PJ_EBUSY` recovery: **LIVE OBSERVED / EVIDENCED**;
-- final automated runtime acceptance: **PASS**;
+- GitHub CI: **3/3 SUCCESS**;
+- final automated offline runtime acceptance: **PASS**;
 - final manual GUI acceptance: **PASS**;
-- production registration/teardown live 3x: **PASS**;
+- manual observation: **92.97 seconds / 185 samples / exit 0**;
+- headless GUI startup/normal exit: **40/40 PASS**, median **191.04 ms**,
+  P95 **202.22 ms**, max **207.21 ms**;
+- controlled PJSUA2 `PJ_EBUSY` recovery: **LIVE OBSERVED / EVIDENCED
+  HISTORICALLY**, not rerun on this HEAD;
+- production registration/teardown live 3x: **PASS HISTORICALLY ON COMMIT 31**,
+  not rerun on this HEAD;
 - live external callback quiescence: **UNPROVEN**;
 - production-client real `PJ_EBUSY` recovery: **UNPROVEN**;
 - PJSUA2 integration readiness: **BLOCKED**.
 
-Final Phase 8 acceptance remains an explicit maintainer decision.
+The static-analysis hotfix closes the identified `noexcept` exception-escape
+path around shutdown disconnection waits and restores GitHub CI to 3/3. The
+offline acceptance does not convert historical live observations into
+current-head live SIP proof.
 
+Final Phase 8 acceptance remains an explicit maintainer decision.
 
 **Status: PENDING FINAL MAINTAINER ACCEPTANCE.** This is an evidence/architecture
 closure candidate, **not** a claim that live PJSUA2 teardown is safe.
