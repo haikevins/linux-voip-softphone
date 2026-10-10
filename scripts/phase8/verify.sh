@@ -31,6 +31,7 @@ required_paths=(
     scripts/quality/verify-docs-structure.sh
     scripts/quality/verify-evidence-structure.sh
     scripts/phase8/verify-final-runtime-acceptance.sh
+    scripts/phase8/verify-pjsip-live-lifecycle-evidence.sh
     scripts/phase8/verify-roadmap-exit.sh
 )
 for path in "${required_paths[@]}"; do
@@ -67,6 +68,9 @@ for path in paths:
 print(f'Phase 8 Python syntax: PASS ({len(paths)} file(s))')
 PY
 
+echo '== recorded live PJSUA2 lifecycle evidence =='
+bash scripts/phase8/verify-pjsip-live-lifecycle-evidence.sh
+
 echo '== Phase 8 final automated offline runtime acceptance =='
 bash scripts/phase8/verify-final-runtime-acceptance.sh --automatic
 
@@ -85,5 +89,6 @@ fi
 echo 'Source checkout cleanliness: PASS'
 
 echo 'Phase 8 automated offline verification: PASS'
+echo 'EVIDENCE: controlled PJSUA2 PJ_EBUSY recovery was observed in the recorded live run.'
 echo 'BOUNDARY: live SIP/PJSUA2 shutdown safety remains BLOCKED/UNPROVEN.'
 echo 'BOUNDARY: manual graphical GUI acceptance remains a separate explicit gate.'

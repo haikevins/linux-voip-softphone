@@ -73,7 +73,7 @@ During the full observation period, verify:
 
 If either fails, keep Phase 8 **NOT ACCEPTED**; retain the `/tmp/` log directory and investigate. Do not commit logs as if already verified. A passing test supports acceptance of the *offline Phase 8 multithreading/GUI preview scope* only, subject to final maintainer approval.
 
-**Not covered:** live SIP registration/call audio quality, PJSUA2 `shutdown2` recovery on `PJ_EBUSY`, external callback quiescence, actual crash-free teardown of registered PJSUA2 objects, sustained FPS/rendering benchmark, real-world power/battery performance. A user with a controlled Asterisk lab can separately exercise SIP, but this test **deliberately** does not start calls or handle credentials while known lifetime safety risks are unresolved.
+**Not covered by this offline acceptance:** live SIP registration/call audio quality, PJSUA2 `shutdown2` recovery on `PJ_EBUSY`, external callback quiescence, actual crash-free teardown of registered PJSUA2 objects, sustained FPS/rendering benchmark, real-world power/battery performance. A later controlled Commit 30 lab experiment separately observed one real `PJ_EBUSY` -> hangup -> zero-call-slot -> retry-success sequence and no late registration callback (`onRegState`) in its recorded window. That later evidence does **not** retroactively make this offline acceptance a live-SIP gate or prove universal PJSUA2 shutdown safety.
 
 Report the console transcript and the paths to `acceptance-status.txt`, `gui-smoke-results.json`, `gui-manual-results.json`; do not share passwords, SIP config secrets, or live registration traces. **No automatic git commit/push/merge or change of roadmap sign-off** is performed by these scripts.
 
@@ -117,8 +117,11 @@ Recorded from the committed `phase/8-multithreading` checkout on 2026-10-10.
 The manual resource values are observations, not leak proof: RSS first/last/peak
 was 193376/198280/199628 KiB, FD range 30–33, and thread range 23–24.
 
-Scope boundaries remain unchanged: live SIP registration/calls are
-**NOT TESTED**;
-production PJSUA2 shutdown safety is **BLOCKED/UNPROVEN**; memory leak freedom is
-**NOT PROVEN**; sustained FPS performance is **NOT MEASURED**. Final maintainer
-Phase 8 sign-off remains **PENDING**.
+This historical offline rerun did not test live SIP registration/calls. A
+later controlled live PJSUA2 experiment at Commit 29 baseline `4ace2be`
+recorded SIP registration, one active call slot, real `PJ_EBUSY`, zero slots
+after hangup, and successful shutdown retry. Production PJSUA2 shutdown safety
+nonetheless remains **BLOCKED/UNPROVEN** because external callback quiescence
+and production-client race coverage are not established. Memory leak freedom
+is **NOT PROVEN**; sustained FPS performance is **NOT MEASURED**. Final
+maintainer Phase 8 sign-off remains **PENDING**.

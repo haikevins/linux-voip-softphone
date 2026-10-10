@@ -10,8 +10,11 @@ The multithreading roadmap implementation, stress coverage, standalone
 ThreadSanitizer coverage, ownership audits, and final offline GUI runtime
 acceptance have recorded ThinkPad evidence. Final maintainer phase sign-off is
 still pending. Production PJSUA2 shutdown safety remains deliberately
-**BLOCKED/UNPROVEN** where external callback quiescence and real `PJ_EBUSY`
-recovery cannot be established by the current non-live tests.
+**BLOCKED/UNPROVEN** because external callback quiescence is not established.
+A controlled live PJSUA2 2.17 experiment at Commit 29 baseline `4ace2be`
+observed the `PJ_EBUSY` -> hangup -> zero call slots -> non-forced shutdown
+retry-success sequence, but that observation is not a universal production
+lifetime guarantee.
 
 Do not describe the phase as proving universal race freedom, live SIP teardown
 safety, or integration of the generic queue into the deployed Qt event path.
@@ -59,7 +62,8 @@ Out of scope:
   roadmap diagram illustrates them;
 - live SIP registration/call verification as part of the offline final runtime
   gate;
-- proving PJSUA2 external callback quiescence or real `PJ_EBUSY` recovery;
+- treating one controlled live PJSUA2 recovery observation as proof of
+  universal callback quiescence or production-client shutdown safety;
 - changing or recreating the Phase 7 tag `v0.8-qt-gui`.
 
 ## Deliverables
@@ -122,6 +126,21 @@ interaction. Live SIP shutdown is explicitly outside that acceptance scope.
 The final automated and 90-second manual GUI acceptance were rerun after these
 corrections on committed HEAD `8c78677`; the source checkout remained clean.
 
+### Production teardown hardening and controlled live evidence — Commits 27–30
+
+- `f555976` — gate production callbacks during SIP teardown.
+- `b8cca4c` — fail closed on unsafe SIP destruction.
+- `4ace2be` — isolate SIP callback owner lifetime through shared callback
+  context and detach.
+- Commit 30 candidate — add an explicit opt-in PJSUA2 2.17 live lifecycle
+  probe and preserve sanitized evidence from the controlled Asterisk lab.
+
+The live experiment observed a real `PJ_EBUSY` from
+`shutdown2(force=false)` while one call slot was active, followed by hangup,
+zero call slots, and a successful retry. No late registration callback (`onRegState`) was observed at shutdown return,
+during a 1.5-second grace interval, or through `libDestroy()` in that run. External callback quiescence remains **UNPROVEN**
+and production integration readiness remains **BLOCKED**.
+
 ## Architecture and design
 
 The authoritative architecture document is
@@ -178,6 +197,19 @@ Roadmap/source/evidence exit audit:
 bash scripts/phase8/verify-roadmap-exit.sh
 ```
 
+Offline verification of the committed live-lifecycle evidence summary:
+
+```bash
+bash scripts/phase8/verify-pjsip-live-lifecycle-evidence.sh
+```
+
+The real SIP experiment is explicit opt-in and is not part of the offline
+aggregate:
+
+```bash
+PHASE8_LIVE_SIP=1 bash scripts/phase8/run-pjsip-live-lifecycle-probe.sh
+```
+
 Final offline automatic acceptance:
 
 ```bash
@@ -211,11 +243,14 @@ include:
 - manual resource observation: 222 samples, RSS 193376/198280/199628 KiB
   first/last/peak, FD range 30–33, thread range 23–24.
 
-These results are scoped. They do not prove:
+These results are scoped. The later controlled live lifecycle experiment also
+recorded SIP 200 registration, one active call slot, real `PJ_EBUSY`, zero
+call slots after hangup, and successful non-forced shutdown retry. It did not observe a late registration callback (`onRegState`) in that run. Together, the evidence still does
+not prove:
 
-- live SIP registration/call teardown safety;
+- full live SIP/media teardown safety;
 - production PJSUA2 external callback quiescence;
-- actual `PJ_EBUSY` recovery;
+- production-client recovery from every actual `PJ_EBUSY` timing;
 - universal race freedom;
 - memory leak freedom; or
 - sustained rendering/FPS performance.
@@ -243,8 +278,10 @@ evidence/07-threading/
 ```
 
 The `evidence/phase8/` history must not be overwritten to make earlier runs
-look like later runs. `evidence/07-threading/` is the roadmap closure view and
-explicitly preserves the remaining BLOCKED/UNPROVEN PJSUA2 boundaries.
+look like later runs. The controlled live lifecycle summary is preserved as
+`evidence/phase8/pjsip-live-lifecycle.txt`. `evidence/07-threading/` remains
+the historical roadmap closure view and is not rewritten to make its earlier
+offline acceptance appear to have included this later live experiment.
 
 No raw SIP authentication material, passwords, PCAPs, or SRTP inline key
 material belong in committed evidence.
@@ -285,12 +322,12 @@ Roadmap implementation/evidence criteria currently have these states:
 | Final maintainer Phase 8 sign-off | PENDING |
 | Merge to `main` / release tag | NOT STARTED |
 
-Known production PJSUA2 shutdown risks remain documented as
-`BLOCKED/UNPROVEN`. They must not be silently relabeled as solved. The
-maintainer must explicitly decide whether Phase 8 closes as the roadmap's
-offline/educational multithreading milestone with those production risks
-carried forward, or whether additional live PJSUA2 work is required before
-sign-off.
+Production PJSUA2 shutdown integration remains `BLOCKED/UNPROVEN` even after
+the controlled `PJ_EBUSY` recovery observation. The live run narrows one
+runtime uncertainty; it does not supply the missing external callback
+quiescence contract or prove production-client shutdown under every race. The
+maintainer must explicitly decide whether additional live PJSUA2 work is
+required before Phase 8 sign-off.
 
 ## References
 

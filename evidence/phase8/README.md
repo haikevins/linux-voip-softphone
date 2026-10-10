@@ -7,8 +7,10 @@ The recorded ThinkPad offline/runtime gates include successful canonical,
 focused, stress, TSan, PJSIP non-live, and GUI-preview acceptance results.
 
 Final maintainer Phase 8 sign-off remains pending. Production PJSUA2 shutdown
-integration remains `BLOCKED/UNPROVEN` where live external callback quiescence
-and real `PJ_EBUSY` recovery are not demonstrated.
+integration remains `BLOCKED/UNPROVEN` because live external callback
+quiescence and production-client race coverage are not established. A later
+controlled PJSUA2 2.17 lab run records a real `PJ_EBUSY` recovery sequence
+without upgrading that broader integration boundary.
 
 The roadmap-required closure artifacts are retained separately in
 `evidence/07-threading/`; this directory preserves the chronological Phase 8
@@ -31,8 +33,11 @@ Evidence in this directory covers:
 - manual-verification status for slices that did not alter live SIP behavior.
 
 It does not prove live PJSUA2 callback quiescence, safe teardown after every
-shutdown failure, actual `PJ_EBUSY` recovery, universal race freedom, memory
-leak freedom, or sustained GUI FPS performance.
+shutdown failure, production-client recovery from every real `PJ_EBUSY`
+timing, universal race freedom, memory leak freedom, or sustained GUI FPS
+performance. The controlled live evidence does prove that one real PJSUA2 2.17
+non-forced shutdown returned `PJ_EBUSY` with an active call slot and that the
+recorded retry succeeded after hangup and zero call slots.
 
 ## Environment
 
@@ -69,7 +74,9 @@ The chronological automated evidence files are:
 - `pjsip-callback-ingress-races.txt` — external callback ingress races;
 - `pjsip-shutdown-ownership-policy.txt` — retry/stale-result ownership model;
 - `pjsip-shutdown-authorization.txt` — authorization policy;
-- `pjsip-shutdown-integration-contract.txt` — fail-closed integration gate.
+- `pjsip-shutdown-integration-contract.txt` — fail-closed integration gate;
+- `pjsip-live-lifecycle.txt` — sanitized controlled PJSUA2 2.17 live lifecycle
+  observation, including real `PJ_EBUSY` and successful retry after hangup.
 
 Roadmap closure and final offline runtime evidence are indexed from
 `evidence/07-threading/`. The final post-hardening rerun is also preserved as
@@ -90,7 +97,9 @@ evidence/07-threading/final-runtime-acceptance.txt
 
 That record includes human preview-mode GUI interaction and normal window
 X-close PASS. It explicitly states that live SIP registration/calls were not
-tested by that gate.
+tested by that gate. The later `pjsip-live-lifecycle.txt` artifact is a
+separate controlled lab observation and does not rewrite the historical GUI
+acceptance scope.
 
 ## Artifacts
 
@@ -131,9 +140,11 @@ Recorded final offline acceptance rerun on committed HEAD `8c78677` reports:
 - manual observation: 222 samples, RSS 193376/198280/199628 KiB
   first/last/peak, FD range 30–33, thread range 23–24.
 
-Results must be read with their scope. Integration readiness for unresolved
-live PJSUA2 shutdown remains BLOCKED; external callback quiescence and actual
-`PJ_EBUSY` recovery remain UNPROVEN.
+Results must be read with their scope. The controlled live PJSUA2 2.17 run
+observed real `PJ_EBUSY`, zero call slots after hangup, successful non-forced
+shutdown retry, and no late registration callback (`onRegState`) in its recorded observation
+window. Integration readiness remains BLOCKED; external callback quiescence
+and production-client recovery across adversarial timings remain UNPROVEN.
 
 ## Security and redaction
 
@@ -161,13 +172,19 @@ CXX="$(command -v clang++-18)" \
 PHASE8_TSAN_BUILD_DIR="$PWD/build/phase8-tsan-clang18-debug" \
 PHASE8_TSAN_REPEATS=3 \
     bash scripts/phase8/verify-tsan.sh
+bash scripts/phase8/verify-pjsip-live-lifecycle-evidence.sh
 bash scripts/phase8/verify-roadmap-exit.sh
 bash scripts/phase8/verify-final-runtime-acceptance.sh --automatic
 ```
 
 The human stage for the final runtime acceptance requires the actual
 `EVIDENCE_DIR` emitted by the automatic run and a graphical desktop terminal.
-See `docs/phase8/final-runtime-acceptance.md` before running it.
+See `docs/phase8/final-runtime-acceptance.md` before running it. The live
+lifecycle experiment is intentionally separate and requires explicit opt-in:
+
+```bash
+PHASE8_LIVE_SIP=1 bash scripts/phase8/run-pjsip-live-lifecycle-probe.sh
+```
 
 A reproduced run creates new observations. Do not overwrite old evidence to
 make historical runs appear current.

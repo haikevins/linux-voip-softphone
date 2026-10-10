@@ -33,7 +33,7 @@ were intentionally not grafted onto that path; do **not** claim otherwise.
 The roadmap's separate SIP/Metrics/Logging threads diagram is an explanatory
 model, not proof that dedicated metrics and logging workers were implemented.
 
-Commit 19's source audit intentionally says:
+The current source integration audit still intentionally reports:
 
 ```text
 Integration readiness: BLOCKED
@@ -41,10 +41,26 @@ Live external callback quiescence: UNPROVEN
 Actual PJ_EBUSY recovery: UNPROVEN
 ```
 
-The risks remain open. No source-level or synthetic contract test establishes
-safe real PJSUA2 object destruction after shutdown failure. These risks must
-be triaged explicitly for production deployment rather than silently declared
-fixed or passed into the next phase as solved.
+That last field remains **production-integration scoped**: the static audit
+does not consume live lab evidence and no real `PJ_EBUSY` has been injected
+through a production client's `stop()` method. Separately, the controlled
+Commit 30 live PJSUA2 2.17 experiment at baseline `4ace2be` observed this real
+vendor-runtime sequence:
+
+```text
+ACTIVE_CALL_SLOTS=1
+FIRST_SHUTDOWN=PJ_EBUSY
+CALL_SLOTS_AFTER_HANGUP=0
+SECOND_SHUTDOWN=SUCCESS
+```
+
+No registration callback (`onRegState`) was observed at successful shutdown
+return, during the 1.5-second grace interval, or through `libDestroy()` in that
+recorded run.
+This narrows the runtime uncertainty around non-forced account shutdown, but it
+does not establish external callback quiescence or universal production
+teardown safety. Those remaining risks must be triaged explicitly rather than
+silently declared solved.
 
 ## Verification and sign-off
 
@@ -97,4 +113,5 @@ shutdown or prove end-to-end integration of the generic queue.
 
 Integration readiness: BLOCKED.
 External callback quiescence: UNPROVEN.
-Actual PJ_EBUSY recovery: UNPROVEN.
+Controlled PJSUA2 PJ_EBUSY recovery: LIVE OBSERVED / EVIDENCED.
+Production-client recovery from an injected real PJ_EBUSY: UNPROVEN.

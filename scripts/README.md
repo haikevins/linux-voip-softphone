@@ -22,6 +22,8 @@ scripts/
     ├── verify.sh
     ├── verify-final-runtime-acceptance.sh
     ├── verify-roadmap-exit.sh
+    ├── verify-pjsip-live-lifecycle-evidence.sh
+    ├── run-pjsip-live-lifecycle-probe.sh
     ├── verify-queue.sh
     ├── verify-stress.sh
     ├── verify-tsan.sh
@@ -40,7 +42,8 @@ There is no `scripts/phase7/` directory. Phase 7 reused the repository-wide qual
 - `dev/` provides routine local build and test entry points.
 - `quality/` contains reusable repository-wide quality and structure gates.
 - `phaseN/` contains phase-specific verification, integration, and evidence collection workflows.
-- `phase8/verify.sh` is the Phase 8 aggregate automated **offline** gate. It validates documentation/evidence structure, script syntax, the final offline runtime acceptance workflow, and the roadmap/source audit. It does not authorize live PJSUA2 shutdown safety.
+- `phase8/verify.sh` is the Phase 8 aggregate automated **offline** gate. It validates documentation/evidence structure, script syntax, the recorded live-evidence summary, the final offline runtime acceptance workflow, and the roadmap/source audit. It does not execute live SIP or authorize PJSUA2 shutdown safety.
+- `phase8/run-pjsip-live-lifecycle-probe.sh` is an explicit opt-in real-SIP experiment (`PHASE8_LIVE_SIP=1`). It is deliberately excluded from the offline aggregate and may briefly ring the configured target extension. Normal runs require a clean checkout; `PHASE8_ALLOW_DIRTY=1` is reserved for guarded pre-commit validation and requires the working-tree state to be unchanged by the probe.
 
 ## Conventions
 
@@ -69,6 +72,6 @@ There is no `scripts/phase7/` directory. Phase 7 reused the repository-wide qual
 
 `phase6/verify.sh` first checks the audio environment, then reuses the Phase 5 quality and regression gate and explicitly runs the RTP statistics and PJSUA2 RTP diagnostics suites. It validates only automated checks; outgoing/incoming calls, audible two-way audio, and live RTP results remain manual gates.
 
-`phase8/verify.sh` intentionally remains an offline aggregate. It delegates to the already reviewed Phase 8 acceptance and roadmap gates, preserves their `BLOCKED/UNPROVEN` live-PJSUA2 boundary, and leaves graphical/manual GUI acceptance to the explicit `verify-final-runtime-acceptance.sh --manual` invocation.
+`phase8/verify.sh` intentionally remains an offline aggregate. It validates the committed sanitized live-lifecycle summary but never replays the real SIP experiment. It delegates to the reviewed Phase 8 acceptance and roadmap gates, preserves the `BLOCKED/UNPROVEN` external-quiescence boundary, and leaves graphical/manual GUI acceptance to the explicit `verify-final-runtime-acceptance.sh --manual` invocation.
 
 Phase-specific documentation under `docs/phaseN/` remains the authoritative source for each phase workflow and prerequisites.
