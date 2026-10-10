@@ -1,47 +1,95 @@
 #include "pjsip/SipRegistrationClient.hpp"
 
+#include "pjsip/CallbackActivityGate.hpp"
+
+#include <atomic>
 #include <cstdio>
+#include <exception>
 #include <stdexcept>
 #include <utility>
 
 namespace voip::pjsip {
 
+struct SipRegistrationClient::CallbackContext final
+{
+    explicit CallbackContext(SipRegistrationClient &owner) noexcept : owner_(&owner) {}
+
+    [[nodiscard]] SipRegistrationClient *owner() const noexcept
+    {
+        return owner_.load(std::memory_order_acquire);
+    }
+
+    void detach_owner() noexcept
+    {
+        owner_.store(nullptr, std::memory_order_release);
+    }
+
+    detail::CallbackActivityGate account_activity;
+
+  private:
+    std::atomic<SipRegistrationClient *> owner_;
+};
+
 class SipRegistrationClient::RegistrationAccount final : public pj::Account
 {
   public:
-    explicit RegistrationAccount(SipRegistrationClient &owner) : owner_(owner) {}
+    explicit RegistrationAccount(std::shared_ptr<CallbackContext> context)
+        : context_(std::move(context))
+    {}
 
     void onRegState(pj::OnRegStateParam &parameter) override
     {
+        auto callback_entry = context_->account_activity.enter();
+        if (!callback_entry.admitted()) {
+            return;
+        }
+
+        auto *owner = context_->owner();
+        if (owner == nullptr) {
+            return;
+        }
+
         try {
-            owner_.on_registration_state(parameter, getInfo());
+            owner->on_registration_state(parameter, getInfo());
         } catch (const pj::Error &error) {
-            owner_.on_registration_callback_error(error.info());
+            owner->on_registration_callback_error(error.info());
         } catch (const std::exception &error) {
-            owner_.on_registration_callback_error(error.what());
+            owner->on_registration_callback_error(error.what());
         } catch (...) {
-            owner_.on_registration_callback_error("unknown registration callback failure");
+            owner->on_registration_callback_error("unknown registration callback failure");
         }
     }
 
   private:
-    SipRegistrationClient &owner_;
+    std::shared_ptr<CallbackContext> context_;
 };
 
 SipRegistrationClient::SipRegistrationClient(SipEndpointConfig endpoint_config,
                                              SipAccountConfig account_config)
-    : endpoint_config_(endpoint_config), account_config_(std::move(account_config))
+    : endpoint_config_(endpoint_config), account_config_(std::move(account_config)),
+      callback_context_(std::make_shared<CallbackContext>(*this))
 {}
 
 SipRegistrationClient::~SipRegistrationClient()
 {
     stop();
+    if (library_created_ || endpoint_ != nullptr || account_ != nullptr) {
+        std::fputs("PJSIP registration client teardown could not prove safe destruction\n", stderr);
+        std::terminate();
+    }
+    callback_context_->detach_owner();
 }
 
 void SipRegistrationClient::start()
 {
     if (started_) {
         throw std::logic_error("SIP registration client is already started");
+    }
+    if (library_created_ || endpoint_ != nullptr || account_ != nullptr) {
+        throw std::logic_error("SIP registration client retains teardown state");
+    }
+    if (!callback_context_->account_activity.reset_if_empty()) {
+        throw std::logic_error("SIP registration callback activity did not drain before restart");
     }
     if (!account_config_.register_on_add) {
         throw std::invalid_argument("SIP registration client requires register_on_add=true");
@@ -77,7 +125,7 @@ void SipRegistrationClient::start()
         auto pjsua2_account_config = account_config_.to_pjsua2_account_config();
         pjsua2_account_config.sipConfig.transportId = transport_id;
 
-        account_ = std::make_unique<RegistrationAccount>(*this);
+        account_ = std::make_unique<RegistrationAccount>(callback_context_);
         account_->create(pjsua2_account_config);
         started_ = true;
     } catch (...) {
@@ -88,19 +136,73 @@ void SipRegistrationClient::start()
 
 void SipRegistrationClient::stop() noexcept
 {
-    account_.reset();
-
-    if (endpoint_ != nullptr && library_created_) {
-        try {
-            endpoint_->libDestroy();
-        } catch (...) {
-            std::fputs("PJSIP cleanup failed during shutdown\n", stderr);
+    if (!library_created_) {
+        if (account_ != nullptr) {
+            std::fputs("PJSIP registration shutdown found an account without a library\n", stderr);
+            return;
         }
+        endpoint_.reset();
+        started_ = false;
+        return;
+    }
+    if (endpoint_ == nullptr) {
+        std::fputs("PJSIP registration shutdown lost the endpoint owner\n", stderr);
+        return;
     }
 
+    callback_context_->account_activity.close();
+    if (!callback_context_->account_activity.wait_for_empty_for(std::chrono::seconds{2})) {
+        std::fputs("PJSIP registration callbacks did not drain before account shutdown\n", stderr);
+        return;
+    }
+
+    if (!shutdown_account_safely()) {
+        return;
+    }
+
+    if (!callback_context_->account_activity.wait_for_empty_for(std::chrono::seconds{2})) {
+        std::fputs("PJSIP registration callbacks did not drain after account shutdown\n", stderr);
+        return;
+    }
+
+    // Retain the derived Account callback target through libDestroy(). PJProject
+    // 2.17 destroys its worker/media/endpoints inside this boundary and may
+    // emit account callbacks while destroying the SIP endpoint. This ordering
+    // is an implementation-reviewed lifetime guard, not a universal callback
+    // quiescence proof.
+    try {
+        endpoint_->libDestroy();
+    } catch (...) {
+        std::fputs("PJSIP cleanup failed during registration shutdown\n", stderr);
+        return;
+    }
+
+    account_.reset();
     endpoint_.reset();
     library_created_ = false;
     started_ = false;
+}
+
+bool SipRegistrationClient::shutdown_account_safely() noexcept
+{
+    if (account_ == nullptr || !account_->isValid()) {
+        return true;
+    }
+
+    pj::AccountShutdownParam parameter;
+    parameter.force = false;
+
+    try {
+        account_->shutdown2(parameter);
+        return true;
+    } catch (const pj::Error &error) {
+        std::fprintf(stderr, "PJSIP registration account shutdown failed: %s\n",
+                     error.info().c_str());
+        return false;
+    } catch (...) {
+        std::fputs("PJSIP registration account shutdown failed during cleanup\n", stderr);
+        return false;
+    }
 }
 
 RegistrationResult

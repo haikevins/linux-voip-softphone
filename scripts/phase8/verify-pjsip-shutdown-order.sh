@@ -12,7 +12,7 @@ if [[ "$(git branch --show-current)" != 'phase/8-multithreading' ]]; then
 fi
 
 python3 -B -m unittest discover -s tests/phase8 -p test_pjsip_shutdown_order.py -v
-printf 'PASS: Phase 8 PJSIP source shutdown-order contract (6 tests)\n'
+printf 'PASS: Phase 8 PJSIP source shutdown-order contract\n'
 
 if [[ "${PHASE8_PJSIP_STATIC_ONLY:-0}" == '1' ]]; then
     echo 'STATIC ONLY: PJSIP compilation and dynamic CTests NOT RUN.'

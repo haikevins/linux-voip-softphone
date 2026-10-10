@@ -36,13 +36,16 @@ class SipRegistrationClient
     [[nodiscard]] RegistrationResult wait_for_registration(std::chrono::milliseconds timeout);
 
   private:
+    struct CallbackContext;
     class RegistrationAccount;
 
     void on_registration_state(const pj::OnRegStateParam &parameter, const pj::AccountInfo &info);
     void on_registration_callback_error(std::string reason) noexcept;
+    [[nodiscard]] bool shutdown_account_safely() noexcept;
 
     SipEndpointConfig endpoint_config_;
     SipAccountConfig account_config_;
+    std::shared_ptr<CallbackContext> callback_context_;
     std::unique_ptr<pj::Endpoint> endpoint_;
     std::unique_ptr<RegistrationAccount> account_;
 

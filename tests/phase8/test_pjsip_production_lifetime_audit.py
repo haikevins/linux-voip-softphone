@@ -21,10 +21,14 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
     def setUpClass(cls):
         cls.original_outgoing = (ROOT / 'src/pjsip/SipOutgoingCallClient.cpp').read_text()
         cls.original_incoming = (ROOT / 'src/pjsip/SipIncomingCallClient.cpp').read_text()
+        cls.original_registration = (ROOT / 'src/pjsip/SipRegistrationClient.cpp').read_text()
 
-    def run_audit(self, outgoing=None, incoming=None):
-        return audit.audit_pair(outgoing if outgoing is not None else self.original_outgoing,
-                                incoming if incoming is not None else self.original_incoming)
+    def run_audit(self, outgoing=None, incoming=None, registration=None):
+        return audit.audit_pair(
+            outgoing if outgoing is not None else self.original_outgoing,
+            incoming if incoming is not None else self.original_incoming,
+            registration if registration is not None else self.original_registration,
+        )
 
     @staticmethod
     def replace_once(text, old, new):
@@ -38,7 +42,7 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
         self.assertEqual('INCONCLUSIVE', result['live_callback_quiescence'])
         for item in result['clients'].values():
             self.assertEqual([], item['errors'])
-            self.assertGreaterEqual(len(item['checks']), 25)
+            self.assertGreaterEqual(len(item['checks']), 18)
             self.assertTrue(all(item['checks'].values()))
 
     def test_both_clients_have_no_known_source_closure_risks(self):
@@ -46,6 +50,7 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
         resolved = {
             'ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE',
             'ACCOUNT_SHUTDOWN_RESULT_DISCARDED',
+            'ACCOUNT_TARGET_RELEASED_BEFORE_LIBDESTROY',
             'CALLBACKS_BORROW_OWNER_BY_REFERENCE',
             'CALL_SLOT_WAIT_RESULT_DISCARDED',
             'NO_PRODUCTION_CALLBACK_ACTIVITY_GATE',
@@ -249,6 +254,115 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
         self.assertIn('CALLBACKS_BORROW_OWNER_BY_REFERENCE',
                       result['clients']['outgoing']['risks'])
         self.assertEqual('FAIL', result['source_contract'])
+
+
+    def test_call_clients_retain_account_target_through_libdestroy(self):
+        old = (
+            '    try {\n'
+            '        endpoint_->libDestroy();\n'
+            '    } catch (...) {\n'
+            '        std::fputs("PJSIP cleanup failed during call-session shutdown\\n", stderr);\n'
+            '        return;\n'
+            '    }\n\n'
+            '    account_.reset();')
+        new = (
+            '    account_.reset();\n\n'
+            '    try {\n'
+            '        endpoint_->libDestroy();\n'
+            '    } catch (...) {\n'
+            '        std::fputs("PJSIP cleanup failed during call-session shutdown\\n", stderr);\n'
+            '        return;\n'
+            '    }')
+        modified = self.replace_once(self.original_outgoing, old, new)
+        result = self.run_audit(outgoing=modified)
+        self.assertFalse(
+            result['clients']['outgoing']['checks']['account_retained_through_libdestroy'])
+        self.assertIn(
+            'ACCOUNT_TARGET_RELEASED_BEFORE_LIBDESTROY',
+            result['clients']['outgoing']['risks'],
+        )
+        self.assertEqual('FAIL', result['source_contract'])
+
+    def test_registration_client_uses_shared_gated_owner_context(self):
+        result = self.run_audit()
+        registration = result['clients']['registration']
+        self.assertEqual([], registration['errors'])
+        self.assertEqual([], registration['risks'])
+        self.assertTrue(registration['checks']['registration_callback_gate'])
+        self.assertTrue(registration['checks']['callback_does_not_borrow_owner_reference'])
+        self.assertTrue(registration['checks']['destructor_detaches_callback_owner'])
+
+        old = (
+            '        auto callback_entry = context_->account_activity.enter();\n'
+            '        if (!callback_entry.admitted()) {\n'
+            '            return;\n'
+            '        }\n\n')
+        modified = self.replace_once(self.original_registration, old, '')
+        result = self.run_audit(registration=modified)
+        self.assertFalse(
+            result['clients']['registration']['checks']['registration_callback_gate'])
+        self.assertIn(
+            'REGISTRATION_CALLBACK_NO_TEARDOWN_GATE',
+            result['clients']['registration']['risks'],
+        )
+
+    def test_registration_shutdown_result_vetoes_release(self):
+        old = (
+            '    if (!shutdown_account_safely()) {\n'
+            '        return;\n'
+            '    }')
+        modified = self.replace_once(
+            self.original_registration,
+            old,
+            '    static_cast<void>(shutdown_account_safely());',
+        )
+        result = self.run_audit(registration=modified)
+        self.assertFalse(
+            result['clients']['registration']['checks']['account_failure_vetoes_release'])
+        self.assertIn(
+            'ACCOUNT_SHUTDOWN_RESULT_DISCARDED',
+            result['clients']['registration']['risks'],
+        )
+
+    def test_registration_account_survives_libdestroy(self):
+        old = (
+            '    try {\n'
+            '        endpoint_->libDestroy();\n'
+            '    } catch (...) {\n'
+            '        std::fputs("PJSIP cleanup failed during registration shutdown\\n", stderr);\n'
+            '        return;\n'
+            '    }\n\n'
+            '    account_.reset();')
+        new = (
+            '    account_.reset();\n\n'
+            '    try {\n'
+            '        endpoint_->libDestroy();\n'
+            '    } catch (...) {\n'
+            '        std::fputs("PJSIP cleanup failed during registration shutdown\\n", stderr);\n'
+            '        return;\n'
+            '    }')
+        modified = self.replace_once(self.original_registration, old, new)
+        result = self.run_audit(registration=modified)
+        self.assertFalse(
+            result['clients']['registration']['checks']['account_retained_through_libdestroy'])
+        self.assertIn(
+            'ACCOUNT_TARGET_RELEASED_BEFORE_LIBDESTROY',
+            result['clients']['registration']['risks'],
+        )
+
+    def test_registration_destructor_must_fail_closed(self):
+        modified = self.replace_once(
+            self.original_registration,
+            '        std::terminate();\n',
+            '        /* terminate deliberately removed */\n',
+        )
+        result = self.run_audit(registration=modified)
+        self.assertFalse(
+            result['clients']['registration']['checks']['destructor_fails_closed_after_stop'])
+        self.assertIn(
+            'ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE',
+            result['clients']['registration']['risks'],
+        )
 
     def test_missing_callback_override_is_rejected(self):
         modified = self.replace_once(

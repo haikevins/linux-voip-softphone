@@ -24,12 +24,14 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         base = ROOT / 'src/pjsip'
         cls.outgoing = (base / 'SipOutgoingCallClient.cpp').read_text(encoding='utf-8')
         cls.incoming = (base / 'SipIncomingCallClient.cpp').read_text(encoding='utf-8')
+        cls.registration = (base / 'SipRegistrationClient.cpp').read_text(encoding='utf-8')
         cls.header = (base / 'PjsipShutdownAuthorization.hpp').read_text(encoding='utf-8')
 
-    def evaluate(self, outgoing=None, incoming=None, header=None):
+    def evaluate(self, outgoing=None, incoming=None, registration=None, header=None):
         return audit.evaluate(
             self.outgoing if outgoing is None else outgoing,
             self.incoming if incoming is None else incoming,
+            self.registration if registration is None else registration,
             self.header if header is None else header,
         )
 
@@ -44,12 +46,13 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         self.assertEqual(result['integration_readiness'], 'BLOCKED')
         self.assertEqual(result['destructor_failure_policy'], 'FAIL_CLOSED_TERMINATE')
         self.assertEqual(result['callback_owner_lifetime_policy'], 'SHARED_CONTEXT_DETACH')
+        self.assertEqual(result['account_target_lifetime_policy'], 'RETAIN_THROUGH_LIBDESTROY')
         self.assertEqual(result['live_external_quiescence'], 'UNPROVEN')
         self.assertEqual(result['actual_pj_ebusy_recovery'], 'UNPROVEN')
 
     def test_both_clients_have_zero_known_source_closure_risks(self):
         result = self.evaluate()
-        self.assertEqual(set(result['clients']), {'incoming', 'outgoing'})
+        self.assertEqual(set(result['clients']), {'incoming', 'outgoing', 'registration'})
         for item in result['clients'].values():
             self.assertTrue(all(item['checks'].values()))
             self.assertEqual(item['open_risks'], [])
@@ -172,6 +175,53 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         self.assertFalse(report['clients']['outgoing']['checks']['no_known_source_closure_risks'])
         self.assertEqual(report['integration_readiness'], 'REVIEW_REQUIRED')
 
+
+    def test_registration_client_participates_in_blocker_audit(self):
+        report = self.evaluate()
+        registration = report['clients']['registration']
+        self.assertTrue(all(registration['checks'].values()))
+        self.assertEqual(registration['open_risks'], [])
+        self.assertEqual(registration['unreviewed_tokens'], [])
+
+    def test_early_registration_account_release_requires_review(self):
+        before = (
+            '    try {\n'
+            '        endpoint_->libDestroy();\n'
+            '    } catch (...) {\n'
+            '        std::fputs("PJSIP cleanup failed during registration shutdown\\n", stderr);\n'
+            '        return;\n'
+            '    }\n\n'
+            '    account_.reset();')
+        after = (
+            '    account_.reset();\n\n'
+            '    try {\n'
+            '        endpoint_->libDestroy();\n'
+            '    } catch (...) {\n'
+            '        std::fputs("PJSIP cleanup failed during registration shutdown\\n", stderr);\n'
+            '        return;\n'
+            '    }')
+        changed = self.changed(self.registration, before, after)
+        report = self.evaluate(registration=changed)
+        self.assertFalse(
+            report['clients']['registration']['checks']['no_known_source_closure_risks'])
+        self.assertEqual(report['integration_readiness'], 'REVIEW_REQUIRED')
+
+    def test_registration_raw_owner_reference_requires_review(self):
+        before = (
+            '  private:\n'
+            '    std::shared_ptr<CallbackContext> context_;\n'
+            '};')
+        after = (
+            '  private:\n'
+            '    std::shared_ptr<CallbackContext> context_;\n'
+            '    SipRegistrationClient &owner_;\n'
+            '};')
+        changed = self.changed(self.registration, before, after)
+        report = self.evaluate(registration=changed)
+        self.assertFalse(
+            report['clients']['registration']['checks']['no_known_source_closure_risks'])
+        self.assertEqual(report['integration_readiness'], 'REVIEW_REQUIRED')
+
     def test_json_cli_does_not_report_ready(self):
         result = subprocess.run(
             [sys.executable, '-B', str(SCRIPT), '--source-root', str(ROOT), '--json'],
@@ -183,6 +233,7 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         self.assertEqual(report['integration_readiness'], 'BLOCKED')
         self.assertEqual(report['destructor_failure_policy'], 'FAIL_CLOSED_TERMINATE')
         self.assertEqual(report['callback_owner_lifetime_policy'], 'SHARED_CONTEXT_DETACH')
+        self.assertEqual(report['account_target_lifetime_policy'], 'RETAIN_THROUGH_LIBDESTROY')
         self.assertEqual(report['audit_contract'], 'PASS')
 
     def test_require_ready_cli_fails_closed(self):
@@ -194,6 +245,7 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         self.assertIn('Integration readiness: BLOCKED', result.stdout)
         self.assertIn('Destructor failure policy: FAIL_CLOSED_TERMINATE', result.stdout)
         self.assertIn('Callback owner lifetime policy: SHARED_CONTEXT_DETACH', result.stdout)
+        self.assertIn('Account target lifetime policy: RETAIN_THROUGH_LIBDESTROY', result.stdout)
 
 
 if __name__ == '__main__':

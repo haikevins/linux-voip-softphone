@@ -13,7 +13,7 @@ cd "$ROOT"
 echo '===== SOURCE AUDIT (REAL PRODUCTION C++ FILES) ====='
 python3 -B scripts/phase8/audit-pjsip-production-lifetime.py
 
-echo '===== NINE MUTATION-ORIENTED REGRESSIONS ====='
+echo '===== MUTATION-ORIENTED REGRESSIONS ====='
 python3 -B tests/phase8/test_pjsip_production_lifetime_audit.py
 
 echo '===== FOCUSED CTEST REGISTRATION ====='

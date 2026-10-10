@@ -14,6 +14,10 @@ SOURCES = (
     ('SipOutgoingCallClient', ROOT / 'src/pjsip/SipOutgoingCallClient.cpp'),
     ('SipIncomingCallClient', ROOT / 'src/pjsip/SipIncomingCallClient.cpp'),
 )
+REGISTRATION_SOURCE = (
+    'SipRegistrationClient',
+    ROOT / 'src/pjsip/SipRegistrationClient.cpp',
+)
 
 
 def shutdown_body(source: str, class_name: str) -> str:
@@ -62,8 +66,8 @@ def verify_order(source: str, name: str) -> None:
     call_reset = _one(body, 'call_.reset();', name)
     account_shutdown = _one(body, 'shutdown_account_safely()', name)
     account_wait_after_shutdown = body.index(account_wait_marker, account_shutdown)
-    account_reset = _one(body, 'account_.reset();', name)
     lib_destroy = _one(body, 'endpoint_->libDestroy()', name)
+    account_reset = _one(body, 'account_.reset();', name)
 
     # stop() has a separate no-library cleanup branch, so endpoint_.reset()
     # legitimately occurs before the success path too. Require a reset after
@@ -83,8 +87,8 @@ def verify_order(source: str, name: str) -> None:
         call_reset,
         account_shutdown,
         account_wait_after_shutdown,
-        account_reset,
         lib_destroy,
+        account_reset,
         endpoint_reset,
     )
     if list(sequence) != sorted(sequence) or len(set(sequence)) != len(sequence):
@@ -97,6 +101,48 @@ def verify_order(source: str, name: str) -> None:
             raise ValueError(f'{name}: required callback lock missing: {guard}')
 
 
+
+
+def verify_registration_order(source: str, name: str) -> None:
+    body = shutdown_body(source, name)
+
+    account_close = _one(body, 'callback_context_->account_activity.close();', name)
+    account_wait_marker = (
+        'callback_context_->account_activity.wait_for_empty_for(std::chrono::seconds{2})'
+    )
+    if body.count(account_wait_marker) != 2:
+        raise ValueError(f'{name}: expected two account callback drain waits')
+
+    account_wait_before_shutdown = body.index(account_wait_marker)
+    account_shutdown = _one(body, 'shutdown_account_safely()', name)
+    account_wait_after_shutdown = body.index(account_wait_marker, account_shutdown)
+    lib_destroy = _one(body, 'endpoint_->libDestroy()', name)
+    account_reset = _one(body, 'account_.reset();', name)
+
+    endpoint_reset = body.find('endpoint_.reset();', account_reset)
+    if endpoint_reset < 0:
+        raise ValueError(f'{name}: endpoint reset missing after Account release')
+
+    sequence = (
+        account_close,
+        account_wait_before_shutdown,
+        account_shutdown,
+        account_wait_after_shutdown,
+        lib_destroy,
+        account_reset,
+        endpoint_reset,
+    )
+    if list(sequence) != sorted(sequence) or len(set(sequence)) != len(sequence):
+        raise ValueError(f'{name}: Account target must survive through libDestroy')
+
+    shutdown_guard = (
+        'if (!shutdown_account_safely()) {\n'
+        '        return;\n'
+        '    }'
+    )
+    if shutdown_guard not in body:
+        raise ValueError(f'{name}: account shutdown result must veto release')
+
 class SipShutdownOrderTests(unittest.TestCase):
     def test_real_outgoing_order(self):
         name, path = SOURCES[0]
@@ -105,6 +151,34 @@ class SipShutdownOrderTests(unittest.TestCase):
     def test_real_incoming_order(self):
         name, path = SOURCES[1]
         verify_order(path.read_text(encoding='utf-8'), name)
+
+    def test_real_registration_order(self):
+        name, path = REGISTRATION_SOURCE
+        verify_registration_order(path.read_text(encoding='utf-8'), name)
+
+    def test_early_registration_account_release_rejected(self):
+        name, path = REGISTRATION_SOURCE
+        source = path.read_text(encoding='utf-8')
+        old = (
+            '    try {\n'
+            '        endpoint_->libDestroy();\n'
+            '    } catch (...) {\n'
+            '        std::fputs("PJSIP cleanup failed during registration shutdown\\n", stderr);\n'
+            '        return;\n'
+            '    }\n\n'
+            '    account_.reset();')
+        new = (
+            '    account_.reset();\n\n'
+            '    try {\n'
+            '        endpoint_->libDestroy();\n'
+            '    } catch (...) {\n'
+            '        std::fputs("PJSIP cleanup failed during registration shutdown\\n", stderr);\n'
+            '        return;\n'
+            '    }')
+        self.assertEqual(source.count(old), 1)
+        altered = source.replace(old, new, 1)
+        with self.assertRaisesRegex(ValueError, 'survive through libDestroy'):
+            verify_registration_order(altered, name)
 
     def test_early_call_destruction_rejected(self):
         name, path = SOURCES[0]

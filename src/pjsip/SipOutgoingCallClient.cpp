@@ -39,9 +39,7 @@ struct SipOutgoingCallClient::CallbackContext final
 class SipOutgoingCallClient::CallAccount final : public pj::Account
 {
   public:
-    explicit CallAccount(std::shared_ptr<CallbackContext> context)
-        : context_(std::move(context))
-    {}
+    explicit CallAccount(std::shared_ptr<CallbackContext> context) : context_(std::move(context)) {}
 
     void onRegState(pj::OnRegStateParam &parameter) override
     {
@@ -264,7 +262,8 @@ void SipOutgoingCallClient::stop() noexcept
 {
     if (!library_created_) {
         if (account_ != nullptr || call_ != nullptr) {
-            std::fputs("PJSIP outgoing shutdown found callback objects without a library\n", stderr);
+            std::fputs("PJSIP outgoing shutdown found callback objects without a library\n",
+                       stderr);
             return;
         }
         endpoint_.reset();
@@ -337,8 +336,10 @@ void SipOutgoingCallClient::stop() noexcept
         std::fputs("PJSIP account callbacks did not drain after account shutdown\n", stderr);
         return;
     }
-    account_.reset();
-
+    // Keep the derived Account callback target alive through libDestroy().
+    // PJProject 2.17 joins UA/media workers and destroys the SIP endpoint
+    // inside this boundary. This implementation-reviewed ordering is not a
+    // universal proof of external callback quiescence.
     try {
         endpoint_->libDestroy();
     } catch (...) {
@@ -346,12 +347,12 @@ void SipOutgoingCallClient::stop() noexcept
         return;
     }
 
+    account_.reset();
     endpoint_.reset();
     library_created_ = false;
     started_ = false;
     reset_call_state();
 }
-
 
 RegistrationResult
 SipOutgoingCallClient::wait_for_registration(const std::chrono::milliseconds timeout)

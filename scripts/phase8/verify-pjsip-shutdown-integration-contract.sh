@@ -38,12 +38,12 @@ else
 fi
 printf '%s\n' 'PASS: actual PJSUA2 integration remains explicitly BLOCKED'
 
-echo '===== COMMIT 19 FOCUSED STATIC AUDIT CTEST ====='
+echo '===== FOCUSED STATIC AUDIT CTEST ====='
 cmake -S tests/phase8 -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
 ctest --test-dir "$FOCUSED" --output-on-failure \
     -R '^Phase8PjsipShutdownIntegrationContractTest$'
 
-echo '===== COMMIT 19 CANONICAL STATIC AUDIT CTEST ====='
+echo '===== CANONICAL STATIC AUDIT CTEST ====='
 [[ -f "$CANONICAL/CMakeCache.txt" ]] || {
     printf 'ABORT: canonical build not configured: %s\n' "$CANONICAL" >&2
     exit 1

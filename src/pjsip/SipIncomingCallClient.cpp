@@ -257,7 +257,8 @@ void SipIncomingCallClient::stop() noexcept
 {
     if (!library_created_) {
         if (account_ != nullptr || call_ != nullptr) {
-            std::fputs("PJSIP incoming shutdown found callback objects without a library\n", stderr);
+            std::fputs("PJSIP incoming shutdown found callback objects without a library\n",
+                       stderr);
             return;
         }
         endpoint_.reset();
@@ -314,8 +315,10 @@ void SipIncomingCallClient::stop() noexcept
                    stderr);
         return;
     }
-    account_.reset();
-
+    // Keep the derived Account callback target alive through libDestroy().
+    // PJProject 2.17 joins UA/media workers and destroys the SIP endpoint
+    // inside this boundary. This implementation-reviewed ordering is not a
+    // universal proof of external callback quiescence.
     try {
         endpoint_->libDestroy();
     } catch (...) {
@@ -323,11 +326,11 @@ void SipIncomingCallClient::stop() noexcept
         return;
     }
 
+    account_.reset();
     endpoint_.reset();
     library_created_ = false;
     started_ = false;
 }
-
 
 RegistrationResult
 SipIncomingCallClient::wait_for_registration(const std::chrono::milliseconds timeout)

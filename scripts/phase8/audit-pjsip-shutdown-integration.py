@@ -2,10 +2,10 @@
 """Static review of production PJSUA2 teardown hardening.
 
 Zero means the reviewed explicit-stop result handling, local callback gates,
-shared callback-owner context, and fail-closed destructor policy are present in
-both real SIP clients and no external-quiescence proof is being fabricated. It
-does NOT mean live teardown is proven: external callback-target quiescence and
-actual PJ_EBUSY recovery remain runtime closure blockers.
+shared callback-owner context, fail-closed destructor policy, and Account
+callback-target retention through libDestroy() are present in all production
+SIP clients. It does NOT mean live teardown is universally proven: external
+callback-target quiescence remains a runtime closure blocker.
 """
 
 from __future__ import annotations
@@ -33,6 +33,7 @@ RESOLVED_EXPLICIT_STOP_RISKS = frozenset({
     'ACCOUNT_SHUTDOWN_RESULT_DISCARDED',
     'REGISTRATION_CALLBACK_NO_TEARDOWN_GATE',
     'NO_PRODUCTION_CALLBACK_ACTIVITY_GATE',
+    'ACCOUNT_TARGET_RELEASED_BEFORE_LIBDESTROY',
 })
 
 PROOFS = (
@@ -43,7 +44,7 @@ PROOFS = (
 )
 
 # No trusted provider of the last proof exists. If a future change attempts to
-# integrate the authorization header into either stop(), force explicit review.
+# integrate the authorization header into any production stop(), force review.
 PROHIBITED_CLIENT_TOKENS = (
     'PjsipShutdownAuthorization',
     'ShutdownProof::',
@@ -52,9 +53,14 @@ PROHIBITED_CLIENT_TOKENS = (
 )
 
 
-def evaluate(outgoing: str, incoming: str, authorization_header: str) -> dict:
+def evaluate(
+        outgoing: str,
+        incoming: str,
+        registration: str,
+        authorization_header: str,
+) -> dict:
     """Return reviewed offline source facts; never return READY for live PJSUA2."""
-    existing = lifetime.audit_pair(outgoing, incoming)
+    existing = lifetime.audit_pair(outgoing, incoming, registration)
     header_clean = lifetime._clean(authorization_header)
     try:
         declaration = lifetime._extract(header_clean, r'\benum\s+class\s+ShutdownProof\b[^\{;]*')
@@ -64,7 +70,12 @@ def evaluate(outgoing: str, incoming: str, authorization_header: str) -> dict:
         header_proofs = {proof: False for proof in (*PROOFS, 'Count')}
 
     per_client = {}
-    for name, source in (('outgoing', outgoing), ('incoming', incoming)):
+    sources = {
+        'outgoing': outgoing,
+        'incoming': incoming,
+        'registration': registration,
+    }
+    for name, source in sources.items():
         previous = existing['clients'][name]
         cleaned = lifetime._clean(source)
         risks = frozenset(previous['risks'])
@@ -88,16 +99,22 @@ def evaluate(outgoing: str, incoming: str, authorization_header: str) -> dict:
 
     recognized = (
         existing['source_contract'] == 'PASS'
+        and existing['account_target_lifetime'] == 'RETAIN_THROUGH_LIBDESTROY'
         and all(header_proofs.values())
         and all(all(item['checks'].values()) for item in per_client.values())
     )
     return {
         'audit_contract': 'PASS' if recognized else 'REVIEW_REQUIRED',
         'explicit_stop_hardening': 'INTEGRATED' if recognized else 'REVIEW_REQUIRED',
+        'account_target_lifetime_policy': (
+            'RETAIN_THROUGH_LIBDESTROY' if recognized else 'REVIEW_REQUIRED'
+        ),
         'integration_readiness': 'BLOCKED' if recognized else 'REVIEW_REQUIRED',
         'destructor_failure_policy': 'FAIL_CLOSED_TERMINATE',
         'callback_owner_lifetime_policy': 'SHARED_CONTEXT_DETACH',
         'live_external_quiescence': 'UNPROVEN',
+        # Commit 30 observed PJ_EBUSY recovery in a controlled vendor-level
+        # lifecycle probe, not an injected failure through these production clients.
         'actual_pj_ebusy_recovery': 'UNPROVEN',
         'authorization_header_proofs': header_proofs,
         'clients': per_client,
@@ -116,6 +133,7 @@ def main(argv: list[str] | None = None) -> int:
         report = evaluate(
             (base / 'SipOutgoingCallClient.cpp').read_text(encoding='utf-8'),
             (base / 'SipIncomingCallClient.cpp').read_text(encoding='utf-8'),
+            (base / 'SipRegistrationClient.cpp').read_text(encoding='utf-8'),
             (base / 'PjsipShutdownAuthorization.hpp').read_text(encoding='utf-8'),
         )
     except OSError as error:
@@ -130,6 +148,7 @@ def main(argv: list[str] | None = None) -> int:
             for key, good in item['checks'].items():
                 print(f'  {key}: {"PASS" if good else "REVIEW REQUIRED"}')
         print('Explicit-stop teardown hardening:', report['explicit_stop_hardening'])
+        print('Account target lifetime policy:', report['account_target_lifetime_policy'])
         print('Integration readiness:', report['integration_readiness'])
         print('Destructor failure policy:', report['destructor_failure_policy'])
         print('Callback owner lifetime policy:', report['callback_owner_lifetime_policy'])
