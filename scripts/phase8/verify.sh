@@ -6,6 +6,9 @@ set -euo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd "$ROOT"
 
+# Verification must never leave Python bytecode inside the source checkout.
+export PYTHONDONTWRITEBYTECODE=1
+
 fail() {
     printf 'ERROR: %s\n' "$*" >&2
     exit 1
@@ -37,6 +40,7 @@ done
 echo '== repository scope =='
 git diff --check
 git diff --cached --check
+initial_status="$(git status --porcelain=v1 --untracked-files=all)"
 
 echo '== documentation structure =='
 bash scripts/quality/verify-docs-structure.sh
@@ -68,6 +72,17 @@ bash scripts/phase8/verify-final-runtime-acceptance.sh --automatic
 
 echo '== Phase 8 roadmap/source boundary audit =='
 bash scripts/phase8/verify-roadmap-exit.sh
+
+echo '== source checkout cleanliness =='
+final_status="$(git status --porcelain=v1 --untracked-files=all)"
+if [[ "$final_status" != "$initial_status" ]]; then
+    echo 'ERROR: verification modified the source checkout' >&2
+    diff -u \
+        <(printf '%s\n' "$initial_status") \
+        <(printf '%s\n' "$final_status") || true
+    exit 1
+fi
+echo 'Source checkout cleanliness: PASS'
 
 echo 'Phase 8 automated offline verification: PASS'
 echo 'BOUNDARY: live SIP/PJSUA2 shutdown safety remains BLOCKED/UNPROVEN.'

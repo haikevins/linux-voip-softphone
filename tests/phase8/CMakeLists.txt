@@ -87,7 +87,7 @@ set_tests_properties(Phase8MpmcStressTest PROPERTIES TIMEOUT 90)
 if(NOT PHASE8_ENABLE_TSAN)
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
     add_test(NAME Phase8PjsipProductionAuditTest
-        COMMAND "${Python3_EXECUTABLE}"
+        COMMAND "${Python3_EXECUTABLE}" -B
             "${CMAKE_CURRENT_SOURCE_DIR}/test_pjsip_production_lifetime_audit.py")
     set_tests_properties(Phase8PjsipProductionAuditTest PROPERTIES TIMEOUT 30)
 

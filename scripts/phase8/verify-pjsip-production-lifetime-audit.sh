@@ -11,10 +11,10 @@ done
 
 cd "$ROOT"
 echo '===== SOURCE AUDIT (REAL PRODUCTION C++ FILES) ====='
-python3 scripts/phase8/audit-pjsip-production-lifetime.py
+python3 -B scripts/phase8/audit-pjsip-production-lifetime.py
 
 echo '===== NINE MUTATION-ORIENTED REGRESSIONS ====='
-python3 tests/phase8/test_pjsip_production_lifetime_audit.py
+python3 -B tests/phase8/test_pjsip_production_lifetime_audit.py
 
 echo '===== FOCUSED CTEST REGISTRATION ====='
 cmake -S tests/phase8 -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
