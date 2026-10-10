@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Fail-closed static inventory of shutdown *integration blockers* (not live proof).
+"""Static review of production PJSUA2 teardown hardening.
 
-Zero means that both known-unsafe SIP stop() implementations were identified and
-that no authorization proof is being fabricated in these clients. It does NOT
-mean either client is safe to destroy. Any source change requires re-review.
+Zero means the reviewed explicit-stop result handling and local callback gates
+are present in both real SIP clients and no external-quiescence proof is being
+fabricated. It does NOT mean destruction is safe: destructor failure policy,
+raw callback owner references, live callback quiescence, and actual PJ_EBUSY
+recovery remain closure blockers.
 """
 
 from __future__ import annotations
@@ -24,13 +26,16 @@ lifetime = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = lifetime
 spec.loader.exec_module(lifetime)
 
-EXPECTED_RISKS = frozenset({
+EXPECTED_REMAINING_RISKS = frozenset({
+    'ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE',
+    'CALLBACKS_BORROW_OWNER_BY_REFERENCE',
+})
+
+RESOLVED_EXPLICIT_STOP_RISKS = frozenset({
     'CALL_SLOT_WAIT_RESULT_DISCARDED',
     'ACCOUNT_SHUTDOWN_RESULT_DISCARDED',
-    'ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE',
     'REGISTRATION_CALLBACK_NO_TEARDOWN_GATE',
     'NO_PRODUCTION_CALLBACK_ACTIVITY_GATE',
-    'CALLBACKS_BORROW_OWNER_BY_REFERENCE',
 })
 
 PROOFS = (
@@ -41,8 +46,7 @@ PROOFS = (
 )
 
 # No trusted provider of the last proof exists. If a future change attempts to
-# integrate the header into either stop(), force an explicit source review.
-# Stripping comments prevents comment-only changes from masquerading as wiring.
+# integrate the authorization header into either stop(), force explicit review.
 PROHIBITED_CLIENT_TOKENS = (
     'PjsipShutdownAuthorization',
     'ShutdownProof::',
@@ -52,15 +56,12 @@ PROHIBITED_CLIENT_TOKENS = (
 
 
 def evaluate(outgoing: str, incoming: str, authorization_header: str) -> dict:
-    """Return bounded source facts; never return READY for real PJSUA2."""
+    """Return reviewed offline source facts; never return READY for live PJSUA2."""
     existing = lifetime.audit_pair(outgoing, incoming)
     header_clean = lifetime._clean(authorization_header)
     try:
         declaration = lifetime._extract(header_clean, r'\benum\s+class\s+ShutdownProof\b[^\{;]*')
-        header_proofs = {
-            proof: declaration.count(proof) == 1
-            for proof in PROOFS
-        }
+        header_proofs = {proof: declaration.count(proof) == 1 for proof in PROOFS}
         header_proofs['Count'] = declaration.count('Count') == 1
     except ValueError:
         header_proofs = {proof: False for proof in (*PROOFS, 'Count')}
@@ -72,10 +73,13 @@ def evaluate(outgoing: str, incoming: str, authorization_header: str) -> dict:
         risks = frozenset(previous['risks'])
         tokens_found = sorted(token for token in PROHIBITED_CLIENT_TOKENS if token in cleaned)
         checks = {
-            'known_stop_and_callback_structure': (
+            'reviewed_explicit_stop_structure': (
                 not previous['errors'] and all(previous['checks'].values())
             ),
-            'six_known_live_risks_still_identified': EXPECTED_RISKS <= risks,
+            'explicit_stop_result_and_gate_risks_resolved': (
+                not (RESOLVED_EXPLICIT_STOP_RISKS & risks)
+            ),
+            'two_known_closure_risks_remain': risks == EXPECTED_REMAINING_RISKS,
             'no_unreviewed_authorization_wiring': not tokens_found,
         }
         per_client[name] = {
@@ -92,7 +96,9 @@ def evaluate(outgoing: str, incoming: str, authorization_header: str) -> dict:
     )
     return {
         'audit_contract': 'PASS' if recognized else 'REVIEW_REQUIRED',
+        'explicit_stop_hardening': 'INTEGRATED' if recognized else 'REVIEW_REQUIRED',
         'integration_readiness': 'BLOCKED' if recognized else 'REVIEW_REQUIRED',
+        'destructor_failure_policy': 'UNRESOLVED',
         'live_external_quiescence': 'UNPROVEN',
         'actual_pj_ebusy_recovery': 'UNPROVEN',
         'authorization_header_proofs': header_proofs,
@@ -122,17 +128,19 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report, sort_keys=True, indent=2))
     else:
         for name, item in report['clients'].items():
-            print(f'{name}: {len(item["open_risks"])} known lifetime risks OPEN')
+            print(f'{name}: {len(item["open_risks"])} known closure risks OPEN')
             for key, good in item['checks'].items():
                 print(f'  {key}: {"PASS" if good else "REVIEW REQUIRED"}')
+        print('Explicit-stop teardown hardening:', report['explicit_stop_hardening'])
         print('Integration readiness:', report['integration_readiness'])
+        print('Destructor failure policy:', report['destructor_failure_policy'])
         print('Live external callback quiescence:', report['live_external_quiescence'])
         print('Actual PJ_EBUSY recovery:', report['actual_pj_ebusy_recovery'])
 
     if report['audit_contract'] != 'PASS':
         return 2
     if args.require_ready:
-        return 3  # Explicitly NOT ready; the audit may never authorize teardown.
+        return 3
     return 0
 
 

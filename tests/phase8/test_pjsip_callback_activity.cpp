@@ -107,6 +107,36 @@ void concurrent_wait_unblocks_after_last_callback()
     require(result.get(), "drain failed after final callback completed");
 }
 
+
+void tracked_entry_after_close_is_counted_until_return()
+{
+    CallbackActivityGate gate;
+    gate.close();
+    auto entry = gate.enter();
+    require(!entry.admitted(), "closed production entry must be rejected");
+    require(gate.admitted_callbacks() == 1,
+            "rejected production entry must remain counted until callback return");
+    require(!gate.wait_for_empty_for(0ms),
+            "tracked rejected entry must block drain while callback method is active");
+    entry.release();
+    require(gate.wait_for_empty_for(0ms),
+            "tracked rejected entry must drain after callback method returns");
+}
+
+void reset_requires_empty_gate_then_reopens_admission()
+{
+    CallbackActivityGate gate;
+    auto entry = gate.enter();
+    require(entry.admitted(), "open production entry should be admitted");
+    gate.close();
+    require(!gate.reset_if_empty(), "active callback must block gate reset");
+    entry.release();
+    require(gate.reset_if_empty(), "drained gate should reset for a later start");
+    auto permit = gate.try_enter();
+    require(permit.has_value(), "reset gate did not reopen admission");
+    permit.reset();
+}
+
 void concurrent_admission_then_close_rejects_late_entries()
 {
     CallbackActivityGate gate;
@@ -144,9 +174,11 @@ int main()
         timeouts_do_not_force_reclamation();
         moved_permit_releases_exactly_once();
         concurrent_wait_unblocks_after_last_callback();
+        tracked_entry_after_close_is_counted_until_return();
+        reset_requires_empty_gate_then_reopens_admission();
         concurrent_admission_then_close_rejects_late_entries();
         std::cout
-            << "PASS: seven callback activity scenarios (admission, drain, timeout, concurrency)\n";
+            << "PASS: nine callback activity scenarios (admission, drain, reset, concurrency)\n";
         return 0;
     } catch (const std::exception &error) {
         std::cerr << "FAIL: " << error.what() << '\n';

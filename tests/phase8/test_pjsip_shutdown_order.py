@@ -33,30 +33,68 @@ def shutdown_body(source: str, class_name: str) -> str:
     raise ValueError('unterminated stop() definition')
 
 
+def _one(body: str, marker: str, name: str) -> int:
+    if body.count(marker) != 1:
+        raise ValueError(f'{name}: expected one {marker}')
+    return body.index(marker)
+
+
 def verify_order(source: str, name: str) -> None:
     body = shutdown_body(source, name)
-    sequence = (
-        'hangup();',
-        'wait_for_call_cleanup(std::chrono::seconds{2})',
-        'call_.reset();',
-        'shutdown_account_safely()',
-        'account_.reset();',
-        'endpoint_->libDestroy()',
-        'endpoint_.reset();',
+
+    account_close = _one(body, 'account_callback_activity_.close();', name)
+    account_wait_marker = (
+        'account_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})'
     )
-    positions = []
-    for marker in sequence:
-        if body.count(marker) != 1:
-            raise ValueError(f'{name}: expected one {marker}')
-        positions.append(body.index(marker))
-    if positions != sorted(positions) or len(set(positions)) != len(positions):
+    if body.count(account_wait_marker) != 2:
+        raise ValueError(f'{name}: expected two account callback drain waits')
+    account_wait_before_call = body.index(account_wait_marker)
+
+    hangup = _one(body, 'hangup();', name)
+    disconnected = _one(body, 'wait_for_disconnection(std::chrono::seconds{2})', name)
+    call_close = _one(body, 'call_callback_activity_.close();', name)
+    call_wait = _one(
+        body,
+        'call_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})',
+        name,
+    )
+    slot_wait = _one(body, 'wait_for_call_cleanup(std::chrono::seconds{2})', name)
+    call_reset = _one(body, 'call_.reset();', name)
+    account_shutdown = _one(body, 'shutdown_account_safely()', name)
+    account_wait_after_shutdown = body.index(account_wait_marker, account_shutdown)
+    account_reset = _one(body, 'account_.reset();', name)
+    lib_destroy = _one(body, 'endpoint_->libDestroy()', name)
+
+    # stop() has a separate no-library cleanup branch, so endpoint_.reset()
+    # legitimately occurs before the success path too. Require a reset after
+    # libDestroy() rather than requiring exactly one reset in the whole body.
+    endpoint_reset = body.find('endpoint_.reset();', lib_destroy)
+    if endpoint_reset < 0:
+        raise ValueError(f'{name}: endpoint reset missing after libDestroy')
+
+    sequence = (
+        account_close,
+        account_wait_before_call,
+        hangup,
+        disconnected,
+        call_close,
+        call_wait,
+        slot_wait,
+        call_reset,
+        account_shutdown,
+        account_wait_after_shutdown,
+        account_reset,
+        lib_destroy,
+        endpoint_reset,
+    )
+    if list(sequence) != sorted(sequence) or len(set(sequence)) != len(sequence):
         raise ValueError(f'{name}: cleanup must precede Call destruction')
 
+    # These mutexes must guard the actual call_.reset() success-path block.
+    protected_region = body[slot_wait:call_reset]
     for guard in ('incoming_callback_mutex_', 'call_callback_mutex_', 'call_object_mutex_'):
-        if body.count(guard) != 1:
+        if guard not in protected_region:
             raise ValueError(f'{name}: required callback lock missing: {guard}')
-        if body.index(guard) < positions[1] or body.index(guard) > positions[2]:
-            raise ValueError(f'{name}: {guard} not guarding call_.reset()')
 
 
 class SipShutdownOrderTests(unittest.TestCase):
@@ -72,12 +110,17 @@ class SipShutdownOrderTests(unittest.TestCase):
         name, path = SOURCES[0]
         source = path.read_text(encoding='utf-8')
         body = shutdown_body(source, name)
-        altered = body.replace(
-            'static_cast<void>(wait_for_call_cleanup(std::chrono::seconds{2}));',
-            '', 1,
-        ).replace(
-            'call_.reset();',
-            'call_.reset();\n    static_cast<void>(wait_for_call_cleanup(std::chrono::seconds{2}));', 1,
+        cleanup_guard = (
+            '    if (!wait_for_call_cleanup(std::chrono::seconds{2})) {\n'
+            '        return;\n'
+            '    }\n'
+        )
+        self.assertEqual(body.count(cleanup_guard), 1)
+        altered = body.replace(cleanup_guard, '', 1).replace(
+            '        call_.reset();',
+            '        call_.reset();\n'
+            '    if (!wait_for_call_cleanup(std::chrono::seconds{2})) { return; }',
+            1,
         )
         self.assertNotEqual(body, altered)
         with self.assertRaisesRegex(ValueError, 'cleanup must precede'):
@@ -86,10 +129,14 @@ class SipShutdownOrderTests(unittest.TestCase):
     def test_removed_cleanup_wait_rejected(self):
         name, path = SOURCES[1]
         source = path.read_text(encoding='utf-8')
-        altered = source.replace(
-            'static_cast<void>(wait_for_call_cleanup(std::chrono::seconds{2}));',
-            '', 1,
+        body = shutdown_body(source, name)
+        cleanup_guard = (
+            '    if (!wait_for_call_cleanup(std::chrono::seconds{2})) {\n'
+            '        return;\n'
+            '    }\n'
         )
+        self.assertEqual(body.count(cleanup_guard), 1)
+        altered = source.replace(cleanup_guard, '', 1)
         with self.assertRaisesRegex(ValueError, 'expected one'):
             verify_order(altered, name)
 
@@ -97,7 +144,9 @@ class SipShutdownOrderTests(unittest.TestCase):
         name, path = SOURCES[0]
         source = path.read_text(encoding='utf-8')
         body = shutdown_body(source, name)
-        altered = body.replace('incoming_callback_mutex_', 'ELIDED_CALLBACK_MUTEX', 1)
+        lock = 'const std::lock_guard incoming_callback_lock{incoming_callback_mutex_};'
+        self.assertEqual(body.count(lock), 1)
+        altered = body.replace(lock, '/* callback lock deliberately removed */', 1)
         with self.assertRaisesRegex(ValueError, 'callback lock missing'):
             verify_order(source.replace(body, altered, 1), name)
 
@@ -105,6 +154,7 @@ class SipShutdownOrderTests(unittest.TestCase):
         name, path = SOURCES[1]
         source = path.read_text(encoding='utf-8')
         body = shutdown_body(source, name)
+        self.assertEqual(body.count('call_.reset();'), 1)
         altered = body.replace('call_.reset();', 'call_.reset(); call_.reset();', 1)
         with self.assertRaisesRegex(ValueError, 'expected one'):
             verify_order(source.replace(body, altered, 1), name)

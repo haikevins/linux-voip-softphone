@@ -19,6 +19,11 @@ class SipOutgoingCallClient::CallAccount final : public pj::Account
 
     void onRegState(pj::OnRegStateParam &parameter) override
     {
+        auto callback_entry = owner_.account_callback_activity_.enter();
+        if (!callback_entry.admitted()) {
+            return;
+        }
+
         try {
             owner_.on_registration_state(parameter, getInfo());
         } catch (const pj::Error &error) {
@@ -32,6 +37,19 @@ class SipOutgoingCallClient::CallAccount final : public pj::Account
 
     void onIncomingCall(pj::OnIncomingCallParam &parameter) override
     {
+        auto callback_entry = owner_.account_callback_activity_.enter();
+        if (!callback_entry.admitted()) {
+            try {
+                pj::Call rejected_call{*this, parameter.callId};
+                pj::CallOpParam busy_parameter;
+                busy_parameter.statusCode = PJSIP_SC_BUSY_HERE;
+                rejected_call.answer(busy_parameter);
+            } catch (...) {
+                std::fputs("PJSIP incoming call rejection failed during shutdown\n", stderr);
+            }
+            return;
+        }
+
         const std::lock_guard callback_lock{owner_.incoming_callback_mutex_};
 
         try {
@@ -62,6 +80,11 @@ class SipOutgoingCallClient::TrackedCall final : public pj::Call
 
     void onCallState(pj::OnCallStateParam & /*parameter*/) override
     {
+        auto callback_entry = owner_.call_callback_activity_.enter();
+        if (!callback_entry.admitted()) {
+            return;
+        }
+
         const std::lock_guard callback_lock{owner_.call_callback_mutex_};
 
         try {
@@ -77,6 +100,11 @@ class SipOutgoingCallClient::TrackedCall final : public pj::Call
 
     void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override
     {
+        auto callback_entry = owner_.call_callback_activity_.enter();
+        if (!callback_entry.admitted()) {
+            return;
+        }
+
         const std::lock_guard callback_lock{owner_.call_callback_mutex_};
 
         try {
@@ -125,6 +153,13 @@ void SipOutgoingCallClient::start()
 {
     if (started_) {
         throw std::logic_error("SIP outgoing call client is already started");
+    }
+    if (library_created_ || endpoint_ != nullptr || account_ != nullptr || call_ != nullptr) {
+        throw std::logic_error("SIP outgoing call client retains teardown state");
+    }
+    if (!account_callback_activity_.reset_if_empty() ||
+        !call_callback_activity_.reset_if_empty()) {
+        throw std::logic_error("SIP outgoing callback activity did not drain before restart");
     }
     if (!account_config_.register_on_add) {
         throw std::invalid_argument("SIP outgoing call client requires register_on_add=true");
@@ -175,16 +210,58 @@ void SipOutgoingCallClient::start()
 
 void SipOutgoingCallClient::stop() noexcept
 {
-    if (endpoint_ == nullptr && !library_created_) {
+    if (!library_created_) {
+        if (account_ != nullptr || call_ != nullptr) {
+            std::fputs("PJSIP outgoing shutdown found callback objects without a library\n", stderr);
+            return;
+        }
+        endpoint_.reset();
+        started_ = false;
+        reset_call_state();
         return;
     }
-    hangup();
+    if (endpoint_ == nullptr) {
+        std::fputs("PJSIP outgoing shutdown lost the endpoint owner\n", stderr);
+        return;
+    }
 
-    // PJSUA2 may still deliver call callbacks until the call slot is released.
-    // Preserve the derived callback target during the bounded cleanup wait.
-    // A timeout retains the pre-existing forced-shutdown behavior; the
-    // timeout path still requires a live-SIP lifetime regression.
-    static_cast<void>(wait_for_call_cleanup(std::chrono::seconds{2}));
+    // Stop owner-visible account work first. enter() still counts callbacks
+    // rejected after close(), so the derived Account remains alive while
+    // already-entered and shutdown-racing account callbacks return.
+    account_callback_activity_.close();
+    if (!account_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})) {
+        std::fputs("PJSIP account callbacks did not drain before call shutdown\n", stderr);
+        return;
+    }
+
+    bool call_present{false};
+    {
+        const std::lock_guard call_object_lock{call_object_mutex_};
+        call_present = call_ != nullptr;
+    }
+
+    if (call_present) {
+        hangup();
+        if (!wait_for_disconnection(std::chrono::seconds{2})) {
+            std::fputs("PJSIP call did not reach DISCONNECTED during shutdown\n", stderr);
+            return;
+        }
+    }
+
+    // The DISCONNECTED callback may signal call_changed_ before its C++
+    // override returns. Close and drain the local gate before releasing the
+    // derived Call target. This is not a standalone external-source proof.
+    call_callback_activity_.close();
+    if (!call_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})) {
+        std::fputs("PJSIP call callbacks did not drain during shutdown\n", stderr);
+        return;
+    }
+
+    // PJSIP may keep a call slot busy while protocol cleanup completes. The
+    // bounded result is a release precondition rather than an advisory probe.
+    if (!wait_for_call_cleanup(std::chrono::seconds{2})) {
+        return;
+    }
 
     {
         const std::lock_guard incoming_callback_lock{incoming_callback_mutex_};
@@ -192,15 +269,29 @@ void SipOutgoingCallClient::stop() noexcept
         const std::lock_guard call_object_lock{call_object_mutex_};
         call_.reset();
     }
-    static_cast<void>(shutdown_account_safely());
+
+    // shutdown2(force=false) rejects an account that PJSIP still considers
+    // busy. Do not destroy the derived Account on this explicit-stop failure;
+    // a later stop() may retry. Destructor failure policy remains a separate
+    // Phase 8 closure item.
+    if (!shutdown_account_safely()) {
+        return;
+    }
+
+    // shutdown2() removes the account callback source. Count callbacks that
+    // raced the earlier close() and wait for their methods to return before
+    // releasing the derived Account object.
+    if (!account_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})) {
+        std::fputs("PJSIP account callbacks did not drain after account shutdown\n", stderr);
+        return;
+    }
     account_.reset();
 
-    if (endpoint_ != nullptr && library_created_) {
-        try {
-            endpoint_->libDestroy();
-        } catch (...) {
-            std::fputs("PJSIP cleanup failed during call-session shutdown\n", stderr);
-        }
+    try {
+        endpoint_->libDestroy();
+    } catch (...) {
+        std::fputs("PJSIP cleanup failed during call-session shutdown\n", stderr);
+        return;
     }
 
     endpoint_.reset();
@@ -208,6 +299,7 @@ void SipOutgoingCallClient::stop() noexcept
     started_ = false;
     reset_call_state();
 }
+
 
 RegistrationResult
 SipOutgoingCallClient::wait_for_registration(const std::chrono::milliseconds timeout)

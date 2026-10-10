@@ -37,19 +37,25 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         self.assertEqual(original.count(before), 1, 'mutation fixture anchor changed')
         return original.replace(before, after, 1)
 
-    def test_real_clients_are_explicitly_blocked_not_authorized(self):
+    def test_real_clients_are_hardened_but_still_blocked(self):
         result = self.evaluate()
         self.assertEqual(result['audit_contract'], 'PASS')
+        self.assertEqual(result['explicit_stop_hardening'], 'INTEGRATED')
         self.assertEqual(result['integration_readiness'], 'BLOCKED')
+        self.assertEqual(result['destructor_failure_policy'], 'UNRESOLVED')
         self.assertEqual(result['live_external_quiescence'], 'UNPROVEN')
         self.assertEqual(result['actual_pj_ebusy_recovery'], 'UNPROVEN')
 
-    def test_both_clients_retain_all_six_known_risks(self):
+    def test_both_clients_retain_exactly_two_known_closure_risks(self):
         result = self.evaluate()
+        expected = {
+            'ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE',
+            'CALLBACKS_BORROW_OWNER_BY_REFERENCE',
+        }
         self.assertEqual(set(result['clients']), {'incoming', 'outgoing'})
         for item in result['clients'].values():
             self.assertTrue(all(item['checks'].values()))
-            self.assertTrue(audit.EXPECTED_RISKS <= set(item['open_risks']))
+            self.assertEqual(set(item['open_risks']), expected)
             self.assertEqual(item['unreviewed_tokens'], [])
 
     def test_four_proofs_in_header_are_independent_labels(self):
@@ -68,9 +74,9 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
 
     def test_fake_external_quiescence_in_outgoing_stop_requires_review(self):
         changed = self.changed(
-            self.outgoing, '    hangup();',
-            '    hangup();\n'
-            '    policy.report(generation, ShutdownProof::ExternalCallbackIngressQuiescent, '
+            self.outgoing, '        hangup();',
+            '        hangup();\n'
+            '        policy.report(generation, ShutdownProof::ExternalCallbackIngressQuiescent, '
             'ShutdownReceipt::Verified);',
         )
         result = self.evaluate(outgoing=changed)
@@ -79,9 +85,9 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
 
     def test_local_callback_gate_cannot_supply_external_proof(self):
         changed = self.changed(
-            self.incoming, '    hangup();',
-            '    hangup();\n'
-            '    if (local_callbacks_drained) { '
+            self.incoming, '        hangup();',
+            '        hangup();\n'
+            '        if (local_callbacks_drained) { '
             'policy.report(generation, ShutdownProof::ExternalCallbackIngressQuiescent, '
             'ShutdownReceipt::Verified); }',
         )
@@ -97,26 +103,46 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
     def test_early_call_destruction_breaks_checked_stop_order(self):
         changed = self.changed(
             self.outgoing,
-            '    static_cast<void>(wait_for_call_cleanup(std::chrono::seconds{2}));',
+            '    if (!wait_for_call_cleanup(std::chrono::seconds{2})) {\n'
+            '        return;\n'
+            '    }',
             '    call_.reset();',
         )
         self.assertEqual(self.evaluate(outgoing=changed)['audit_contract'], 'REVIEW_REQUIRED')
 
-    def test_account_result_handling_change_needs_fresh_review(self):
-        changed = self.changed(self.incoming,
-                               '    static_cast<void>(shutdown_account_safely());',
-                               '    const bool success = shutdown_account_safely();')
+    def test_account_result_discard_requires_review(self):
+        changed = self.changed(
+            self.incoming,
+            '    if (!shutdown_account_safely()) {\n'
+            '        return;\n'
+            '    }',
+            '    static_cast<void>(shutdown_account_safely());',
+        )
         report = self.evaluate(incoming=changed)
         self.assertFalse(report['clients']['incoming']['checks'][
-            'six_known_live_risks_still_identified'])
+            'explicit_stop_result_and_gate_risks_resolved'])
         self.assertEqual(report['integration_readiness'], 'REVIEW_REQUIRED')
 
-    def test_call_slot_wait_result_change_needs_fresh_review(self):
-        changed = self.changed(self.outgoing,
-                               '    static_cast<void>(wait_for_call_cleanup(std::chrono::seconds{2}));',
-                               '    const bool cleaned = wait_for_call_cleanup(std::chrono::seconds{2});')
+    def test_call_slot_result_discard_requires_review(self):
+        changed = self.changed(
+            self.outgoing,
+            '    if (!wait_for_call_cleanup(std::chrono::seconds{2})) {\n'
+            '        return;\n'
+            '    }',
+            '    static_cast<void>(wait_for_call_cleanup(std::chrono::seconds{2}));',
+        )
         self.assertEqual(self.evaluate(outgoing=changed)['integration_readiness'],
                          'REVIEW_REQUIRED')
+
+    def test_destructor_policy_change_requires_fresh_review(self):
+        changed = self.changed(
+            self.outgoing,
+            'SipOutgoingCallClient::~SipOutgoingCallClient()\n{\n    stop();\n}',
+            'SipOutgoingCallClient::~SipOutgoingCallClient()\n{\n    stop();\n    std::terminate();\n}',
+        )
+        report = self.evaluate(outgoing=changed)
+        self.assertFalse(report['clients']['outgoing']['checks']['two_known_closure_risks_remain'])
+        self.assertEqual(report['integration_readiness'], 'REVIEW_REQUIRED')
 
     def test_json_cli_does_not_report_ready(self):
         result = subprocess.run(
@@ -125,7 +151,9 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
+        self.assertEqual(report['explicit_stop_hardening'], 'INTEGRATED')
         self.assertEqual(report['integration_readiness'], 'BLOCKED')
+        self.assertEqual(report['destructor_failure_policy'], 'UNRESOLVED')
         self.assertEqual(report['audit_contract'], 'PASS')
 
     def test_require_ready_cli_fails_closed(self):
@@ -135,6 +163,7 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 3, result.stderr)
         self.assertIn('Integration readiness: BLOCKED', result.stdout)
+        self.assertIn('Destructor failure policy: UNRESOLVED', result.stdout)
 
 
 if __name__ == '__main__':

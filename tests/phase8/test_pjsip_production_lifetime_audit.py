@@ -38,65 +38,144 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
         self.assertEqual('INCONCLUSIVE', result['live_callback_quiescence'])
         for item in result['clients'].values():
             self.assertEqual([], item['errors'])
-            self.assertEqual(9, len(item['checks']))
+            self.assertGreaterEqual(len(item['checks']), 20)
             self.assertTrue(all(item['checks'].values()))
 
-    def test_both_clients_report_unverified_account_shutdown(self):
+    def test_both_clients_retain_only_two_closure_risks(self):
         result = self.run_audit()
+        expected = {
+            'ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE',
+            'CALLBACKS_BORROW_OWNER_BY_REFERENCE',
+        }
+        resolved = {
+            'ACCOUNT_SHUTDOWN_RESULT_DISCARDED',
+            'CALL_SLOT_WAIT_RESULT_DISCARDED',
+            'NO_PRODUCTION_CALLBACK_ACTIVITY_GATE',
+            'REGISTRATION_CALLBACK_NO_TEARDOWN_GATE',
+        }
         for item in result['clients'].values():
-            self.assertIn('ACCOUNT_SHUTDOWN_RESULT_DISCARDED', item['risks'])
-            self.assertIn('ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE', item['risks'])
-            self.assertIn('CALL_SLOT_WAIT_RESULT_DISCARDED', item['risks'])
-            self.assertIn('NO_PRODUCTION_CALLBACK_ACTIVITY_GATE', item['risks'])
-            self.assertIn('CALLBACKS_BORROW_OWNER_BY_REFERENCE', item['risks'])
-            self.assertIn('REGISTRATION_CALLBACK_NO_TEARDOWN_GATE', item['risks'])
+            self.assertEqual(expected, set(item['risks']))
+            self.assertTrue(resolved.isdisjoint(item['risks']))
 
-    def test_reordered_outgoing_stop_is_rejected(self):
-        text = self.original_outgoing
-        text = self.replace_once(text, 'static_cast<void>(wait_for_call_cleanup(std::chrono::seconds{2}));',
-                                 'call_.reset();')
-        # One reset is now inserted early; a duplicate reset remains inside the mutex.
-        result = self.run_audit(outgoing=text)
-        self.assertFalse(result['clients']['outgoing']['checks']['shutdown_order'])
-        self.assertFalse(result['clients']['outgoing']['checks']['bounded_wait_before_release'])
+    def test_call_slot_result_must_veto_call_release(self):
+        old = ('    if (!wait_for_call_cleanup(std::chrono::seconds{2})) {\n'
+               '        return;\n'
+               '    }')
+        modified = self.replace_once(
+            self.original_outgoing, old,
+            '    static_cast<void>(wait_for_call_cleanup(std::chrono::seconds{2}));')
+        result = self.run_audit(outgoing=modified)
+        self.assertFalse(result['clients']['outgoing']['checks']['slot_failure_vetoes_call_release'])
+        self.assertIn('CALL_SLOT_WAIT_RESULT_DISCARDED', result['clients']['outgoing']['risks'])
+        self.assertEqual('FAIL', result['source_contract'])
 
-    def test_reordered_incoming_account_cleanup_is_rejected(self):
-        old = 'static_cast<void>(shutdown_account_safely());\n    account_.reset();'
-        new = 'account_.reset();\n    static_cast<void>(shutdown_account_safely());'
-        modified = self.replace_once(self.original_incoming, old, new)
-        self.assertFalse(self.run_audit(incoming=modified)['clients']['incoming']['checks']['shutdown_order'])
+    def test_account_shutdown_result_must_veto_account_release(self):
+        old = ('    if (!shutdown_account_safely()) {\n'
+               '        return;\n'
+               '    }')
+        modified = self.replace_once(
+            self.original_incoming, old, '    static_cast<void>(shutdown_account_safely());')
+        result = self.run_audit(incoming=modified)
+        self.assertFalse(
+            result['clients']['incoming']['checks']['account_failure_vetoes_account_release'])
+        self.assertIn('ACCOUNT_SHUTDOWN_RESULT_DISCARDED', result['clients']['incoming']['risks'])
+        self.assertEqual('FAIL', result['source_contract'])
 
-    def test_removed_incoming_callback_lock_is_rejected(self):
-        modified = self.replace_once(self.original_incoming,
-                                     'const std::lock_guard callback_lock{owner_.incoming_callback_mutex_};',
-                                     '/* callback lock deliberately removed */')
-        self.assertFalse(self.run_audit(incoming=modified)['clients']['incoming']['checks']['incoming_callback_mutex'])
+    def test_callback_gate_and_mutex_regressions_are_rejected(self):
+        reg_old = (
+            '    void onRegState(pj::OnRegStateParam &parameter) override\n'
+            '    {\n'
+            '        auto callback_entry = owner_.account_callback_activity_.enter();\n'
+            '        if (!callback_entry.admitted()) {\n'
+            '            return;\n'
+            '        }\n\n')
+        reg_new = '    void onRegState(pj::OnRegStateParam &parameter) override\n    {\n'
+        no_reg_gate = self.replace_once(self.original_outgoing, reg_old, reg_new)
+        result = self.run_audit(outgoing=no_reg_gate)
+        self.assertFalse(result['clients']['outgoing']['checks']['registration_callback_gate'])
+        self.assertIn('REGISTRATION_CALLBACK_NO_TEARDOWN_GATE',
+                      result['clients']['outgoing']['risks'])
 
-    def test_removed_call_media_lock_is_rejected(self):
-        text = self.original_outgoing
-        # Scope precisely to the single tracked-call class callback.
-        old = ('void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override\n'
-               '    {\n        const std::lock_guard callback_lock{owner_.call_callback_mutex_};')
-        new = ('void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override\n'
-               '    {')
-        modified = self.replace_once(text, old, new)
-        self.assertFalse(self.run_audit(outgoing=modified)['clients']['outgoing']['checks']['media_callback_mutex'])
+        no_incoming_lock = self.replace_once(
+            self.original_incoming,
+            'const std::lock_guard callback_lock{owner_.incoming_callback_mutex_};',
+            '/* incoming callback lock removed */')
+        self.assertFalse(
+            self.run_audit(incoming=no_incoming_lock)['clients']['incoming']['checks'][
+                'incoming_callback_mutex'])
 
-    def test_forced_account_shutdown_is_rejected(self):
-        modified = self.replace_once(self.original_outgoing,
-                                     'parameter.force = false;', 'parameter.force = true;')
-        self.assertFalse(self.run_audit(outgoing=modified)['clients']['outgoing']['checks']['non_forced_account_shutdown'])
+        media_old = (
+            'void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override\n'
+            '    {\n'
+            '        auto callback_entry = owner_.call_callback_activity_.enter();\n'
+            '        if (!callback_entry.admitted()) {\n'
+            '            return;\n'
+            '        }\n\n'
+            '        const std::lock_guard callback_lock{owner_.call_callback_mutex_};')
+        media_new = (
+            'void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override\n'
+            '    {\n'
+            '        auto callback_entry = owner_.call_callback_activity_.enter();\n'
+            '        if (!callback_entry.admitted()) {\n'
+            '            return;\n'
+            '        }')
+        no_media_lock = self.replace_once(self.original_outgoing, media_old, media_new)
+        self.assertFalse(
+            self.run_audit(outgoing=no_media_lock)['clients']['outgoing']['checks'][
+                'media_callback_mutex'])
 
-    def test_removed_call_slot_counter_is_rejected(self):
-        modified = self.replace_once(self.original_incoming,
-                                     'timeout, [] { return pjsua_call_get_count(); },',
-                                     'timeout, [] { return 0U; },')
-        self.assertFalse(self.run_audit(incoming=modified)['clients']['incoming']['checks']['polling_uses_real_call_slots'])
+    def test_closed_account_gate_must_reject_new_incoming_call(self):
+        old = ('                pj::Call rejected_call{*this, parameter.callId};\n'
+               '                pj::CallOpParam busy_parameter;\n'
+               '                busy_parameter.statusCode = PJSIP_SC_BUSY_HERE;\n'
+               '                rejected_call.answer(busy_parameter);')
+        modified = self.replace_once(self.original_outgoing, old, '                return;')
+        result = self.run_audit(outgoing=modified)
+        self.assertFalse(
+            result['clients']['outgoing']['checks']['incoming_rejects_after_gate_close'])
+        self.assertEqual('FAIL', result['source_contract'])
+
+    def test_nonforced_shutdown_and_real_call_slot_counter_are_required(self):
+        forced = self.replace_once(self.original_outgoing,
+                                   'parameter.force = false;', 'parameter.force = true;')
+        self.assertFalse(
+            self.run_audit(outgoing=forced)['clients']['outgoing']['checks'][
+                'non_forced_account_shutdown'])
+
+        fake_slots = self.replace_once(self.original_incoming,
+                                       'timeout, [] { return pjsua_call_get_count(); },',
+                                       'timeout, [] { return 0U; },')
+        self.assertFalse(
+            self.run_audit(incoming=fake_slots)['clients']['incoming']['checks'][
+                'polling_uses_real_call_slots'])
+
+    def test_restart_requires_drained_gates_and_no_retained_teardown_state(self):
+        no_gate_reset = self.replace_once(
+            self.original_outgoing,
+            '    if (!account_callback_activity_.reset_if_empty() ||\n'
+            '        !call_callback_activity_.reset_if_empty()) {\n'
+            '        throw std::logic_error("SIP outgoing callback activity did not drain before restart");\n'
+            '    }\n',
+            '')
+        self.assertFalse(
+            self.run_audit(outgoing=no_gate_reset)['clients']['outgoing']['checks'][
+                'restart_requires_empty_callback_gates'])
+
+        no_retained_check = self.replace_once(
+            self.original_incoming,
+            '    if (library_created_ || endpoint_ != nullptr || account_ != nullptr || call_ != nullptr) {\n'
+            '        throw std::logic_error("SIP incoming call client retains teardown state");\n'
+            '    }\n',
+            '')
+        self.assertFalse(
+            self.run_audit(incoming=no_retained_check)['clients']['incoming']['checks'][
+                'restart_rejects_retained_teardown_state'])
 
     def test_missing_callback_override_is_rejected(self):
-        modified = self.replace_once(self.original_incoming,
-                                     'void onCallState(pj::OnCallStateParam & /*parameter*/) override',
-                                     'void renamedCallState(pj::OnCallStateParam & /*parameter*/) override')
+        modified = self.replace_once(
+            self.original_incoming,
+            'void onCallState(pj::OnCallStateParam & /*parameter*/) override',
+            'void renamedCallState(pj::OnCallStateParam & /*parameter*/) override')
         result = self.run_audit(incoming=modified)
         self.assertEqual('FAIL', result['source_contract'])
         self.assertEqual(['STRUCTURE_UNRECOGNIZED'], result['clients']['incoming']['risks'])

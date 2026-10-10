@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Phase 8: bounded structural inventory for actual outgoing/incoming PJSUA2 source.
 
-This audits known invariants and records unresolved risks; it is not a race or
-callback-quiescence proof. An exit code of zero means only that the checked
-source structure remains recognizable and the audit could be completed.
+This audits reviewed offline teardown invariants and records unresolved risks; it
+is not a race or external callback-quiescence proof. An exit code of zero means
+only that the checked source structure remains recognizable and the audit could
+be completed.
 """
 
 from __future__ import annotations
@@ -73,53 +74,113 @@ def audit_client(source: str, client: str, account_class: str, call_class: str) 
         incoming = _extract(account, r'\bvoid\s+onIncomingCall\s*\([^)]*\)\s*override')
         state = _extract(call, r'\bvoid\s+onCallState\s*\([^)]*\)\s*override')
         media = _extract(call, r'\bvoid\s+onCallMediaState\s*\([^)]*\)\s*override')
+        start = _extract(clean, rf'\bvoid\s+{client}::start\s*\(\s*\)')
         stop = _extract(clean, rf'\bvoid\s+{client}::stop\s*\(\s*\)\s*noexcept')
-        account_shutdown = _extract(clean, rf'\bbool\s+{client}::shutdown_account_safely\s*\([^)]*\)\s*noexcept')
-        call_cleanup = _extract(clean, rf'\bbool\s+{client}::wait_for_call_cleanup\s*\([^)]*\)\s*noexcept')
+        destructor = _extract(clean, rf'\b{client}::~{client}\s*\(\s*\)')
+        account_shutdown = _extract(
+            clean, rf'\bbool\s+{client}::shutdown_account_safely\s*\([^)]*\)\s*noexcept')
+        call_cleanup = _extract(
+            clean, rf'\bbool\s+{client}::wait_for_call_cleanup\s*\([^)]*\)\s*noexcept')
     except ValueError as error:
         return {"checks": {"source_parseable": False}, "risks": ["STRUCTURE_UNRECOGNIZED"],
                 "errors": [str(error)]}
 
+    account_entry = 'account_callback_activity_.enter()'
+    call_entry = 'call_callback_activity_.enter()'
     checks["callbacks_present"] = all([reg, incoming, state, media])
+    checks["registration_callback_gate"] = account_entry in reg and '.admitted()' in reg
+    checks["incoming_callback_gate"] = account_entry in incoming and '.admitted()' in incoming
+    checks["incoming_rejects_after_gate_close"] = (
+        checks["incoming_callback_gate"]
+        and 'pj::Call rejected_call' in incoming
+        and 'PJSIP_SC_BUSY_HERE' in incoming
+    )
+    checks["state_callback_gate"] = call_entry in state and '.admitted()' in state
+    checks["media_callback_gate"] = call_entry in media and '.admitted()' in media
     checks["incoming_callback_mutex"] = 'incoming_callback_mutex_' in incoming
     checks["state_callback_mutex"] = 'call_callback_mutex_' in state
     checks["media_callback_mutex"] = 'call_callback_mutex_' in media
     checks["callback_owner_reference"] = ('owner_(owner)' in account and 'owner_(owner)' in call)
     checks["polling_uses_real_call_slots"] = (
-        'detail::wait_for_zero_call_slots(' in call_cleanup and
-        'pjsua_call_get_count()' in call_cleanup)
+        'detail::wait_for_zero_call_slots(' in call_cleanup
+        and 'pjsua_call_get_count()' in call_cleanup)
+    checks["restart_requires_empty_callback_gates"] = (
+        'account_callback_activity_.reset_if_empty()' in start
+        and 'call_callback_activity_.reset_if_empty()' in start)
+    checks["restart_rejects_retained_teardown_state"] = all(token in start for token in (
+        'library_created_', 'endpoint_ != nullptr', 'account_ != nullptr', 'call_ != nullptr',
+        'retains teardown state'))
+    checks["destructor_invokes_stop"] = 'stop();' in destructor
 
-    # These five tokens are deliberately searched *inside stop()*; a helper
-    # elsewhere in the same file cannot give this function correct ordering.
-    operations = [
-        'wait_for_call_cleanup(std::chrono::seconds{2})',
-        'call_.reset()',
-        'shutdown_account_safely()',
-        'account_.reset()',
-        'endpoint_->libDestroy()',
+    account_close = stop.find('account_callback_activity_.close()')
+    account_pre_drain = stop.find(
+        'account_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})')
+    hangup = stop.find('hangup()')
+    disconnect = stop.find('wait_for_disconnection(std::chrono::seconds{2})')
+    call_close = stop.find('call_callback_activity_.close()')
+    call_drain = stop.find('call_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})')
+    slot_wait = stop.find('wait_for_call_cleanup(std::chrono::seconds{2})')
+    call_reset = stop.find('call_.reset()')
+    account_shutdown_pos = stop.find('shutdown_account_safely()')
+    account_post_drain = stop.find(
+        'account_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})',
+        account_pre_drain + 1)
+    account_reset = stop.find('account_.reset()')
+    lib_destroy = stop.find('endpoint_->libDestroy()')
+
+    ordered = [
+        account_close, account_pre_drain, hangup, disconnect, call_close, call_drain,
+        slot_wait, call_reset, account_shutdown_pos, account_post_drain, account_reset,
+        lib_destroy,
     ]
-    positions = [stop.find(operation) for operation in operations]
     checks["shutdown_order"] = (
-        all(position >= 0 for position in positions) and
-        positions == sorted(positions) and len(set(positions)) == len(positions))
-    checks["bounded_wait_before_release"] = positions[0] >= 0 and positions[0] < positions[1]
+        all(position >= 0 for position in ordered)
+        and ordered == sorted(ordered)
+        and len(set(ordered)) == len(ordered)
+    )
+    checks["account_gate_drains_before_call_shutdown"] = (
+        account_close >= 0 and account_close < account_pre_drain < hangup)
+    checks["disconnect_precedes_call_gate_close"] = (
+        disconnect >= 0 and disconnect < call_close < call_drain)
+    checks["call_gate_drains_before_slot_wait"] = call_drain >= 0 and call_drain < slot_wait
+    checks["slot_failure_vetoes_call_release"] = bool(re.search(
+        r'if\s*\(\s*!wait_for_call_cleanup\(std::chrono::seconds\{2\}\)\s*\)\s*\{\s*return;',
+        stop, re.DOTALL)) and slot_wait < call_reset
+    checks["call_released_before_account_shutdown"] = (
+        call_reset >= 0 and call_reset < account_shutdown_pos)
+    checks["account_failure_vetoes_account_release"] = bool(re.search(
+        r'if\s*\(\s*!shutdown_account_safely\(\)\s*\)\s*\{\s*return;',
+        stop, re.DOTALL)) and account_shutdown_pos < account_reset
+    checks["account_gate_drains_after_shutdown"] = (
+        account_shutdown_pos >= 0 and account_shutdown_pos < account_post_drain < account_reset)
+    checks["libdestroy_failure_retains_endpoint"] = bool(re.search(
+        r'endpoint_->libDestroy\(\);\s*\}\s*catch\s*\(\.\.\.\)\s*\{[^}]*return;\s*\}'
+        r'\s*endpoint_\.reset\(\);', stop, re.DOTALL))
     checks["non_forced_account_shutdown"] = (
-        'parameter.force = false;' in account_shutdown and
-        'account_->shutdown2(parameter)' in account_shutdown and
-        'return false;' in account_shutdown)
+        'parameter.force = false;' in account_shutdown
+        and 'account_->shutdown2(parameter)' in account_shutdown
+        and 'return false;' in account_shutdown)
 
-    if 'owner_.incoming_callback_mutex_' not in reg and 'owner_.call_callback_mutex_' not in reg:
+    if not checks["registration_callback_gate"]:
         risks.append('REGISTRATION_CALLBACK_NO_TEARDOWN_GATE')
-    if 'static_cast<void>(wait_for_call_cleanup(' in stop:
+    if not checks["slot_failure_vetoes_call_release"]:
         risks.append('CALL_SLOT_WAIT_RESULT_DISCARDED')
-    if 'static_cast<void>(shutdown_account_safely())' in stop:
+    if not checks["account_failure_vetoes_account_release"]:
         risks.append('ACCOUNT_SHUTDOWN_RESULT_DISCARDED')
-    if ('account_.reset()' in stop and 'return false;' in account_shutdown and
-            'static_cast<void>(shutdown_account_safely())' in stop):
-        risks.append('ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE')
-    if 'CallbackActivityGate' not in source:
+    if not all(checks[key] for key in (
+            "registration_callback_gate", "incoming_callback_gate",
+            "state_callback_gate", "media_callback_gate")):
         risks.append('NO_PRODUCTION_CALLBACK_ACTIVITY_GATE')
+
+    # Explicit stop() now retains the derived Account after shutdown2 failure,
+    # but the client destructor still continues member destruction after stop()
+    # returns. Account::~Account() can therefore force-delete on that path.
+    if 'std::terminate()' not in destructor:
+        risks.append('ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE')
+
     if 'owner_(owner)' in account or 'owner_(owner)' in call:
+        # Local entry/drain accounting narrows the overlap but does not prove
+        # that PJSUA2 can never invoke the derived target after owner lifetime.
         risks.append('CALLBACKS_BORROW_OWNER_BY_REFERENCE')
 
     return {"checks": checks, "risks": sorted(set(risks)), "errors": []}
@@ -132,7 +193,7 @@ def audit_pair(outgoing: str, incoming: str) -> dict:
     }
     passed = all(all(item['checks'].values()) and not item['errors'] for item in clients.values())
     return {
-        "baseline": "f77d0b3",
+        "baseline": "6d8e048",
         "kind": "STATIC_SOURCE_CONTRACT_ONLY",
         "source_contract": "PASS" if passed else "FAIL",
         "live_callback_quiescence": "INCONCLUSIVE",
