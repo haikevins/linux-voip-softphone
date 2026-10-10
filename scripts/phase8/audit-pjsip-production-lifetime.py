@@ -156,6 +156,11 @@ def audit_client(source: str, client: str, account_class: str, call_class: str) 
     checks["libdestroy_failure_retains_endpoint"] = bool(re.search(
         r'endpoint_->libDestroy\(\);\s*\}\s*catch\s*\(\.\.\.\)\s*\{[^}]*return;\s*\}'
         r'\s*endpoint_\.reset\(\);', stop, re.DOTALL))
+    checks["destructor_fails_closed_after_stop"] = bool(re.search(
+        r'stop\(\);\s*if\s*\(\s*library_created_\s*\|\|\s*'
+        r'endpoint_\s*!=\s*nullptr\s*\|\|\s*account_\s*!=\s*nullptr\s*\|\|\s*'
+        r'call_\s*!=\s*nullptr\s*\)\s*\{[^}]*std::terminate\(\);',
+        destructor, re.DOTALL))
     checks["non_forced_account_shutdown"] = (
         'parameter.force = false;' in account_shutdown
         and 'account_->shutdown2(parameter)' in account_shutdown
@@ -172,10 +177,10 @@ def audit_client(source: str, client: str, account_class: str, call_class: str) 
             "state_callback_gate", "media_callback_gate")):
         risks.append('NO_PRODUCTION_CALLBACK_ACTIVITY_GATE')
 
-    # Explicit stop() now retains the derived Account after shutdown2 failure,
-    # but the client destructor still continues member destruction after stop()
-    # returns. Account::~Account() can therefore force-delete on that path.
-    if 'std::terminate()' not in destructor:
+    # A destructor cannot return while retaining callback-owning PJSUA2 members.
+    # If explicit stop() cannot prove teardown, terminate before C++ member
+    # destruction can invoke Account::~Account() and force-delete the account.
+    if not checks["destructor_fails_closed_after_stop"]:
         risks.append('ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE')
 
     if 'owner_(owner)' in account or 'owner_(owner)' in call:
@@ -193,7 +198,7 @@ def audit_pair(outgoing: str, incoming: str) -> dict:
     }
     passed = all(all(item['checks'].values()) and not item['errors'] for item in clients.values())
     return {
-        "baseline": "6d8e048",
+        "baseline": "f555976",
         "kind": "STATIC_SOURCE_CONTRACT_ONLY",
         "source_contract": "PASS" if passed else "FAIL",
         "live_callback_quiescence": "INCONCLUSIVE",

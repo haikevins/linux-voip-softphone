@@ -42,14 +42,13 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         self.assertEqual(result['audit_contract'], 'PASS')
         self.assertEqual(result['explicit_stop_hardening'], 'INTEGRATED')
         self.assertEqual(result['integration_readiness'], 'BLOCKED')
-        self.assertEqual(result['destructor_failure_policy'], 'UNRESOLVED')
+        self.assertEqual(result['destructor_failure_policy'], 'FAIL_CLOSED_TERMINATE')
         self.assertEqual(result['live_external_quiescence'], 'UNPROVEN')
         self.assertEqual(result['actual_pj_ebusy_recovery'], 'UNPROVEN')
 
-    def test_both_clients_retain_exactly_two_known_closure_risks(self):
+    def test_both_clients_retain_exactly_one_known_closure_risk(self):
         result = self.evaluate()
         expected = {
-            'ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE',
             'CALLBACKS_BORROW_OWNER_BY_REFERENCE',
         }
         self.assertEqual(set(result['clients']), {'incoming', 'outgoing'})
@@ -134,14 +133,17 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         self.assertEqual(self.evaluate(outgoing=changed)['integration_readiness'],
                          'REVIEW_REQUIRED')
 
-    def test_destructor_policy_change_requires_fresh_review(self):
+    def test_destructor_fail_closed_policy_removal_requires_fresh_review(self):
         changed = self.changed(
             self.outgoing,
-            'SipOutgoingCallClient::~SipOutgoingCallClient()\n{\n    stop();\n}',
-            'SipOutgoingCallClient::~SipOutgoingCallClient()\n{\n    stop();\n    std::terminate();\n}',
+            '    if (library_created_ || endpoint_ != nullptr || account_ != nullptr || call_ != nullptr) {\n'
+            '        std::fputs("PJSIP outgoing client teardown could not prove safe destruction\\n", stderr);\n'
+            '        std::terminate();\n'
+            '    }',
+            '',
         )
         report = self.evaluate(outgoing=changed)
-        self.assertFalse(report['clients']['outgoing']['checks']['two_known_closure_risks_remain'])
+        self.assertFalse(report['clients']['outgoing']['checks']['one_known_closure_risk_remains'])
         self.assertEqual(report['integration_readiness'], 'REVIEW_REQUIRED')
 
     def test_json_cli_does_not_report_ready(self):
@@ -153,7 +155,7 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         report = json.loads(result.stdout)
         self.assertEqual(report['explicit_stop_hardening'], 'INTEGRATED')
         self.assertEqual(report['integration_readiness'], 'BLOCKED')
-        self.assertEqual(report['destructor_failure_policy'], 'UNRESOLVED')
+        self.assertEqual(report['destructor_failure_policy'], 'FAIL_CLOSED_TERMINATE')
         self.assertEqual(report['audit_contract'], 'PASS')
 
     def test_require_ready_cli_fails_closed(self):
@@ -163,7 +165,7 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 3, result.stderr)
         self.assertIn('Integration readiness: BLOCKED', result.stdout)
-        self.assertIn('Destructor failure policy: UNRESOLVED', result.stdout)
+        self.assertIn('Destructor failure policy: FAIL_CLOSED_TERMINATE', result.stdout)
 
 
 if __name__ == '__main__':

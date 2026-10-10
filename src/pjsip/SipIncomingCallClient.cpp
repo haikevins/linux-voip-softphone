@@ -5,6 +5,7 @@
 #include "pjsip/Pjsua2CallAudioBridge.hpp"
 
 #include <cstdio>
+#include <exception>
 #include <pjsua-lib/pjsua.h>
 #include <stdexcept>
 #include <thread>
@@ -133,6 +134,10 @@ SipIncomingCallClient::SipIncomingCallClient(SipEndpointConfig endpoint_config,
 SipIncomingCallClient::~SipIncomingCallClient()
 {
     stop();
+    if (library_created_ || endpoint_ != nullptr || account_ != nullptr || call_ != nullptr) {
+        std::fputs("PJSIP incoming client teardown could not prove safe destruction\n", stderr);
+        std::terminate();
+    }
 }
 
 void SipIncomingCallClient::start()

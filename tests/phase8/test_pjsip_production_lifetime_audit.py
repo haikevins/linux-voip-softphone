@@ -41,10 +41,9 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
             self.assertGreaterEqual(len(item['checks']), 20)
             self.assertTrue(all(item['checks'].values()))
 
-    def test_both_clients_retain_only_two_closure_risks(self):
+    def test_both_clients_retain_only_callback_owner_closure_risk(self):
         result = self.run_audit()
         expected = {
-            'ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE',
             'CALLBACKS_BORROW_OWNER_BY_REFERENCE',
         }
         resolved = {
@@ -170,6 +169,26 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
         self.assertFalse(
             self.run_audit(incoming=no_retained_check)['clients']['incoming']['checks'][
                 'restart_rejects_retained_teardown_state'])
+
+    def test_destructor_must_fail_closed_before_member_destruction(self):
+        old = (
+            'SipOutgoingCallClient::~SipOutgoingCallClient()\n'
+            '{\n'
+            '    stop();\n'
+            '    if (library_created_ || endpoint_ != nullptr || account_ != nullptr || call_ != nullptr) {\n'
+            '        std::fputs("PJSIP outgoing client teardown could not prove safe destruction\\n", stderr);\n'
+            '        std::terminate();\n'
+            '    }\n'
+            '}')
+        modified = self.replace_once(
+            self.original_outgoing, old,
+            'SipOutgoingCallClient::~SipOutgoingCallClient()\n{\n    stop();\n}')
+        result = self.run_audit(outgoing=modified)
+        self.assertFalse(
+            result['clients']['outgoing']['checks']['destructor_fails_closed_after_stop'])
+        self.assertIn('ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE',
+                      result['clients']['outgoing']['risks'])
+        self.assertEqual('FAIL', result['source_contract'])
 
     def test_missing_callback_override_is_rejected(self):
         modified = self.replace_once(
