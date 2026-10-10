@@ -19,7 +19,24 @@ expected_scenario_h2=$'## Purpose\n## Preconditions\n## Procedure\n## Observatio
 
 [[ -f evidence/README.md ]] || error "missing evidence/README.md"
 
-for n in 0 1 2 3 4 5 6; do
+# Every documented phase must have a matching evidence README. Discover the
+# phases from docs/ instead of hard-coding the latest phase number, so a new
+# phase cannot silently escape this repository-wide gate.
+mapfile -t phase_docs < <(
+    find docs -mindepth 2 -maxdepth 2 -type f \
+        -path 'docs/phase[0-9]*/README.md' -print | sort -V
+)
+((${#phase_docs[@]} > 0)) || error "no docs/phaseN/README.md files found"
+
+for phase_doc in "${phase_docs[@]}"; do
+    phase_dir="$(dirname "$phase_doc")"
+    phase_name="$(basename "$phase_dir")"
+    n="${phase_name#phase}"
+    [[ "$n" =~ ^[0-9]+$ ]] || {
+        error "unexpected phase documentation path: $phase_doc"
+        continue
+    }
+
     f="evidence/phase${n}/README.md"
     [[ -f "$f" ]] || { error "missing $f"; continue; }
 
@@ -27,12 +44,28 @@ for n in 0 1 2 3 4 5 6; do
     [[ "$h1" == "# Phase ${n} Evidence — "* ]] || error "$f has unexpected H1: $h1"
 
     actual="$(grep '^## ' "$f" || true)"
-    [[ "$actual" == "$expected_phase_h2" ]] || {
-        error "$f does not match the phase evidence H2 schema"
-        printf '%s\n' "$actual" >&2
-    }
+    if [[ "$n" == "7" ]]; then
+        # Phase 7 predates the strict schema gate and preserves one historical
+        # post-closure appendix. Validate the canonical ten-heading prefix and
+        # permit only explicitly named post-closure appendices afterwards.
+        canonical_actual="$(printf '%s\n' "$actual" | head -n 10)"
+        [[ "$canonical_actual" == "$expected_phase_h2" ]] || {
+            error "$f does not match the phase evidence H2 schema prefix"
+            printf '%s\n' "$actual" >&2
+        }
+        while IFS= read -r heading; do
+            [[ -z "$heading" || "$heading" == '## Post-closure verification update — '* ]] || \
+                error "$f has unexpected extra H2 heading: $heading"
+        done < <(printf '%s\n' "$actual" | tail -n +11)
+    else
+        [[ "$actual" == "$expected_phase_h2" ]] || {
+            error "$f does not match the phase evidence H2 schema"
+            printf '%s\n' "$actual" >&2
+        }
+    fi
 
-    grep -Fq "docs/phase${n}/README.md" "$f" || error "$f does not reference docs/phase${n}/README.md"
+    grep -Fq "docs/phase${n}/README.md" "$f" || \
+        error "$f does not reference docs/phase${n}/README.md"
 done
 
 # Phase 6 uses short sanitized summaries rather than full terminal transcripts.

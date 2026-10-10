@@ -10,6 +10,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Verify documentation structure
+        run: ./scripts/quality/verify-docs-structure.sh
+
+      - name: Verify evidence structure
+        run: ./scripts/quality/verify-evidence-structure.sh
+
       - name: Install tools
         run: sudo apt-get update && sudo apt-get install -y ninja-build clang-format clang-tidy libgtest-dev
 
