@@ -1,0 +1,31 @@
+Phase 8 roadmap evidence — ThreadSanitizer
+Source: maintainer ThinkPad Phase 8 Commit 19 verification (2026-10-10)
+Baseline before Commit 19: 1e88ea455f157622fbcd8c18b0df60b4287ed5af
+Commit 19 SHA after user push: e98bc3418f76b15b4b568d603f5e4002cbd3a544
+Status: OBSERVED IN SUPPLIED THINKPAD LOG; closure HEAD confirmation pending.
+
+COMMAND OBSERVED:
+  CXX="$(command -v clang++-18)" \
+  PHASE8_TSAN_BUILD_DIR="$PWD/build/phase8-tsan-clang18-debug" \
+  PHASE8_TSAN_REPEATS=3 bash scripts/phase8/verify-tsan.sh
+
+OBSERVED THINKPAD OUTPUT:
+  Phase8ThreadSafeQueueTest             3/3 PASS
+  Phase8SerialTaskWorkerTest            3/3 PASS
+  Phase8ThreadOwnershipTest             3/3 PASS
+  Phase8MpmcStressTest                  3/3 PASS
+  Phase8PjsipCallSlotCleanupTest        3/3 PASS
+  Phase8PjsipCallbackActivityTest       3/3 PASS
+  "100% tests passed, 0 tests failed out of 6"
+  "PASS: Phase 8 TSan gate (six tests x 3 run(s))"
+  RESULT: 18/18 instrumented test executions PASS.
+
+LIMITATIONS:
+  The six isolated tests are C++20 models, NOT live Qt or PJSUA2 runtime.
+  No real PJSUA2 callback quiescence, shutdown retry, or PJ_EBUSY recovery
+  was exercised. A clean TSan run does not prove universal race freedom.
+
+RELATED HISTORICAL FILE:
+  evidence/phase8/tsan-report.txt
+
+New ThinkPad run for roadmap closure: NOT RUN by creation of this artifact.

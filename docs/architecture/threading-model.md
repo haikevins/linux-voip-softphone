@@ -1,5 +1,13 @@
 # Threading model — Phase 8
 
+> **Status after Phase 8 Commit 19 (2026-10-10):** The original text below
+> preserves the implementation history (including Commit 6's then-future
+> items). For the current as-built thread paths and exit limitations, read
+> [Roadmap exit review](../phase8/roadmap-exit-review.md) and
+> [the reproducible diagram](threading-diagram.dot). No Phase 8 generic
+> queue/worker has been wired to the Qt/PJSUA2 backend.
+
+
 ## Provenance and current baseline
 
 According to the Phase 7 handoff for `v0.8-qt-gui`, the GUI backend already
@@ -184,3 +192,33 @@ observed call-slot count, **not proof of callback thread quiescence**. On
 `shutdown2(force=false)` failure, account cleanup remains an open risk.
 Do not infer runtime callback lifetime correctness or broad PJSIP TSan coverage
 from the added standalone fifth CTest.
+
+## As-built owner/thread map at Commit 19 (roadmap review addendum)
+
+- **GUI/application owner:** `GuiViewModel` owns an application `CallManager`.
+  `CallManager` records its constructing thread and asserts that its methods
+  run on that thread (`src/application/CallManager.cpp`). This is an owner-
+  thread contract; assert-only checks are not a runtime race detector.
+- **Existing Qt session worker:** `QtRegistrationBackend` creates a
+  `std::jthread` in `begin_registration()` and serializes calls through its
+  `RegistrationSession`. It relays registration/call/RTP events by
+  `QMetaObject::invokeMethod(..., Qt::QueuedConnection)` onto its QObject
+  thread; Qt signals then reach the `GuiViewModel`/`CallManager`. This flow
+  already existed before the generic Phase 8 queue/worker.
+- **Generic Phase 8 components:** `ThreadSafeQueue<T>` plus
+  `SerialTaskWorker` are separate C++20 components; they own neither
+  PJSIP objects nor Qt UI objects. Stress runs are four producer threads,
+  four consumer threads, 25,000 events per producer. Do not present this
+  queue as the transport for the currently deployed Qt event path.
+- **Sanitizer scope:** Clang18 TSan exercises six standalone C++ tests
+  three times (18 passing runs per the ThinkPad log). It does not
+  instrument Qt, the GUI executable, or the vendor PJSUA2 runtime.
+- **Outstanding safety risks:** the Commit 19 PJSUA2 shutdown integration
+  audit deliberately reports `Integration readiness: BLOCKED` with
+  external callback quiescence and `PJ_EBUSY` recovery unproven. This is
+  a known production lifetime risk, not a demonstrated-safe shutdown.
+
+Diagram: [`docs/architecture/threading-diagram.dot`](threading-diagram.dot)
+(rendered at `evidence/07-threading/threading-diagram.png`). Evidence:
+`evidence/07-threading/{stress-test.txt,tsan-report.txt}`. The diagram
+represents code-level control flow, **not** a captured runtime thread trace.
