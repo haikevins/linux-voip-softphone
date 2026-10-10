@@ -113,4 +113,12 @@ if(NOT PHASE8_ENABLE_TSAN)
     # authorization helper. Not connected to either SIP client's stop().
     phase8_add_test(phase8_pjsip_shutdown_authorization_tests
         test_pjsip_shutdown_authorization.cpp Phase8PjsipShutdownAuthorizationTest)
+
+    # Commit 19: source audit of *real* stop() entry points against the
+    # authorization helper. PASS means unsafe blockers identified, NOT safe.
+    # Keep the six existing standalone TSan C++ tests unchanged.
+    add_test(NAME Phase8PjsipShutdownIntegrationContractTest
+        COMMAND "${Python3_EXECUTABLE}" -B
+            "${CMAKE_CURRENT_SOURCE_DIR}/test_pjsip_shutdown_integration_contract.py")
+    set_tests_properties(Phase8PjsipShutdownIntegrationContractTest PROPERTIES TIMEOUT 30)
 endif()
