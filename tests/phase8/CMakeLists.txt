@@ -108,4 +108,9 @@ if(NOT PHASE8_ENABLE_TSAN)
     # resource release. This is not wired to real PJSUA2 shutdown.
     phase8_add_test(phase8_pjsip_shutdown_ownership_policy_tests
         test_pjsip_shutdown_ownership_policy.cpp Phase8PjsipShutdownOwnershipPolicyTest)
+
+    # Commit 18: exercise the production-facing, receipt-only shutdown
+    # authorization helper. Not connected to either SIP client's stop().
+    phase8_add_test(phase8_pjsip_shutdown_authorization_tests
+        test_pjsip_shutdown_authorization.cpp Phase8PjsipShutdownAuthorizationTest)
 endif()

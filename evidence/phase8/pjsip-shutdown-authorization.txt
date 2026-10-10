@@ -1,0 +1,103 @@
+Phase 8 Commit 18 — PJSIP shutdown authorization header
+=========================================================
+Branch: phase/8-multithreading
+Required baseline HEAD: b1071348fb3beff1adf6a078fd153d340ea93201
+Expected commit subject: feat(phase8): introduce PJSIP shutdown authorization helper
+
+SCOPE:
+  M tests/phase8/CMakeLists.txt
+  A src/pjsip/PjsipShutdownAuthorization.hpp
+  A tests/phase8/test_pjsip_shutdown_authorization.cpp
+  A scripts/phase8/verify-pjsip-shutdown-authorization.sh
+  A docs/phase8/commit18-pjsip-shutdown-authorization.md
+  A evidence/phase8/pjsip-shutdown-authorization.txt
+
+AUTHORING VERIFICATION (NOT ThinkPad):
+  Reconstructed Commit 17 source snapshot: PASS
+  Focused standalone CTest: PASS (11/11)
+  New header regression under GCC strict -Wall -Wextra -Wpedantic -Werror: PASS
+  New authorization regression repeated 250 times: PASS
+  Manifest, byte content, script executable, bash syntax, git diff --check: PASS
+  clang-format 18, clang-tidy 18, PJSIP, Qt and canonical on ThinkPad: NOT RUN
+
+THINKPAD ACCEPTANCE — UPDATE ONLY USING REAL LOGS:
+  Baseline/branch/origin parity and clean tree: PASS (pre-overlay)
+  ZIP SHA256 + exact six-file manifest: PASS (v2)
+  Full CI clang-format gate: PASS (18.1.3)
+  Full CI clang-tidy preset: PASS (18.1.3)
+  Focused + canonical new header target: PASS (1/1 each)
+  Focused Phase 8 CTest 11/11: PASS
+  Clang18 TSan six tests x three runs (18/18): PASS
+  Qt owner-thread regression: PASS
+  PJSIP regression 45/45: PASS
+  Canonical CMake build and CTest 146/146: PASS
+  Git commit/push/remote parity/clean tree: PENDING
+  GitHub Actions on new SHA: PENDING
+
+SAFETY LIMITS:
+  New reusable header is NOT wired to live SipIncomingCallClient::stop()
+  or SipOutgoingCallClient::stop(). This is receipt authorization bookkeeping,
+  NOT external PJSUA2 callback quiescence, a safe resource owner, a real
+  PJ_EBUSY recovery, or a production teardown fix. All identified live
+  callback/shutdown lifetime risks remain OPEN.
+
+
+OBSERVED THINKPAD C1 FORMAT FAILURE AND V2 CORRECTION:
+  Initial Commit 18 ZIP SHA256/overlay and source manifest: verified before C1.
+  Initial ThinkPad clang-format 18.1.3: FAIL (7 diagnostics), at
+    tests/phase8/test_pjsip_shutdown_authorization.cpp:21-24 and :145-146.
+  Corrected v2: explicit trailing-comma proofs initializer and named
+    call_slots enum value for the late-receipt assertion; no logic change.
+  v2 clang-format/clang-tidy and regressions on ThinkPad: PASS.
+  Git commit/push and GitHub Actions: PENDING.
+
+
+---
+
+THINKPAD VERIFIED PHASE 8 COMMIT 18 V2
+Recorded: 2026-10-10T08:05:07+07:00
+Branch: phase/8-multithreading
+Baseline HEAD: b1071348fb3beff1adf6a078fd153d340ea93201
+Overlay: Commit 18 v2
+Overlay SHA256: 350139f5a4317702dc743dd38e279a0a20da9d9af088cc0d6ee3935b277c239c
+
+THINKPAD VERIFIED RESULTS:
+  Full clang-format 18.1.3: PASS
+  Full clang-tidy 18.1.3: PASS
+  Shutdown authorization header regression: PASS
+  Ownership policy model: PASS
+  Shutdown failure-path model: PASS
+  Callback ingress model: PASS
+  Focused CTest: 11/11 PASS
+  TSan: 18/18 PASS
+  Qt ownership regression: PASS
+  PJSIP CTest: 45/45 PASS
+  Canonical configure/build: PASS
+  Canonical CTest: 146/146 PASS
+  Exact source manifest: PASS (1 modified + 5 added)
+
+THINKPAD LOG FILES:
+  /tmp/phase8-commit18-v2-format.log
+  /tmp/phase8-commit18-v2-tidy.log
+  /tmp/phase8-commit18-v2-authorization.log
+  /tmp/phase8-commit18-v2-policy.log
+  /tmp/phase8-commit18-v2-failure-paths.log
+  /tmp/phase8-commit18-v2-ingress.log
+  /tmp/phase8-commit18-v2-focused.log
+  /tmp/phase8-commit18-v2-tsan.log
+  /tmp/phase8-commit18-v2-qt.log
+  /tmp/phase8-commit18-v2-pjsip.log
+  /tmp/phase8-commit18-v2-configure.log
+  /tmp/phase8-commit18-v2-build.log
+  /tmp/phase8-commit18-v2-canonical.log
+
+PENDING AT EVIDENCE CAPTURE:
+  Git commit/push and remote synchronization.
+  GitHub Actions on the new commit SHA.
+
+LIMITATIONS:
+  Header authorization tests: PASS.
+  Live PJSUA2 teardown: NOT TESTED.
+  External callback quiescence: NOT VERIFIED.
+  Real PJ_EBUSY recovery: NOT TESTED.
+  Production callback/shutdown lifetime risks: OPEN.
