@@ -1,224 +1,290 @@
-# Threading model — Phase 8
+# Phase 8 Architecture — Threading Model
 
-> **Status after Phase 8 Commit 19 (2026-10-10):** The original text below
-> preserves the implementation history (including Commit 6's then-future
-> items). For the current as-built thread paths and exit limitations, read
-> [Roadmap exit review](../phase8/roadmap-exit-review.md) and
-> [the reproducible diagram](threading-diagram.dot). No Phase 8 generic
-> queue/worker has been wired to the Qt/PJSUA2 backend.
+## Status
 
+Phase 8 makes the concurrency model explicit and testable, but the current
+architecture is intentionally split between the production Qt/PJSUA2 path and
+the generic C++20 queue/worker path introduced for concurrency verification.
 
-## Provenance and current baseline
+The generic `ThreadSafeQueue<T>` and `SerialTaskWorker` are implemented and
+verified in isolation. They are **not** the deployed transport between PJSUA2
+callbacks and Qt UI state. Production PJSUA2 shutdown integration remains
+fail-closed where real external callback quiescence and `PJ_EBUSY` recovery are
+not proven.
 
-According to the Phase 7 handoff for `v0.8-qt-gui`, the GUI backend already
-uses `std::jthread`, mutex/condition-variable synchronization, and Qt queued
-handoff to the GUI. `CallManager` has an owner-thread contract. These are
-**existing boundaries**; this document does not assert that a fresh runtime
-trace or code audit of the canonical clone was completed for Commit 1.
+Recorded final offline acceptance is PASS for its stated scope. Final Phase 8
+maintainer sign-off is still pending.
 
-The queue introduced in Phase 8 Commit 1 and extended in Commit 2 is an
-**isolated library component**. Commit 3 adds a standalone
-`SerialTaskWorker` that owns a thread and consumes callable tasks from the
-queue. Neither component is wired to Qt, `CallManager`, or PJSUA2.
-Commits 1–5 were tested in the canonical ThinkPad repository on
-2026-10-09 (maintainer-supplied terminal logs); Commit 4 recorded 138/138
-canonical CTest entries at `c7a4243`, and Commit 5 recorded 139/139 plus
-100 stress repetitions at `5979869`. Nothing here establishes Qt/PJSIP
-callback thread affinity.
+## Purpose
 
-## Current vs. planned event paths
+This document defines:
+
+- the owner/thread boundaries used by the released Qt softphone;
+- the contracts of the generic Phase 8 queue and serial worker;
+- shutdown and cancellation semantics;
+- what Phase 8 stress/TSan tests cover;
+- what the PJSUA2 lifetime audits establish; and
+- which safety properties remain unproven.
+
+It prevents roadmap diagrams, isolated concurrency tests, and source audits
+from being mistaken for stronger runtime guarantees than the evidence supports.
+
+## Scope
+
+Covered:
+
+- `src/concurrency/ThreadSafeQueue.hpp`;
+- `src/concurrency/SerialTaskWorker.hpp`;
+- `QtRegistrationBackend` session worker and queued GUI handoff;
+- `GuiViewModel` / `CallManager` owner-thread contract;
+- Phase 8 ownership, MPMC stress, callback activity, shutdown policy, and TSan
+  tests;
+- bounded PJSUA2 call-slot cleanup and shutdown authorization logic;
+- final offline GUI/runtime acceptance.
+
+Not established by this architecture document:
+
+- that PJSUA2 endpoint/account/call objects are universally thread-safe;
+- that a zero call-slot count means all external callbacks are quiescent;
+- that the generic queue is used by the production Qt event path;
+- that dedicated runtime Metrics and Logging threads from the roadmap sketch
+  were implemented;
+- safe real-world teardown after all PJSUA2 shutdown failures.
+
+## Architecture model
+
+### Production Qt/PJSUA2 event path
+
+The deployed GUI path retains the Phase 7 ownership model:
 
 ```text
-Phase 7 baseline (reported in release handoff)
-PJSUA2/session worker -> Qt queued handoff -> GUI state/UI thread
-                  CallManager: owner-thread affinity
+Qt GUI / application owner thread
+    GuiViewModel
+        -> CallManager
 
-Phase 8 Commits 1–5 (implemented; independent of the app)
-producer(s) -> ThreadSafeQueue<T> -> consumer(s)
-                 close() / drain
-                 stop_token-local cancellation for waiters
+QtRegistrationBackend
+    owns registration/session std::jthread
+        -> RegistrationSession
+        -> PJSUA2 client/account/call operations
 
-post(task) -> SerialTaskWorker [owns std::jthread]
-                     -> ThreadSafeQueue<Task> -> single worker callback
-                          request_close() -> drain -> join
-                 queue + worker + ownership + 100k MPMC stress CTests
-                 standalone or canonical CTest (registered in Commit 4)
-
-Phase 8 Commit 6 (standalone only)
--fsanitize=thread -> 4 Phase 8 test executables (not Qt/PJSIP)
-
-Phase 8 future (planned, not implemented)
-actual Qt/PJSIP owner audit
-                   -> carefully scoped integration if safe
+worker event
+    -> QMetaObject::invokeMethod(..., Qt::QueuedConnection)
+    -> Qt object thread
+    -> GuiViewModel / CallManager
 ```
 
-## `ThreadSafeQueue<T>` contract (implemented)
+`CallManager` records its constructing thread and asserts its owner-thread
+contract. `QtRegistrationBackend` serializes its session workflow on its owned
+`std::jthread` and publishes GUI-facing events through queued Qt delivery.
 
-- Unbounded FIFO guarded by one mutex and one condition variable.
-- `push(T)` makes a value available on success, returns `false` if closed.
-- `try_pop()` never blocks; empty returns `std::nullopt`.
-- `wait_pop()` blocks until an item is present or the queue closes; drains
-  remaining items even after close; once closed-and-empty, returns nullopt.
-- `wait_pop(std::stop_token)` wakes on queued data, queue closure, or the
-  calling worker's requested stop. It returns `std::nullopt` for cancellation
-  **without consuming an item** when cancellation is observed before dequeue.
-  If stop races with a successful dequeue, either outcome is permitted.
-- A local stop request does **not** close the queue; other consumers and
-  producers can continue using it.
-- `close()` is idempotent, cannot be undone, and wakes all waiting consumers.
+This path existed before the generic Phase 8 queue/worker.
+
+### Generic Phase 8 concurrency path
+
+```text
+multiple producers
+      |
+      v
+ThreadSafeQueue<T>
+      |
+      v
+one or more test consumers
+
+or
+
+multiple task producers
+      |
+      v
+SerialTaskWorker
+      |
+      v
+one owned worker thread
+```
+
+`ThreadSafeQueue<T>` is an unbounded C++20 MPMC FIFO with `push`, `try_pop`,
+blocking `wait_pop`, stop-token-aware `wait_pop`, and idempotent `close`.
+
+`SerialTaskWorker` owns one `std::jthread` and one
+`ThreadSafeQueue<std::function<void()>>`. Accepted tasks execute serially on
+the owned worker thread. Throwing tasks are contained and counted rather than
+terminating the worker.
+
+### Roadmap diagram boundary
+
+`README_roadmap.md` illustrates SIP, Metrics, and Logging worker threads. That
+is an explanatory target model, not evidence that separate metrics/logging
+workers are currently deployed. The code-level diagram source is
+`docs/architecture/threading-diagram.dot`; its rendered PNG is retained at
+`evidence/07-threading/threading-diagram.png`.
+
+## Runtime and lifecycle
+
+### `ThreadSafeQueue<T>` lifecycle
+
+- `push()` linearizes under the queue mutex and rejects new work after close.
+- `try_pop()` removes at most one available item.
+- blocking `wait_pop()` wakes for queued data or queue closure.
+- stop-aware `wait_pop(std::stop_token)` additionally wakes for local
+  cancellation; cancelling one consumer does not close the shared queue.
+- a stop observed before dequeue returns cancellation without consuming an
+  item; a concurrent stop/dequeue race may resolve either way.
+- `close()` is idempotent and wakes all waiters; accepted data remains
+  drainable.
 - `size()` and `is_closed()` are point-in-time observations only.
-- Consumers share the queue; any one item is removed by at most one consumer.
-- Inter-producer FIFO follows mutex acquisition/linearization order.
-- Owner must join producers/consumers before destroying the queue.
-- No PJSIP/Qt API calls are made from queue internals.
+- the queue does not own producer/consumer threads; owners must join users
+  before destroying the queue.
 
-## Ownership and error behavior
+The queue does not call Qt or PJSIP APIs.
 
-The queue does not own its threads. Thread owners must stop producers,
-choose whether to close the queue to drain outstanding work or request
-per-consumer stop to abandon outstanding work, join all consumers, then
-destroy the queue. Calling `request_stop()` on a consumer does not close the
-queue or automatically stop producers. `std::condition_variable_any` enables
-C++20 stop-token-aware waiting; an ordinary `wait_pop()` still requires a
-push or `close()` to unblock. If `T` throws during
-its move into an optional result, the queue entry is not popped; `T` may
-nevertheless have been modified by a throwing move. Avoid throwing payload
-moves in concurrency-sensitive paths.
+### `SerialTaskWorker` lifecycle
 
-## `SerialTaskWorker` contract (Commit 3; implemented in isolation)
+- construction starts one owned worker thread;
+- `post()` accepts non-empty callable tasks until close/shutdown;
+- callbacks execute one at a time in queue order;
+- `request_close()` may be requested by a callback;
+- external `shutdown()` closes, drains, and joins;
+- concurrent external shutdown calls serialize their join;
+- a callback may not self-join through `shutdown()`;
+- owner destruction must not race with active API users or callbacks capturing
+  owner resources;
+- callback exceptions increment `failures()` while `completed()` counts all
+  finished callbacks.
 
-- The owner constructs a worker thread, posts callable `std::function<void()>`
-  tasks, and invokes `shutdown()` from outside the worker to close, drain, and
-  join. Destruction also closes/drains/joins. A worker callback may safely
-  invoke `request_close()` but not `shutdown()`.
-- Only one callback executes at a time. Tasks accepted by the queue are
-  executed exactly once, in queue order, before `shutdown()` returns.
-  Concurrent producers have no wall-clock submission ordering guarantee.
-- `post()` returns `false` for an empty callable or after close. As with any
-  allocating queue, allocation failures can throw rather than returning
-  `false`. There is no bounded backpressure or abort-pending-work mode yet.
-- Task exceptions are caught at the worker boundary; `failures()` reports
-  throwing callbacks and `completed()` counts all finished callbacks. The
-  error payload is not retained. Application code must not mistake these
-  counters for a UI error-handling policy.
-- Concurrent external `shutdown()` calls serialize their join. Caller must
-  still ensure that object destruction cannot race with active `post()`,
-  `request_close()`, `shutdown()`, or callbacks capturing owner resources.
-  Self-destruction from the worker callback is unsupported.
-- Worker callbacks run on the owned C++ thread, **not** automatically on the
-  Qt GUI thread or the PJSIP endpoint-owner thread. Never access Qt UI state
-  or PJSIP objects through this worker without an independently verified
-  ownership and queued-handoff contract.
+The worker thread is not automatically the Qt GUI thread or a valid PJSUA2
+owner thread.
 
-## Commit 4 test ownership and CTest boundary
+### PJSUA2 call cleanup and shutdown boundary
 
-- The ownership test exercises four concurrent *external* task producers
-  and asserts that their callbacks execute only on the `SerialTaskWorker`
-  thread. A nested post from a running callback must execute later, after
-  an already-queued task, and on that same owned thread. These checks are
-  not a general replacement for race detection or the planned MPMC stress.
-- Standalone `tests/phase8` retains a separately configurable CMake project.
-  When entered from the canonical parent, the file avoids a nested project
-  and registers three `Phase8*` CTest entries. The guarded integration
-  script appends `add_subdirectory(phase8)` to `tests/CMakeLists.txt` in the
-  canonical checkout. It does not edit Qt or PJSIP runtime code.
-- The app-level ownership/callback audit is still pending; nothing here
-  authorizes PJSUA2 access from the general-purpose worker thread.
+Phase 8 hardened the outgoing/incoming client cleanup ordering so call-slot
+cleanup is observed before destroying the derived Call callback target where
+possible. A deterministic polling policy makes zero-slot, delayed cleanup,
+timeout, and deadline behavior testable.
 
-## Commit 5: contention, shutdown accounting, and exception injection
+Later commits model:
 
-- Four concurrent producers enqueue **100,000 unique events**, and four
-  consumers dequeue them. Atomic per-ID occurrence counters verify exact-once
-  delivery without introducing test-side data races if the queue misbehaves.
-  Consumers drain after producers join and the queue is closed.
-- A four-producer/one-consumer test separately asserts per-producer FIFO.
-  With multiple consumers, post-dequeue scheduling does not establish the
-  queue's dequeue serialization order, so it is deliberately **not** used as
-  an ordering oracle in the 4x4 test.
-- In the close-contended scenario, accepted/rejected counts can vary with
-  scheduling; the invariant is that every accepted ID is delivered once,
-  no event is delivered twice, and post-close pushes are rejected. `close()`
-  remains a drain rather than a data-drop operation.
-- A separate 10,000-task worker scenario injects deterministic exceptions;
-  `completed()` counts every accepted callback and `failures()` counts all
-  injected exceptions. These are generic concurrency tests, not SIP/Qt
-  runtime ownership evidence. Commit 5 was verified on the ThinkPad:
-  100/100 stress repeats, canonical 139/139, push `5979869` synchronized.
+- callback activity/drain behavior;
+- shutdown failure paths;
+- external callback ingress races;
+- ownership retries and stale results;
+- production-facing shutdown authorization; and
+- a fail-closed integration contract.
 
-## Commit 6: TSan scope and coverage
+These models deliberately distinguish **call-slot state** from **external
+callback quiescence**. `pjsua_call_get_count() == 0` does not prove all vendor
+callbacks have stopped. If non-forced shutdown fails and safe callback
+quiescence cannot be established, integration readiness remains BLOCKED.
 
-- TSan is **opt-in** via `PHASE8_ENABLE_TSAN=ON` for a standalone
-  `tests/phase8` build, never by instrumenting only one portion of Qt/PJSIP.
-  All four standalone test translation units and their header-only queue /
-  worker implementations compile and link with `-fsanitize=thread`.
-- `scripts/phase8/verify-tsan.sh` uses its own build tree and runs CTest
-  serially. A failure or race report fails the gate; unsupported runtime
-  mappings are recorded as BLOCKED rather than passed.
-- Do not mix TSan with ASan/UBSan or reuse their build directories. Normal
-  canonical CTest builds leave TSan off, preserving the 139-entry baseline.
-- The isolated Linux GCC 14.2 TSan run completed four tests three times each
-  with no reported races. This cannot establish race freedom for unexercised
-  interleavings or any Qt/PJSIP callbacks. On the ThinkPad, GCC 13 TSan
-  was BLOCKED by memory mapping failures. Clang 18.1.3 successfully
-  completed four instrumented tests three times each. These results
-  are recorded separately in `evidence/phase8/tsan-report.txt`.
+## Verification strategy
 
-## Future acceptance checks
+### Deterministic/unit coverage
 
-Before integrating the queue into application workflows, establish the
-actual GUI/PJSUA2 callback context and verify ordering, cancellation,
-`std::jthread` teardown, account lifetime, post-ring rejection semantics,
-GUI queued signal delivery, and RTP diagnostic updates. Use a separate TSan
-build; do not combine TSan with ASan in one executable.
+Standalone `tests/phase8` covers queue behavior, serial worker behavior,
+worker-thread ownership, MPMC stress, PJSIP call-slot cleanup policy, callback
+activity, and shutdown/lifetime models. The Phase 8 subtree is also registered
+with canonical CTest.
 
-## Commit 8 source-review update (runtime validation pending)
+### Stress coverage
 
-Static inspection of canonical `cf31e2a` identifies Qt queued worker-to-GUI
-handoffs and a joined registration-session worker. It also confirms PJSUA2
-callback overrides perform library operations, so "all PJSUA2 operations run
-on the Qt session worker" must not be treated as a verified invariant.
-`SipOutgoingCallClient::stop()` and the independent incoming client release
-the call object before waiting for zero active call slots. This is a
-**lifetime verification risk**, not an observed data race or UAF. See
-`docs/phase8/commit8-source-ownership-review.md`. A Qt-only fake-session
-lifetime regression is pending canonical ThinkPad verification.
+The primary integrity stress uses four producers × 25,000 events and four
+consumers for 100,000 distinct IDs. Atomic per-ID counters detect missing,
+duplicate, malformed, or unexpectedly rejected items without adding a test-side
+data race. Separate tests cover per-producer FIFO and close/drain accounting.
 
-## Commit 10 — bounded PJSIP call-slot polling (not callback quiescence)
+Stress proves the exercised invariants under the observed schedules; it does
+not provide deterministic coverage of all possible thread interleavings.
 
-The two PJSIP clients now share a deterministic, injected polling policy
-for the existing 10ms/2s call-slot wait. Six direct C++ cases exercise its
-success and timeout decisions. `pjsua_call_get_count() == 0` is only an
-observed call-slot count, **not proof of callback thread quiescence**. On
-`shutdown2(force=false)` failure, account cleanup remains an open risk.
-Do not infer runtime callback lifetime correctness or broad PJSIP TSan coverage
-from the added standalone fifth CTest.
+### ThreadSanitizer scope
 
-## As-built owner/thread map at Commit 19 (roadmap review addendum)
+TSan is opt-in for the standalone Phase 8 C++ tests. The verified ThinkPad
+Clang 18 run executes six standalone tests three times each, yielding 18/18
+PASS executions. GCC 13 on the ThinkPad was BLOCKED by runtime memory-mapping
+failure and was not mislabeled as a clean sanitizer run.
 
-- **GUI/application owner:** `GuiViewModel` owns an application `CallManager`.
-  `CallManager` records its constructing thread and asserts that its methods
-  run on that thread (`src/application/CallManager.cpp`). This is an owner-
-  thread contract; assert-only checks are not a runtime race detector.
-- **Existing Qt session worker:** `QtRegistrationBackend` creates a
-  `std::jthread` in `begin_registration()` and serializes calls through its
-  `RegistrationSession`. It relays registration/call/RTP events by
-  `QMetaObject::invokeMethod(..., Qt::QueuedConnection)` onto its QObject
-  thread; Qt signals then reach the `GuiViewModel`/`CallManager`. This flow
-  already existed before the generic Phase 8 queue/worker.
-- **Generic Phase 8 components:** `ThreadSafeQueue<T>` plus
-  `SerialTaskWorker` are separate C++20 components; they own neither
-  PJSIP objects nor Qt UI objects. Stress runs are four producer threads,
-  four consumer threads, 25,000 events per producer. Do not present this
-  queue as the transport for the currently deployed Qt event path.
-- **Sanitizer scope:** Clang18 TSan exercises six standalone C++ tests
-  three times (18 passing runs per the ThinkPad log). It does not
-  instrument Qt, the GUI executable, or the vendor PJSUA2 runtime.
-- **Outstanding safety risks:** the Commit 19 PJSUA2 shutdown integration
-  audit deliberately reports `Integration readiness: BLOCKED` with
-  external callback quiescence and `PJ_EBUSY` recovery unproven. This is
-  a known production lifetime risk, not a demonstrated-safe shutdown.
+TSan does not instrument the Qt GUI executable or vendor PJSUA2 runtime in the
+recorded Phase 8 evidence. Therefore it cannot establish race freedom for those
+unexercised components.
 
-Diagram: [`docs/architecture/threading-diagram.dot`](threading-diagram.dot)
-(rendered at `evidence/07-threading/threading-diagram.png`). Evidence:
-`evidence/07-threading/{stress-test.txt,tsan-report.txt}`. The diagram
-represents code-level control flow, **not** a captured runtime thread trace.
+### Production-path ownership/lifetime verification
+
+Source audits and focused Qt fake-session regressions verify the intended
+ownership/queued-handoff contracts without making live SIP claims. PJSUA2
+shutdown integration audits are fail-closed: the verifier can PASS its audit
+while still reporting integration readiness BLOCKED.
+
+### Final offline runtime acceptance
+
+The recorded ThinkPad acceptance includes canonical 147/147 CTest, Qt worker
+repeats, focused Phase 8 tests, repeated MPMC stress, Clang 18 TSan, non-live
+PJSIP regression, roadmap audit, 40/40 headless GUI startup/exit runs, and
+human preview-mode GUI interaction/normal X-close.
+
+It deliberately does not perform live SIP registration/calls while PJSUA2
+shutdown lifetime risks remain unresolved.
+
+## Design rationale
+
+### Prefer explicit ownership over "thread-safe everywhere"
+
+The design keeps ownership boundaries narrow: application state belongs to its
+owner thread; GUI-facing delivery uses Qt queued invocation; generic workers do
+not gain implicit permission to access Qt or PJSUA2 objects.
+
+### Keep cancellation local unless shutdown is global
+
+A stop request to one queue consumer should not close a shared queue for other
+users. Queue `close()` represents global no-more-work/drain semantics, while a
+stop token represents local waiter cancellation.
+
+### Drain accepted work deterministically
+
+`SerialTaskWorker` uses close-and-drain shutdown so accepted tasks are
+accounted for. The project does not currently expose an abort-pending-work
+mode or bounded backpressure; these limitations are explicit rather than
+hidden.
+
+### Separate evidence scopes
+
+Unit tests, MPMC stress, TSan, source audits, Qt fake-session tests, and offline
+GUI acceptance prove different properties. Phase 8 keeps those scopes
+separate so one passing gate is not used as evidence for an unrelated runtime
+claim.
+
+### Fail closed on unresolved PJSUA2 lifetime questions
+
+A shutdown authorization helper and integration audit exist specifically to
+avoid treating incomplete lifetime evidence as permission to destroy PJSUA2
+objects. BLOCKED/UNPROVEN is an acceptable technical result when the underlying
+library boundary cannot yet be demonstrated safe.
+
+## Phase boundary
+
+Phase 8 establishes a reusable concurrency foundation and a stronger,
+evidence-backed ownership/lifetime model. It proves the exercised queue,
+worker, stress, sanitizer, non-live shutdown-contract, and offline GUI
+acceptance properties recorded in the repository.
+
+Phase 8 does **not** prove:
+
+- that the generic queue transports current Qt/PJSUA2 production events;
+- live PJSUA2 callback quiescence;
+- safe destruction after every shutdown failure;
+- actual `PJ_EBUSY` recovery in the Asterisk lab;
+- universal race freedom;
+- memory leak freedom; or
+- sustained GUI rendering performance.
+
+Those unresolved production PJSUA2 lifetime risks must remain visible at phase
+closure and be carried forward unless new live evidence resolves them.
+
+## References
+
+- `README_roadmap.md`, Phase 8 — Multithreading.
+- `docs/phase8/README.md`.
+- `docs/phase8/roadmap-exit-review.md`.
+- `docs/phase8/final-runtime-acceptance.md`.
+- `docs/architecture/threading-diagram.dot`.
+- `docs/interview/phase8-questions.md`.
+- `evidence/phase8/README.md`.
+- `evidence/07-threading/README.md`.
+- `tests/phase8/`.
+- `scripts/phase8/`.
