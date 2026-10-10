@@ -2,10 +2,10 @@
 """Static review of production PJSUA2 teardown hardening.
 
 Zero means the reviewed explicit-stop result handling, local callback gates,
-and fail-closed destructor policy are present in both real SIP clients and no
-external-quiescence proof is being fabricated. It does NOT mean live teardown
-is proven: raw callback owner references, live callback quiescence, and actual
-PJ_EBUSY recovery remain closure blockers.
+shared callback-owner context, and fail-closed destructor policy are present in
+both real SIP clients and no external-quiescence proof is being fabricated. It
+does NOT mean live teardown is proven: external callback-target quiescence and
+actual PJ_EBUSY recovery remain runtime closure blockers.
 """
 
 from __future__ import annotations
@@ -26,9 +26,7 @@ lifetime = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = lifetime
 spec.loader.exec_module(lifetime)
 
-EXPECTED_REMAINING_RISKS = frozenset({
-    'CALLBACKS_BORROW_OWNER_BY_REFERENCE',
-})
+EXPECTED_REMAINING_RISKS = frozenset()
 
 RESOLVED_EXPLICIT_STOP_RISKS = frozenset({
     'CALL_SLOT_WAIT_RESULT_DISCARDED',
@@ -78,7 +76,7 @@ def evaluate(outgoing: str, incoming: str, authorization_header: str) -> dict:
             'explicit_stop_result_and_gate_risks_resolved': (
                 not (RESOLVED_EXPLICIT_STOP_RISKS & risks)
             ),
-            'one_known_closure_risk_remains': risks == EXPECTED_REMAINING_RISKS,
+            'no_known_source_closure_risks': risks == EXPECTED_REMAINING_RISKS,
             'no_unreviewed_authorization_wiring': not tokens_found,
         }
         per_client[name] = {
@@ -98,6 +96,7 @@ def evaluate(outgoing: str, incoming: str, authorization_header: str) -> dict:
         'explicit_stop_hardening': 'INTEGRATED' if recognized else 'REVIEW_REQUIRED',
         'integration_readiness': 'BLOCKED' if recognized else 'REVIEW_REQUIRED',
         'destructor_failure_policy': 'FAIL_CLOSED_TERMINATE',
+        'callback_owner_lifetime_policy': 'SHARED_CONTEXT_DETACH',
         'live_external_quiescence': 'UNPROVEN',
         'actual_pj_ebusy_recovery': 'UNPROVEN',
         'authorization_header_proofs': header_proofs,
@@ -133,6 +132,7 @@ def main(argv: list[str] | None = None) -> int:
         print('Explicit-stop teardown hardening:', report['explicit_stop_hardening'])
         print('Integration readiness:', report['integration_readiness'])
         print('Destructor failure policy:', report['destructor_failure_policy'])
+        print('Callback owner lifetime policy:', report['callback_owner_lifetime_policy'])
         print('Live external callback quiescence:', report['live_external_quiescence'])
         print('Actual PJ_EBUSY recovery:', report['actual_pj_ebusy_recovery'])
 

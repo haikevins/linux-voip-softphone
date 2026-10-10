@@ -68,6 +68,7 @@ def audit_client(source: str, client: str, account_class: str, call_class: str) 
     checks: dict[str, bool] = {}
     risks: list[str] = []
     try:
+        context = _extract(clean, rf'\bstruct\s+{client}::CallbackContext\b[^{{;]*')
         account = _extract(clean, rf'\bclass\s+{client}::{account_class}\b[^{{;]*')
         call = _extract(clean, rf'\bclass\s+{client}::{call_class}\b[^{{;]*')
         reg = _extract(account, r'\bvoid\s+onRegState\s*\([^)]*\)\s*override')
@@ -85,9 +86,39 @@ def audit_client(source: str, client: str, account_class: str, call_class: str) 
         return {"checks": {"source_parseable": False}, "risks": ["STRUCTURE_UNRECOGNIZED"],
                 "errors": [str(error)]}
 
-    account_entry = 'account_callback_activity_.enter()'
-    call_entry = 'call_callback_activity_.enter()'
+    account_entry = 'context_->account_activity.enter()'
+    call_entry = 'context_->call_activity.enter()'
+
+    def owner_after_admission(body: str, entry: str) -> bool:
+        entry_pos = body.find(entry)
+        admitted_pos = body.find('.admitted()')
+        owner_pos = body.find('context_->owner()')
+        return 0 <= entry_pos < admitted_pos < owner_pos
+
     checks["callbacks_present"] = all([reg, incoming, state, media])
+    checks["callback_context_owner_atomic"] = (
+        f'std::atomic<{client} *> owner_' in context
+        and 'owner_.load(std::memory_order_acquire)' in context
+        and 'owner_.store(nullptr, std::memory_order_release)' in context
+    )
+    checks["callback_context_owns_gates"] = (
+        'detail::CallbackActivityGate account_activity;' in context
+        and 'detail::CallbackActivityGate call_activity;' in context
+    )
+    checks["account_uses_shared_callback_context"] = (
+        'std::shared_ptr<CallbackContext> context_' in account
+        and 'context_(std::move(context))' in account
+    )
+    checks["call_uses_shared_callback_context"] = (
+        'std::shared_ptr<CallbackContext> context_' in call
+        and 'context_(std::move(context))' in call
+    )
+    checks["callbacks_do_not_borrow_owner_reference"] = (
+        'owner_(owner)' not in account
+        and 'owner_(owner)' not in call
+        and f'{client} &owner_' not in account
+        and f'{client} &owner_' not in call
+    )
     checks["registration_callback_gate"] = account_entry in reg and '.admitted()' in reg
     checks["incoming_callback_gate"] = account_entry in incoming and '.admitted()' in incoming
     checks["incoming_rejects_after_gate_close"] = (
@@ -97,33 +128,39 @@ def audit_client(source: str, client: str, account_class: str, call_class: str) 
     )
     checks["state_callback_gate"] = call_entry in state and '.admitted()' in state
     checks["media_callback_gate"] = call_entry in media and '.admitted()' in media
-    checks["incoming_callback_mutex"] = 'incoming_callback_mutex_' in incoming
-    checks["state_callback_mutex"] = 'call_callback_mutex_' in state
-    checks["media_callback_mutex"] = 'call_callback_mutex_' in media
-    checks["callback_owner_reference"] = ('owner_(owner)' in account and 'owner_(owner)' in call)
+    checks["owner_lookup_after_gate_admission"] = all((
+        owner_after_admission(reg, account_entry),
+        owner_after_admission(incoming, account_entry),
+        owner_after_admission(state, call_entry),
+        owner_after_admission(media, call_entry),
+    ))
+    checks["incoming_callback_mutex"] = 'owner->incoming_callback_mutex_' in incoming
+    checks["state_callback_mutex"] = 'owner->call_callback_mutex_' in state
+    checks["media_callback_mutex"] = 'owner->call_callback_mutex_' in media
     checks["polling_uses_real_call_slots"] = (
         'detail::wait_for_zero_call_slots(' in call_cleanup
         and 'pjsua_call_get_count()' in call_cleanup)
     checks["restart_requires_empty_callback_gates"] = (
-        'account_callback_activity_.reset_if_empty()' in start
-        and 'call_callback_activity_.reset_if_empty()' in start)
+        'callback_context_->account_activity.reset_if_empty()' in start
+        and 'callback_context_->call_activity.reset_if_empty()' in start)
     checks["restart_rejects_retained_teardown_state"] = all(token in start for token in (
         'library_created_', 'endpoint_ != nullptr', 'account_ != nullptr', 'call_ != nullptr',
         'retains teardown state'))
     checks["destructor_invokes_stop"] = 'stop();' in destructor
 
-    account_close = stop.find('account_callback_activity_.close()')
+    account_close = stop.find('callback_context_->account_activity.close()')
     account_pre_drain = stop.find(
-        'account_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})')
+        'callback_context_->account_activity.wait_for_empty_for(std::chrono::seconds{2})')
     hangup = stop.find('hangup()')
     disconnect = stop.find('wait_for_disconnection(std::chrono::seconds{2})')
-    call_close = stop.find('call_callback_activity_.close()')
-    call_drain = stop.find('call_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})')
+    call_close = stop.find('callback_context_->call_activity.close()')
+    call_drain = stop.find(
+        'callback_context_->call_activity.wait_for_empty_for(std::chrono::seconds{2})')
     slot_wait = stop.find('wait_for_call_cleanup(std::chrono::seconds{2})')
     call_reset = stop.find('call_.reset()')
     account_shutdown_pos = stop.find('shutdown_account_safely()')
     account_post_drain = stop.find(
-        'account_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})',
+        'callback_context_->account_activity.wait_for_empty_for(std::chrono::seconds{2})',
         account_pre_drain + 1)
     account_reset = stop.find('account_.reset()')
     lib_destroy = stop.find('endpoint_->libDestroy()')
@@ -161,6 +198,13 @@ def audit_client(source: str, client: str, account_class: str, call_class: str) 
         r'endpoint_\s*!=\s*nullptr\s*\|\|\s*account_\s*!=\s*nullptr\s*\|\|\s*'
         r'call_\s*!=\s*nullptr\s*\)\s*\{[^}]*std::terminate\(\);',
         destructor, re.DOTALL))
+    terminate_pos = destructor.find('std::terminate()')
+    detach_pos = destructor.find('callback_context_->detach_owner()')
+    checks["destructor_detaches_callback_owner"] = (
+        checks["destructor_fails_closed_after_stop"]
+        and terminate_pos >= 0
+        and detach_pos > terminate_pos
+    )
     checks["non_forced_account_shutdown"] = (
         'parameter.force = false;' in account_shutdown
         and 'account_->shutdown2(parameter)' in account_shutdown
@@ -183,10 +227,16 @@ def audit_client(source: str, client: str, account_class: str, call_class: str) 
     if not checks["destructor_fails_closed_after_stop"]:
         risks.append('ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE')
 
-    if 'owner_(owner)' in account or 'owner_(owner)' in call:
-        # Local entry/drain accounting narrows the overlap but does not prove
-        # that PJSUA2 can never invoke the derived target after owner lifetime.
+    if not checks["callbacks_do_not_borrow_owner_reference"]:
         risks.append('CALLBACKS_BORROW_OWNER_BY_REFERENCE')
+    if not all(checks[key] for key in (
+            "callback_context_owner_atomic", "callback_context_owns_gates",
+            "account_uses_shared_callback_context", "call_uses_shared_callback_context",
+            "owner_lookup_after_gate_admission", "destructor_detaches_callback_owner")):
+        # This is an offline owner-lifetime contract only. It prevents callbacks
+        # that reach a still-live derived target from dereferencing a destroyed
+        # client. It does not prove PJSUA2 will never invoke a destroyed target.
+        risks.append('CALLBACK_OWNER_CONTEXT_UNSAFE')
 
     return {"checks": checks, "risks": sorted(set(risks)), "errors": []}
 
@@ -198,7 +248,7 @@ def audit_pair(outgoing: str, incoming: str) -> dict:
     }
     passed = all(all(item['checks'].values()) and not item['errors'] for item in clients.values())
     return {
-        "baseline": "f555976",
+        "baseline": "b8cca4c",
         "kind": "STATIC_SOURCE_CONTRACT_ONLY",
         "source_contract": "PASS" if passed else "FAIL",
         "live_callback_quiescence": "INCONCLUSIVE",

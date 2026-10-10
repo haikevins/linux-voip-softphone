@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# A deterministic failure-path MODEL gate + a bounded inventory of current
-# production hazards. Neither part establishes live PJSUA2 callback quiescence.
+# A deterministic failure-path MODEL gate + the current production source
+# closure inventory. Neither part establishes live PJSUA2 callback-target
+# quiescence or actual PJ_EBUSY recovery.
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 FOCUSED="${PHASE8_BUILD_DIR:-$ROOT/build/phase8-queue-debug}"
 CANONICAL="${PHASE8_CANONICAL_BUILD_DIR:-$ROOT/build/qt-pjsip-gui-debug}"
@@ -43,24 +44,17 @@ result = audit.audit_pair(outgoing, incoming)
 if result['source_contract'] != 'PASS':
     raise SystemExit('ABORT: production source structure changed; re-audit before proceeding')
 
-unresolved = {
-    'CALL_SLOT_WAIT_RESULT_DISCARDED',
-    'ACCOUNT_SHUTDOWN_RESULT_DISCARDED',
-    'ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE',
-    'REGISTRATION_CALLBACK_NO_TEARDOWN_GATE',
-    'NO_PRODUCTION_CALLBACK_ACTIVITY_GATE',
-    'CALLBACKS_BORROW_OWNER_BY_REFERENCE',
-}
 for client, state in result['clients'].items():
-    missing = unresolved.difference(state['risks'])
-    if missing:
+    if state['risks']:
         raise SystemExit(
-            f'ABORT: {client} known-risk inventory changed; review {sorted(missing)}'
+            f'ABORT: {client} source closure risk inventory is not empty: '
+            f'{sorted(state["risks"])}'
         )
-    print(f'{client}: six known shutdown/callback lifetime risks OPEN (not repaired)')
+    print(f'{client}: 0 known source closure risks OPEN')
 
-print('PASS: production failure-path risk inventory (known risks remain OPEN)')
-print('Live PJSUA2 callback quiescence: NOT TESTED')
+print('PASS: production source closure inventory (offline structural contract)')
+print('Live PJSUA2 callback-target quiescence: NOT TESTED')
+print('Actual PJ_EBUSY recovery: NOT TESTED')
 PY
 
 echo '===== FOCUSED MODEL TARGET ====='

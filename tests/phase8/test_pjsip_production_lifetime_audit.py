@@ -38,22 +38,21 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
         self.assertEqual('INCONCLUSIVE', result['live_callback_quiescence'])
         for item in result['clients'].values():
             self.assertEqual([], item['errors'])
-            self.assertGreaterEqual(len(item['checks']), 20)
+            self.assertGreaterEqual(len(item['checks']), 25)
             self.assertTrue(all(item['checks'].values()))
 
-    def test_both_clients_retain_only_callback_owner_closure_risk(self):
+    def test_both_clients_have_no_known_source_closure_risks(self):
         result = self.run_audit()
-        expected = {
-            'CALLBACKS_BORROW_OWNER_BY_REFERENCE',
-        }
         resolved = {
+            'ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE',
             'ACCOUNT_SHUTDOWN_RESULT_DISCARDED',
+            'CALLBACKS_BORROW_OWNER_BY_REFERENCE',
             'CALL_SLOT_WAIT_RESULT_DISCARDED',
             'NO_PRODUCTION_CALLBACK_ACTIVITY_GATE',
             'REGISTRATION_CALLBACK_NO_TEARDOWN_GATE',
         }
         for item in result['clients'].values():
-            self.assertEqual(expected, set(item['risks']))
+            self.assertEqual([], item['risks'])
             self.assertTrue(resolved.isdisjoint(item['risks']))
 
     def test_call_slot_result_must_veto_call_release(self):
@@ -84,7 +83,7 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
         reg_old = (
             '    void onRegState(pj::OnRegStateParam &parameter) override\n'
             '    {\n'
-            '        auto callback_entry = owner_.account_callback_activity_.enter();\n'
+            '        auto callback_entry = context_->account_activity.enter();\n'
             '        if (!callback_entry.admitted()) {\n'
             '            return;\n'
             '        }\n\n')
@@ -97,25 +96,33 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
 
         no_incoming_lock = self.replace_once(
             self.original_incoming,
-            'const std::lock_guard callback_lock{owner_.incoming_callback_mutex_};',
+            'const std::lock_guard callback_lock{owner->incoming_callback_mutex_};',
             '/* incoming callback lock removed */')
         self.assertFalse(
             self.run_audit(incoming=no_incoming_lock)['clients']['incoming']['checks'][
                 'incoming_callback_mutex'])
 
         media_old = (
-            'void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override\n'
+            '    void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override\n'
             '    {\n'
-            '        auto callback_entry = owner_.call_callback_activity_.enter();\n'
+            '        auto callback_entry = context_->call_activity.enter();\n'
             '        if (!callback_entry.admitted()) {\n'
             '            return;\n'
             '        }\n\n'
-            '        const std::lock_guard callback_lock{owner_.call_callback_mutex_};')
+            '        auto *owner = context_->owner();\n'
+            '        if (owner == nullptr) {\n'
+            '            return;\n'
+            '        }\n\n'
+            '        const std::lock_guard callback_lock{owner->call_callback_mutex_};')
         media_new = (
-            'void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override\n'
+            '    void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override\n'
             '    {\n'
-            '        auto callback_entry = owner_.call_callback_activity_.enter();\n'
+            '        auto callback_entry = context_->call_activity.enter();\n'
             '        if (!callback_entry.admitted()) {\n'
+            '            return;\n'
+            '        }\n\n'
+            '        auto *owner = context_->owner();\n'
+            '        if (owner == nullptr) {\n'
             '            return;\n'
             '        }')
         no_media_lock = self.replace_once(self.original_outgoing, media_old, media_new)
@@ -151,8 +158,8 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
     def test_restart_requires_drained_gates_and_no_retained_teardown_state(self):
         no_gate_reset = self.replace_once(
             self.original_outgoing,
-            '    if (!account_callback_activity_.reset_if_empty() ||\n'
-            '        !call_callback_activity_.reset_if_empty()) {\n'
+            '    if (!callback_context_->account_activity.reset_if_empty() ||\n'
+            '        !callback_context_->call_activity.reset_if_empty()) {\n'
             '        throw std::logic_error("SIP outgoing callback activity did not drain before restart");\n'
             '    }\n',
             '')
@@ -179,6 +186,7 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
             '        std::fputs("PJSIP outgoing client teardown could not prove safe destruction\\n", stderr);\n'
             '        std::terminate();\n'
             '    }\n'
+            '    callback_context_->detach_owner();\n'
             '}')
         modified = self.replace_once(
             self.original_outgoing, old,
@@ -187,6 +195,58 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
         self.assertFalse(
             result['clients']['outgoing']['checks']['destructor_fails_closed_after_stop'])
         self.assertIn('ACCOUNT_DESTROYED_AFTER_POSSIBLE_SHUTDOWN_FAILURE',
+                      result['clients']['outgoing']['risks'])
+        self.assertEqual('FAIL', result['source_contract'])
+
+    def test_callback_owner_lookup_must_follow_gate_admission(self):
+        old = (
+            '        auto callback_entry = context_->account_activity.enter();\n'
+            '        if (!callback_entry.admitted()) {\n'
+            '            return;\n'
+            '        }\n\n'
+            '        auto *owner = context_->owner();\n'
+            '        if (owner == nullptr) {\n'
+            '            return;\n'
+            '        }')
+        new = (
+            '        auto *owner = context_->owner();\n'
+            '        auto callback_entry = context_->account_activity.enter();\n'
+            '        if (!callback_entry.admitted() || owner == nullptr) {\n'
+            '            return;\n'
+            '        }')
+        modified = self.replace_once(self.original_incoming, old, new)
+        result = self.run_audit(incoming=modified)
+        self.assertFalse(
+            result['clients']['incoming']['checks']['owner_lookup_after_gate_admission'])
+        self.assertIn('CALLBACK_OWNER_CONTEXT_UNSAFE', result['clients']['incoming']['risks'])
+        self.assertEqual('FAIL', result['source_contract'])
+
+    def test_callback_owner_context_must_detach_on_safe_destruction(self):
+        modified = self.replace_once(
+            self.original_outgoing, '    callback_context_->detach_owner();\n', '')
+        result = self.run_audit(outgoing=modified)
+        self.assertFalse(
+            result['clients']['outgoing']['checks']['destructor_detaches_callback_owner'])
+        self.assertIn('CALLBACK_OWNER_CONTEXT_UNSAFE', result['clients']['outgoing']['risks'])
+        self.assertEqual('FAIL', result['source_contract'])
+
+    def test_raw_owner_reference_reintroduction_is_rejected(self):
+        old = (
+            '  private:\n'
+            '    std::shared_ptr<CallbackContext> context_;\n'
+            '};\n\n'
+            'class SipOutgoingCallClient::TrackedCall final')
+        new = (
+            '  private:\n'
+            '    std::shared_ptr<CallbackContext> context_;\n'
+            '    SipOutgoingCallClient &owner_;\n'
+            '};\n\n'
+            'class SipOutgoingCallClient::TrackedCall final')
+        modified = self.replace_once(self.original_outgoing, old, new)
+        result = self.run_audit(outgoing=modified)
+        self.assertFalse(
+            result['clients']['outgoing']['checks']['callbacks_do_not_borrow_owner_reference'])
+        self.assertIn('CALLBACKS_BORROW_OWNER_BY_REFERENCE',
                       result['clients']['outgoing']['risks'])
         self.assertEqual('FAIL', result['source_contract'])
 

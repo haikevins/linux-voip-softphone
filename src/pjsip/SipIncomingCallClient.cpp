@@ -1,9 +1,11 @@
 #include "pjsip/SipIncomingCallClient.hpp"
 
+#include "pjsip/CallbackActivityGate.hpp"
 #include "pjsip/PjsipCallSlotCleanup.hpp"
 #include "pjsip/Pjsua2AudioDeviceManager.hpp"
 #include "pjsip/Pjsua2CallAudioBridge.hpp"
 
+#include <atomic>
 #include <cstdio>
 #include <exception>
 #include <pjsua-lib/pjsua.h>
@@ -13,32 +15,60 @@
 
 namespace voip::pjsip {
 
+struct SipIncomingCallClient::CallbackContext final
+{
+    explicit CallbackContext(SipIncomingCallClient &owner) noexcept : owner_(&owner) {}
+
+    [[nodiscard]] SipIncomingCallClient *owner() const noexcept
+    {
+        return owner_.load(std::memory_order_acquire);
+    }
+
+    void detach_owner() noexcept
+    {
+        owner_.store(nullptr, std::memory_order_release);
+    }
+
+    detail::CallbackActivityGate account_activity;
+    detail::CallbackActivityGate call_activity;
+
+  private:
+    std::atomic<SipIncomingCallClient *> owner_;
+};
+
 class SipIncomingCallClient::IncomingAccount final : public pj::Account
 {
   public:
-    explicit IncomingAccount(SipIncomingCallClient &owner) : owner_(owner) {}
+    explicit IncomingAccount(std::shared_ptr<CallbackContext> context)
+        : context_(std::move(context))
+    {}
 
     void onRegState(pj::OnRegStateParam &parameter) override
     {
-        auto callback_entry = owner_.account_callback_activity_.enter();
+        auto callback_entry = context_->account_activity.enter();
         if (!callback_entry.admitted()) {
             return;
         }
 
+        auto *owner = context_->owner();
+        if (owner == nullptr) {
+            return;
+        }
+
         try {
-            owner_.on_registration_state(parameter, getInfo());
+            owner->on_registration_state(parameter, getInfo());
         } catch (const pj::Error &error) {
-            owner_.on_registration_callback_error(error.info());
+            owner->on_registration_callback_error(error.info());
         } catch (const std::exception &error) {
-            owner_.on_registration_callback_error(error.what());
+            owner->on_registration_callback_error(error.what());
         } catch (...) {
-            owner_.on_registration_callback_error("unknown registration callback failure");
+            owner->on_registration_callback_error("unknown registration callback failure");
         }
     }
 
     void onIncomingCall(pj::OnIncomingCallParam &parameter) override
     {
-        auto callback_entry = owner_.account_callback_activity_.enter();
+        auto callback_entry = context_->account_activity.enter();
         if (!callback_entry.admitted()) {
             try {
                 pj::Call rejected_call{*this, parameter.callId};
@@ -51,72 +81,88 @@ class SipIncomingCallClient::IncomingAccount final : public pj::Account
             return;
         }
 
-        const std::lock_guard callback_lock{owner_.incoming_callback_mutex_};
+        auto *owner = context_->owner();
+        if (owner == nullptr) {
+            return;
+        }
+
+        const std::lock_guard callback_lock{owner->incoming_callback_mutex_};
 
         try {
-            owner_.on_incoming_call(*this, parameter.callId);
+            owner->on_incoming_call(*this, parameter.callId);
         } catch (const pj::Error &error) {
-            owner_.on_incoming_callback_error(error.info());
+            owner->on_incoming_callback_error(error.info());
         } catch (const std::exception &error) {
-            owner_.on_incoming_callback_error(error.what());
+            owner->on_incoming_callback_error(error.what());
         } catch (...) {
-            owner_.on_incoming_callback_error("unknown incoming call callback failure");
+            owner->on_incoming_callback_error("unknown incoming call callback failure");
         }
     }
 
   private:
-    SipIncomingCallClient &owner_;
+    std::shared_ptr<CallbackContext> context_;
 };
 
 class SipIncomingCallClient::TrackedIncomingCall final : public pj::Call
 {
   public:
-    TrackedIncomingCall(pj::Account &account, SipIncomingCallClient &owner, const int call_id)
-        : pj::Call(account, call_id), owner_(owner)
+    TrackedIncomingCall(pj::Account &account, std::shared_ptr<CallbackContext> context,
+                        const int call_id)
+        : pj::Call(account, call_id), context_(std::move(context))
     {}
 
     void onCallState(pj::OnCallStateParam & /*parameter*/) override
     {
-        auto callback_entry = owner_.call_callback_activity_.enter();
+        auto callback_entry = context_->call_activity.enter();
         if (!callback_entry.admitted()) {
             return;
         }
 
-        const std::lock_guard callback_lock{owner_.call_callback_mutex_};
+        auto *owner = context_->owner();
+        if (owner == nullptr) {
+            return;
+        }
+
+        const std::lock_guard callback_lock{owner->call_callback_mutex_};
 
         try {
-            owner_.on_call_state(getInfo());
+            owner->on_call_state(getInfo());
         } catch (const pj::Error &error) {
-            owner_.on_call_callback_error(error.info());
+            owner->on_call_callback_error(error.info());
         } catch (const std::exception &error) {
-            owner_.on_call_callback_error(error.what());
+            owner->on_call_callback_error(error.what());
         } catch (...) {
-            owner_.on_call_callback_error("unknown incoming call state callback failure");
+            owner->on_call_callback_error("unknown incoming call state callback failure");
         }
     }
 
     void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override
     {
-        auto callback_entry = owner_.call_callback_activity_.enter();
+        auto callback_entry = context_->call_activity.enter();
         if (!callback_entry.admitted()) {
             return;
         }
 
-        const std::lock_guard callback_lock{owner_.call_callback_mutex_};
+        auto *owner = context_->owner();
+        if (owner == nullptr) {
+            return;
+        }
+
+        const std::lock_guard callback_lock{owner->call_callback_mutex_};
 
         try {
-            owner_.on_call_media_state(*this);
+            owner->on_call_media_state(*this);
         } catch (const pj::Error &error) {
-            owner_.on_call_media_callback_error(error.info());
+            owner->on_call_media_callback_error(error.info());
         } catch (const std::exception &error) {
-            owner_.on_call_media_callback_error(error.what());
+            owner->on_call_media_callback_error(error.what());
         } catch (...) {
-            owner_.on_call_media_callback_error("unknown incoming call media callback failure");
+            owner->on_call_media_callback_error("unknown incoming call media callback failure");
         }
     }
 
   private:
-    SipIncomingCallClient &owner_;
+    std::shared_ptr<CallbackContext> context_;
 };
 
 SipIncomingCallClient::SipIncomingCallClient(SipEndpointConfig endpoint_config,
@@ -128,7 +174,8 @@ SipIncomingCallClient::SipIncomingCallClient(SipEndpointConfig endpoint_config,
                                              SipAccountConfig account_config,
                                              SipCallAudioConfig audio_config)
     : endpoint_config_(endpoint_config), account_config_(std::move(account_config)),
-      audio_config_(std::move(audio_config))
+      audio_config_(std::move(audio_config)),
+      callback_context_(std::make_shared<CallbackContext>(*this))
 {}
 
 SipIncomingCallClient::~SipIncomingCallClient()
@@ -138,6 +185,7 @@ SipIncomingCallClient::~SipIncomingCallClient()
         std::fputs("PJSIP incoming client teardown could not prove safe destruction\n", stderr);
         std::terminate();
     }
+    callback_context_->detach_owner();
 }
 
 void SipIncomingCallClient::start()
@@ -148,8 +196,8 @@ void SipIncomingCallClient::start()
     if (library_created_ || endpoint_ != nullptr || account_ != nullptr || call_ != nullptr) {
         throw std::logic_error("SIP incoming call client retains teardown state");
     }
-    if (!account_callback_activity_.reset_if_empty() ||
-        !call_callback_activity_.reset_if_empty()) {
+    if (!callback_context_->account_activity.reset_if_empty() ||
+        !callback_context_->call_activity.reset_if_empty()) {
         throw std::logic_error("SIP incoming callback activity did not drain before restart");
     }
     if (!account_config_.register_on_add) {
@@ -196,7 +244,7 @@ void SipIncomingCallClient::start()
         auto pjsua2_account_config = account_config_.to_pjsua2_account_config();
         pjsua2_account_config.sipConfig.transportId = transport_id;
 
-        account_ = std::make_unique<IncomingAccount>(*this);
+        account_ = std::make_unique<IncomingAccount>(callback_context_);
         account_->create(pjsua2_account_config);
         started_ = true;
     } catch (...) {
@@ -221,8 +269,8 @@ void SipIncomingCallClient::stop() noexcept
         return;
     }
 
-    account_callback_activity_.close();
-    if (!account_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})) {
+    callback_context_->account_activity.close();
+    if (!callback_context_->account_activity.wait_for_empty_for(std::chrono::seconds{2})) {
         std::fputs("PJSIP incoming account callbacks did not drain before call shutdown\n", stderr);
         return;
     }
@@ -241,8 +289,8 @@ void SipIncomingCallClient::stop() noexcept
         }
     }
 
-    call_callback_activity_.close();
-    if (!call_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})) {
+    callback_context_->call_activity.close();
+    if (!callback_context_->call_activity.wait_for_empty_for(std::chrono::seconds{2})) {
         std::fputs("PJSIP incoming call callbacks did not drain during shutdown\n", stderr);
         return;
     }
@@ -261,7 +309,7 @@ void SipIncomingCallClient::stop() noexcept
     if (!shutdown_account_safely()) {
         return;
     }
-    if (!account_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})) {
+    if (!callback_context_->account_activity.wait_for_empty_for(std::chrono::seconds{2})) {
         std::fputs("PJSIP incoming account callbacks did not drain after account shutdown\n",
                    stderr);
         return;
@@ -511,7 +559,7 @@ void SipIncomingCallClient::on_incoming_call(pj::Account &account, const int cal
             return;
         }
 
-        call_ = std::make_unique<TrackedIncomingCall>(account, *this, call_id);
+        call_ = std::make_unique<TrackedIncomingCall>(account, callback_context_, call_id);
         const auto info = call_->getInfo();
         remote_uri = info.remoteUri;
         state = info.stateText;

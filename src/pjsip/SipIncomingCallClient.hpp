@@ -1,6 +1,5 @@
 #pragma once
 
-#include "pjsip/CallbackActivityGate.hpp"
 #include "pjsip/Pjsua2RtpDiagnostics.hpp"
 #include "pjsip/SipAccountConfig.hpp"
 #include "pjsip/SipCallAudioConfig.hpp"
@@ -54,6 +53,7 @@ class SipIncomingCallClient
     [[nodiscard]] bool wait_for_disconnection(std::chrono::milliseconds timeout);
 
   private:
+    struct CallbackContext;
     class IncomingAccount;
     class TrackedIncomingCall;
 
@@ -71,6 +71,7 @@ class SipIncomingCallClient
     SipEndpointConfig endpoint_config_;
     SipAccountConfig account_config_;
     SipCallAudioConfig audio_config_;
+    std::shared_ptr<CallbackContext> callback_context_;
     std::unique_ptr<pj::Endpoint> endpoint_;
     std::unique_ptr<IncomingAccount> account_;
     std::unique_ptr<TrackedIncomingCall> call_;
@@ -89,9 +90,6 @@ class SipIncomingCallClient
     bool incoming_complete_{false};
     bool call_complete_{false};
     bool call_disconnected_{false};
-
-    detail::CallbackActivityGate account_callback_activity_;
-    detail::CallbackActivityGate call_callback_activity_;
 
     bool library_created_{false};
     bool started_{false};

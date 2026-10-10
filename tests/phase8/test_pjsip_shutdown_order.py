@@ -42,9 +42,9 @@ def _one(body: str, marker: str, name: str) -> int:
 def verify_order(source: str, name: str) -> None:
     body = shutdown_body(source, name)
 
-    account_close = _one(body, 'account_callback_activity_.close();', name)
+    account_close = _one(body, 'callback_context_->account_activity.close();', name)
     account_wait_marker = (
-        'account_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})'
+        'callback_context_->account_activity.wait_for_empty_for(std::chrono::seconds{2})'
     )
     if body.count(account_wait_marker) != 2:
         raise ValueError(f'{name}: expected two account callback drain waits')
@@ -52,10 +52,10 @@ def verify_order(source: str, name: str) -> None:
 
     hangup = _one(body, 'hangup();', name)
     disconnected = _one(body, 'wait_for_disconnection(std::chrono::seconds{2})', name)
-    call_close = _one(body, 'call_callback_activity_.close();', name)
+    call_close = _one(body, 'callback_context_->call_activity.close();', name)
     call_wait = _one(
         body,
-        'call_callback_activity_.wait_for_empty_for(std::chrono::seconds{2})',
+        'callback_context_->call_activity.wait_for_empty_for(std::chrono::seconds{2})',
         name,
     )
     slot_wait = _one(body, 'wait_for_call_cleanup(std::chrono::seconds{2})', name)

@@ -37,24 +37,22 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         self.assertEqual(original.count(before), 1, 'mutation fixture anchor changed')
         return original.replace(before, after, 1)
 
-    def test_real_clients_are_hardened_but_still_blocked(self):
+    def test_real_clients_have_no_known_source_risks_but_remain_blocked(self):
         result = self.evaluate()
         self.assertEqual(result['audit_contract'], 'PASS')
         self.assertEqual(result['explicit_stop_hardening'], 'INTEGRATED')
         self.assertEqual(result['integration_readiness'], 'BLOCKED')
         self.assertEqual(result['destructor_failure_policy'], 'FAIL_CLOSED_TERMINATE')
+        self.assertEqual(result['callback_owner_lifetime_policy'], 'SHARED_CONTEXT_DETACH')
         self.assertEqual(result['live_external_quiescence'], 'UNPROVEN')
         self.assertEqual(result['actual_pj_ebusy_recovery'], 'UNPROVEN')
 
-    def test_both_clients_retain_exactly_one_known_closure_risk(self):
+    def test_both_clients_have_zero_known_source_closure_risks(self):
         result = self.evaluate()
-        expected = {
-            'CALLBACKS_BORROW_OWNER_BY_REFERENCE',
-        }
         self.assertEqual(set(result['clients']), {'incoming', 'outgoing'})
         for item in result['clients'].values():
             self.assertTrue(all(item['checks'].values()))
-            self.assertEqual(set(item['open_risks']), expected)
+            self.assertEqual(item['open_risks'], [])
             self.assertEqual(item['unreviewed_tokens'], [])
 
     def test_four_proofs_in_header_are_independent_labels(self):
@@ -143,7 +141,35 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
             '',
         )
         report = self.evaluate(outgoing=changed)
-        self.assertFalse(report['clients']['outgoing']['checks']['one_known_closure_risk_remains'])
+        self.assertFalse(report['clients']['outgoing']['checks']['no_known_source_closure_risks'])
+        self.assertEqual(report['integration_readiness'], 'REVIEW_REQUIRED')
+
+    def test_callback_owner_detach_removal_requires_fresh_review(self):
+        changed = self.changed(
+            self.incoming, '    callback_context_->detach_owner();\n', '')
+        report = self.evaluate(incoming=changed)
+        self.assertFalse(report['clients']['incoming']['checks']['no_known_source_closure_risks'])
+        self.assertEqual(report['integration_readiness'], 'REVIEW_REQUIRED')
+
+    def test_callback_owner_lookup_before_admission_requires_review(self):
+        before = (
+            '        auto callback_entry = context_->account_activity.enter();\n'
+            '        if (!callback_entry.admitted()) {\n'
+            '            return;\n'
+            '        }\n\n'
+            '        auto *owner = context_->owner();\n'
+            '        if (owner == nullptr) {\n'
+            '            return;\n'
+            '        }')
+        after = (
+            '        auto *owner = context_->owner();\n'
+            '        auto callback_entry = context_->account_activity.enter();\n'
+            '        if (!callback_entry.admitted() || owner == nullptr) {\n'
+            '            return;\n'
+            '        }')
+        changed = self.changed(self.outgoing, before, after)
+        report = self.evaluate(outgoing=changed)
+        self.assertFalse(report['clients']['outgoing']['checks']['no_known_source_closure_risks'])
         self.assertEqual(report['integration_readiness'], 'REVIEW_REQUIRED')
 
     def test_json_cli_does_not_report_ready(self):
@@ -156,6 +182,7 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         self.assertEqual(report['explicit_stop_hardening'], 'INTEGRATED')
         self.assertEqual(report['integration_readiness'], 'BLOCKED')
         self.assertEqual(report['destructor_failure_policy'], 'FAIL_CLOSED_TERMINATE')
+        self.assertEqual(report['callback_owner_lifetime_policy'], 'SHARED_CONTEXT_DETACH')
         self.assertEqual(report['audit_contract'], 'PASS')
 
     def test_require_ready_cli_fails_closed(self):
@@ -166,6 +193,7 @@ class ShutdownIntegrationContractTest(unittest.TestCase):
         self.assertEqual(result.returncode, 3, result.stderr)
         self.assertIn('Integration readiness: BLOCKED', result.stdout)
         self.assertIn('Destructor failure policy: FAIL_CLOSED_TERMINATE', result.stdout)
+        self.assertIn('Callback owner lifetime policy: SHARED_CONTEXT_DETACH', result.stdout)
 
 
 if __name__ == '__main__':
