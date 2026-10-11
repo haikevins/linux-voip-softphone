@@ -210,7 +210,7 @@ Primary guide: `docs/phase7/README.md`.
 - owned `SerialTaskWorker`;
 - deterministic queue/worker tests;
 - repeated 100,000-event MPMC stress;
-- standalone Clang 18 ThreadSanitizer verification;
+- Clang 18 ThreadSanitizer verification;
 - Qt/PJSUA2 ownership and callback-lifetime audits;
 - shutdown-order/failure-path hardening;
 - controlled live PJSUA2 lifecycle evidence.
@@ -227,7 +227,7 @@ The reusable queue/worker is verified independently; it is not retroactively cla
 
 There is no separate Phase 8 release tag in the current roadmap. Phase 9 starts only after explicit maintainer acceptance.
 
-Primary guide: `docs/phase8/README.md`. Evidence index: `evidence/phase8/README.md`. Roadmap evidence anchors: `roadmap-stress-test.txt`, `roadmap-tsan-report.txt`, and `threading-diagram.png`.
+Primary guide: `docs/phase8/README.md`. Evidence index: `evidence/phase8/README.md`.
 
 ## Phase 9 — Debugging, memory & core dump
 

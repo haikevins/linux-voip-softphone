@@ -9,8 +9,8 @@ import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPT = ROOT / 'scripts/phase8/audit-pjsip-shutdown-integration.py'
-spec = importlib.util.spec_from_file_location('phase8_integration_blocker_audit', SCRIPT)
+SCRIPT = ROOT / 'tests/integration/support/pjsip_shutdown_integration_audit.py'
+spec = importlib.util.spec_from_file_location('pjsip_integration_blocker_audit', SCRIPT)
 if spec is None or spec.loader is None:
     raise RuntimeError('cannot import Phase 8 integration contract')
 audit = importlib.util.module_from_spec(spec)

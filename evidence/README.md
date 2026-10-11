@@ -42,7 +42,7 @@ evidence/
 
 A phase may contain additional scenario directories or artifacts when they represent a real verification boundary. Symmetry between phases is not required.
 
-Historical per-commit/checkpoint artifacts that remain useful for provenance but are no longer part of the phase's current/core evidence may be grouped under `history/`. Moving such files is organizational only: preserve their bytes, record the move, and keep the phase README focused on the current evidence boundary.
+Commit-by-commit/checkpoint history belongs in Git history. The current evidence tree keeps only the concise artifacts needed to support milestone claims and reproducible verification.
 
 ## Phase README schema
 
@@ -74,24 +74,11 @@ Scenario-specific READMEs use:
 ## References
 ```
 
-Historical evidence indexes use:
-
-```text
-## Purpose
-## Contents
-## Provenance
-## Retention
-## Security and redaction
-## References
-```
-
 ## Retention policy
 
 Keep an artifact when it provides useful historical proof that cannot be replaced by a short summary alone. Prefer small, deterministic, sanitized artifacts over complete terminal transcripts.
 
-Historical evidence remains provenance-sensitive: identical content in two phases is not automatically redundant if each file records a distinct milestone run.
-
-New evidence should avoid large logs when a concise summary plus a reproducible verification command is sufficient.
+Do not retain per-commit progress logs when Git history already preserves them. New evidence should avoid large logs when a concise summary plus a reproducible verification command is sufficient.
 
 ## Security and redaction
 

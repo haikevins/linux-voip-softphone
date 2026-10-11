@@ -7,7 +7,7 @@ Use the repository implementation, documentation, tests, and evidence as the bas
 - `ThreadSafeQueue<T>` semantics and ownership
 - `SerialTaskWorker` lifecycle
 - repeated MPMC stress verification
-- standalone ThreadSanitizer scope
+- selected ThreadSanitizer scope
 - Qt owner-thread handoff
 - PJSUA2 callback/lifetime boundaries
 - fail-closed shutdown authorization
@@ -45,7 +45,7 @@ For the observed runs it verifies that multiple producers and consumers transfer
 
 #### Why is a passing TSan run not proof that the softphone is race-free?
 
-The recorded Clang 18 TSan gate instruments the standalone Phase 8 C++ tests, not every Qt/PJSUA2 runtime path. It is strong evidence for exercised code only.
+The recorded Clang 18 TSan gate instruments six selected C++ tests, not every Qt/PJSUA2 runtime path. It is strong evidence for exercised code only.
 
 #### Why was GCC 13 TSan recorded as BLOCKED instead of PASS?
 
@@ -65,9 +65,9 @@ It reports observed PJSUA call-slot state. It does not prove that every external
 
 It makes the policy decision explicit: teardown/integration is authorized only when modeled preconditions establish a safe-enough state. Unresolved shutdown failures, stale results, external callback activity, or uncertain ownership fail closed instead of being assumed safe.
 
-#### Why can the roadmap exit audit PASS while integration readiness is BLOCKED?
+#### Why can offline verification PASS while integration readiness is BLOCKED?
 
-They answer different questions. The roadmap audit checks that required source, tests, documentation, and evidence exist and are internally consistent. Integration readiness asks whether production PJSUA2 shutdown has enough evidence for a stronger safety claim. Phase 8 intentionally preserves `BLOCKED/UNPROVEN` for the latter.
+They answer different questions. Offline tests verify the queue/worker and reviewed source contracts. Integration readiness asks whether production PJSUA2 shutdown has enough live evidence for a stronger safety claim. Phase 8 intentionally preserves `BLOCKED/UNPROVEN` for the latter.
 
 ### Verification boundary
 
@@ -85,11 +85,7 @@ Phase 9 must not be treated as started until Phase 8 is explicitly accepted.
 
 - `docs/phase8/README.md`
 - `docs/architecture/threading-model.md`
-- `docs/phase8/roadmap-exit-review.md`
-- `docs/phase8/final-runtime-acceptance.md`
 - `evidence/phase8/README.md`
-- `evidence/phase8/roadmap-closure.md`
 - `tests/unit/`
 - `tests/integration/`
-- `cmake/phase8-focused/`
 - `scripts/phase8/`
