@@ -223,6 +223,12 @@ add_plain_cpp_test(
     "threading;pjsip;unit;tsan"
 )
 add_plain_cpp_test(
+    pjsip_account_shutdown_attempt_tests
+    unit/test_pjsip_account_shutdown_attempt.cpp
+    PjsipAccountShutdownAttemptTest
+    "threading;pjsip;unit"
+)
+add_plain_cpp_test(
     pjsip_callback_activity_tests
     unit/test_pjsip_callback_activity.cpp
     PjsipCallbackActivityTest

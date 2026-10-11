@@ -1,6 +1,7 @@
 #include "pjsip/SipRegistrationClient.hpp"
 
 #include "pjsip/CallbackActivityGate.hpp"
+#include "pjsip/PjsipAccountShutdownAttempt.hpp"
 
 #include <atomic>
 #include <cstdio>
@@ -192,17 +193,19 @@ bool SipRegistrationClient::shutdown_account_safely() noexcept
     pj::AccountShutdownParam parameter;
     parameter.force = false;
 
-    try {
-        account_->shutdown2(parameter);
-        return true;
-    } catch (const pj::Error &error) {
-        std::fprintf(stderr, "PJSIP registration account shutdown failed: %s\n",
-                     error.info().c_str());
-        return false;
-    } catch (...) {
-        std::fputs("PJSIP registration account shutdown failed during cleanup\n", stderr);
+    const bool shutdown_ok = detail::attempt_account_shutdown<pj::Error>(
+        [&] { account_->shutdown2(parameter); },
+        [&](const pj::Error &error) {
+            std::fprintf(stderr, "PJSIP registration account shutdown failed: %s\n",
+                         error.info().c_str());
+        },
+        [&] {
+            std::fputs("PJSIP registration account shutdown failed during cleanup\n", stderr);
+        });
+    if (!shutdown_ok) {
         return false;
     }
+    return true;
 }
 
 RegistrationResult

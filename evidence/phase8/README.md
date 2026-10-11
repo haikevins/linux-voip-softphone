@@ -42,6 +42,13 @@ CXX="$(command -v clang++-18)" THREADING_TSAN_REPEATS=3 \
 
 The recorded final canonical gate was 147/147 PASS. The recorded Clang 18 TSan gate was 18/18 PASS (six selected tests, three runs each).
 
+The P8-R1 shutdown-attempt injection test is a new deterministic source/test
+change. Its local standalone result is not an updated historical canonical
+CTest count, live SIP observation, or production-client real `PJ_EBUSY` evidence.
+When merged and reproduced on the maintainer host, the new test result is
+reported separately from the retained historical artifacts.
+
+
 ## Manual verification
 
 `manual-verification.txt` records the historical preview-mode GUI interaction/window-close acceptance.
