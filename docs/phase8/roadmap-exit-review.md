@@ -1,9 +1,10 @@
 # Phase 8 — roadmap exit audit (Commit 19 baseline)
 
-**Current evidence update — hotfix HEAD `b6c84ac`**
+**Current evidence update — production hotfix `b6c84ac`, documentation baseline `ba050bb`**
 
-The current committed/pushed Phase 8 candidate is
-`b6c84ac48f9dbb9d442a446dc05bdd47ec1f08ca`.
+The latest production-affecting Phase 8 candidate is
+`b6c84ac48f9dbb9d442a446dc05bdd47ec1f08ca`. The pre-consolidation
+documentation/evidence tip is `ba050bb9bcdd01391e2860b16e2f273c824b3ddc`.
 
 On that exact HEAD:
 
@@ -27,6 +28,12 @@ offline acceptance does not convert historical live observations into
 current-head live SIP proof.
 
 Final Phase 8 acceptance remains an explicit maintainer decision.
+
+The consolidation of Phase 8 docs/scripts is organizational only: historical
+per-commit documents remain in Git history, historical evidence remains
+chronological, and production source/test semantics are not changed by the
+consolidation itself. The consolidation commit must pass the full verifier and
+GitHub CI before maintainer acceptance.
 
 **Status: PENDING FINAL MAINTAINER ACCEPTANCE.** This is an evidence/architecture
 closure candidate, **not** a claim that live PJSUA2 teardown is safe.

@@ -29,6 +29,11 @@ External callback quiescence remains **UNPROVEN**, production-client real
 `PJ_EBUSY` recovery remains **UNPROVEN**, and PJSUA2 integration readiness
 remains **BLOCKED**.
 
+The later docs/scripts consolidation does not change production C++, QML, CMake
+test registration, or historical evidence. It must still pass the complete
+Phase 8 verification and GitHub CI before maintainer sign-off; this document
+does not manufacture new runtime evidence for the consolidation itself.
+
 **Scope:** Final user-visible GUI responsiveness and repeatable *offline* regression after Phase 8 multithreading roadmap closure. This test is a **candidate**, not an assertion that the app is fully operational or that Phase 8 has been signed off.
 
 Baseline: branch `phase/8-multithreading`, ancestor commit `0cd1a7bdb6b0de8e9ed6d1efef0d9722309436a7` (roadmap closure). No production source, QML, CMake target, or existing CTest registration is changed by this overlay. The pre-existing canonical suite should remain **147** tests.
@@ -39,7 +44,7 @@ Baseline: branch `phase/8-multithreading`, ancestor commit `0cd1a7bdb6b0de8e9ed6
 - `src/gui/Main.qml`: a preview keypad (0–9, *, #), destination input, Delete/Clear, Register, Call, Hang up, RTP panel. When not started using `--sip-register`, SIP controls are disabled.
 - `src/gui/QtRegistrationBackend.cpp`, `tests/qt/test_qt_registration_backend.cpp`: injected fake session exercises worker/QObject event handoff; **not** real SIP registration.
 - `tests/phase8/test_mpmc_stress.cpp`: 4 producers × 25,000 events = 100,000 events, 4 consumers.
-- `scripts/phase8/verify-tsan.sh`: standalone 6 C++ tests × 3 repeats using Clang18 TSan, **not** GUI/Qt/PJSUA2 runtime under TSan.
+- `scripts/phase8/verify-threading.sh tsan`: standalone 6 C++ tests × 3 repeats using Clang18 TSan, **not** GUI/Qt/PJSUA2 runtime under TSan.
 - `scripts/phase8/verify-roadmap-exit.sh`: source/evidence inventory that must continue to report PJSUA2 shutdown integration **BLOCKED**.
 - `README_roadmap.md` section 11 and section 23: Phase 8 multithreading requirements and Code + Test + Evidence + Documentation definition of done.
 

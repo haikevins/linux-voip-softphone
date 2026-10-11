@@ -23,8 +23,8 @@ git merge-base --is-ancestor "$EXPECTED_ANCESTOR" HEAD || {
 BUILD="$ROOT/build/qt-pjsip-gui-debug"
 GUI="$BUILD/src/voip-qt-gui"
 [[ -f scripts/phase8/verify-roadmap-exit.sh ]]
-[[ -f scripts/phase8/verify-tsan.sh ]]
-[[ -f scripts/phase8/verify-stress.sh ]]
+[[ -f scripts/phase8/verify-threading.sh ]]
+[[ -f scripts/phase8/verify-pjsip.sh ]]
 [[ -f scripts/phase8/gui-runtime-probe.py ]]
 [[ -f tests/phase8/test_gui_runtime_acceptance_harness.py ]]
 
@@ -88,13 +88,13 @@ ctest --test-dir "$BUILD" --output-on-failure --timeout 30 \
 echo 'PASS: Qt worker regression x10 (fake session; no live PJSIP)'
 
 printf '\n===== 4. PHASE 8 FOCUSED QUEUE/WORKER =====\n'
-bash scripts/phase8/verify-queue.sh 2>&1 | tee "$LOG_DIR/phase8-focused.log"
+bash scripts/phase8/verify-threading.sh queue 2>&1 | tee "$LOG_DIR/phase8-focused.log"
 grep -Fq '100% tests passed, 0 tests failed out of 12' "$LOG_DIR/phase8-focused.log"
 echo 'PASS: Phase 8 focused 12/12'
 
 printf '\n===== 5. 100,000-EVENT MPMC STRESS =====\n'
 PHASE8_STRESS_REPEATS="${PHASE8_ACCEPT_STRESS_REPEATS:-30}" \
-    bash scripts/phase8/verify-stress.sh \
+    bash scripts/phase8/verify-threading.sh stress \
     2>&1 | tee "$LOG_DIR/mpmc-stress.log"
 echo 'PASS: MPMC stress repeated'
 
@@ -102,13 +102,13 @@ printf '\n===== 6. CLANG18 TSAN ISOLATED =====\n'
 CXX="$(command -v clang++-18)" \
 PHASE8_TSAN_BUILD_DIR="$ROOT/build/phase8-tsan-clang18-debug" \
 PHASE8_TSAN_REPEATS=3 \
-    bash scripts/phase8/verify-tsan.sh \
+    bash scripts/phase8/verify-threading.sh tsan \
     2>&1 | tee "$LOG_DIR/tsan.log"
 grep -Fq 'PASS: Phase 8 TSan gate (six tests x 3 run(s))' "$LOG_DIR/tsan.log"
 echo 'PASS: Clang18 TSan 18/18'
 
 printf '\n===== 7. PJSIP NON-LIVE REGRESSION =====\n'
-bash scripts/phase8/verify-pjsip-shutdown-order.sh \
+bash scripts/phase8/verify-pjsip.sh shutdown-order \
     2>&1 | tee "$LOG_DIR/pjsip-nonlive.log"
 grep -Fq '100% tests passed, 0 tests failed out of 45' "$LOG_DIR/pjsip-nonlive.log"
 echo 'PASS: PJSIP non-live 45/45'

@@ -31,7 +31,8 @@ required_paths=(
     scripts/quality/verify-docs-structure.sh
     scripts/quality/verify-evidence-structure.sh
     scripts/phase8/verify-final-runtime-acceptance.sh
-    scripts/phase8/verify-pjsip-live-lifecycle-evidence.sh
+    scripts/phase8/verify-pjsip.sh
+    scripts/phase8/verify-threading.sh
     scripts/phase8/verify-roadmap-exit.sh
 )
 for path in "${required_paths[@]}"; do
@@ -69,7 +70,7 @@ print(f'Phase 8 Python syntax: PASS ({len(paths)} file(s))')
 PY
 
 echo '== recorded live PJSUA2 lifecycle evidence =='
-bash scripts/phase8/verify-pjsip-live-lifecycle-evidence.sh
+bash scripts/phase8/verify-pjsip.sh live-evidence
 
 echo '== Phase 8 final automated offline runtime acceptance =='
 bash scripts/phase8/verify-final-runtime-acceptance.sh --automatic

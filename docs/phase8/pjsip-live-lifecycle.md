@@ -1,6 +1,6 @@
-# Phase 8 Commit 30 — Controlled live PJSUA2 lifecycle evidence
+# Phase 8 — Controlled live PJSUA2 lifecycle evidence
 
-Commit 30 records a reproducible, opt-in live PJSUA2 2.17 lifecycle probe and
+This document preserves the Commit 30 reproducible, opt-in live PJSUA2 2.17 lifecycle probe and
 sanitized evidence from the controlled Asterisk lab. It is an evidence/harness
 commit, not a production shutdown rewrite and not authorization to merge Phase
 8.
@@ -88,7 +88,7 @@ answered for this specific shutdown-busy experiment.
 The offline evidence verifier is safe to run without credentials or network:
 
 ```bash
-bash scripts/phase8/verify-pjsip-live-lifecycle-evidence.sh
+bash scripts/phase8/verify-pjsip.sh live-evidence
 ```
 
 Do not commit passwords, raw `Authorization: Digest` material, nonce/cnonce or

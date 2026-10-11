@@ -62,7 +62,7 @@ grep -Fq 'Actual PJ_EBUSY recovery: UNPROVEN' <<<"$check_output"
 # Validate the separately recorded live vendor-behavior observation without
 # promoting it into an external callback-quiescence proof.
 printf '\n===== VERIFY CONTROLLED LIVE PJSUA2 EVIDENCE =====\n'
-bash scripts/phase8/verify-pjsip-live-lifecycle-evidence.sh
+bash scripts/phase8/verify-pjsip.sh live-evidence
 
 # A passing exit audit explicitly does NOT mean live PJSUA2 safety.
 echo 'PASS: Phase 8 roadmap artifact and source-contract inventory'

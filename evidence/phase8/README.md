@@ -127,6 +127,11 @@ acceptance scope.
 
 ## Artifacts
 
+Historical evidence intentionally retains command/document paths that existed at
+the time of capture. Some of those per-commit docs and one-off wrappers were later
+consolidated; Git history preserves their exact bytes. Do not rewrite historical
+evidence merely to replace an old path with a current consolidated entry point.
+
 Historical Phase 8 artifacts are the files listed in this directory. The latest
 sanitized final rerun summary is `final-runtime-acceptance-8c78677.txt`.
 Roadmap-required final artifacts are:
@@ -190,13 +195,13 @@ the result.
 Core Phase 8 verification entry points include:
 
 ```bash
-bash scripts/phase8/verify-queue.sh
-PHASE8_STRESS_REPEATS=100 bash scripts/phase8/verify-stress.sh
+bash scripts/phase8/verify-threading.sh queue
+PHASE8_STRESS_REPEATS=100 bash scripts/phase8/verify-threading.sh stress
 CXX="$(command -v clang++-18)" \
 PHASE8_TSAN_BUILD_DIR="$PWD/build/phase8-tsan-clang18-debug" \
 PHASE8_TSAN_REPEATS=3 \
-    bash scripts/phase8/verify-tsan.sh
-bash scripts/phase8/verify-pjsip-live-lifecycle-evidence.sh
+    bash scripts/phase8/verify-threading.sh tsan
+bash scripts/phase8/verify-pjsip.sh live-evidence
 bash scripts/phase8/verify-roadmap-exit.sh
 bash scripts/phase8/verify-final-runtime-acceptance.sh --automatic
 ```
