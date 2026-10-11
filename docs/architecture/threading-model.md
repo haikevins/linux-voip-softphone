@@ -115,7 +115,7 @@ terminating the worker.
 is an explanatory target model, not evidence that separate metrics/logging
 workers are currently deployed. The code-level diagram source is
 `docs/architecture/threading-diagram.dot`; its rendered PNG is retained at
-`evidence/07-threading/threading-diagram.png`.
+`evidence/phase8/threading-diagram.png`.
 
 ## Runtime and lifecycle
 
@@ -178,7 +178,7 @@ quiescence cannot be established, integration readiness remains BLOCKED.
 
 ### Deterministic/unit coverage
 
-Standalone `tests/phase8` covers queue behavior, serial worker behavior,
+Standalone `cmake/phase8-focused` harness covers queue behavior, serial worker behavior,
 worker-thread ownership, MPMC stress, PJSIP call-slot cleanup policy, callback
 activity, and shutdown/lifetime models. The Phase 8 subtree is also registered
 with canonical CTest.
@@ -285,6 +285,6 @@ closure and be carried forward unless new live evidence resolves them.
 - `docs/architecture/threading-diagram.dot`.
 - `docs/interview/phase8-questions.md`.
 - `evidence/phase8/README.md`.
-- `evidence/07-threading/README.md`.
-- `tests/phase8/`.
+- `evidence/phase8/roadmap-closure.md`.
+- `tests/unit/` and `tests/integration/`, with focused registration under `cmake/phase8-focused/`.
 - `scripts/phase8/`.

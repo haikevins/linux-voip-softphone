@@ -1239,9 +1239,9 @@ docs/architecture/threading-model.md
 và:
 
 ```text
-evidence/07-threading/
-├── stress-test.txt
-├── tsan-report.txt
+evidence/phase8/
+├── roadmap-stress-test.txt
+├── roadmap-tsan-report.txt
 └── threading-diagram.png
 ```
 

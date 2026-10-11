@@ -24,8 +24,9 @@ for command_name in bash git python3; do
     require_command "$command_name"
 done
 
-[[ "$(git branch --show-current)" == 'phase/8-multithreading' ]] || \
-    fail 'expected phase/8-multithreading'
+PHASE8_REQUIRED_ANCESTOR="34931aa8445f89adb6b4a370e1a519363873419f"
+git merge-base --is-ancestor "$PHASE8_REQUIRED_ANCESTOR" HEAD || \
+    fail "required Phase 8 baseline missing from current HEAD ancestry: $PHASE8_REQUIRED_ANCESTOR"
 
 required_paths=(
     scripts/quality/verify-docs-structure.sh
@@ -61,7 +62,7 @@ python3 -B - <<'PY'
 from pathlib import Path
 
 paths = sorted(Path('scripts/phase8').glob('*.py'))
-paths += sorted(Path('tests/phase8').glob('*.py'))
+paths += sorted(Path('tests/integration').glob('*.py'))
 if not paths:
     raise SystemExit('ERROR: no Phase 8 Python files found')
 for path in paths:

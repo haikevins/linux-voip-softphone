@@ -7,6 +7,7 @@ ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 FOCUSED="${PHASE8_BUILD_DIR:-$ROOT/build/phase8-queue-debug}"
 CANONICAL="${PHASE8_CANONICAL_BUILD_DIR:-$ROOT/build/qt-pjsip-gui-debug}"
 MODE="${1:-all-offline}"
+PHASE8_REQUIRED_ANCESTOR="34931aa8445f89adb6b4a370e1a519363873419f"
 export PYTHONDONTWRITEBYTECODE=1
 
 usage() {
@@ -48,10 +49,10 @@ require_distinct_builds() {
 callback_activity() {
     require_tools cmake ctest
     test -f "$ROOT/src/pjsip/CallbackActivityGate.hpp"
-    test -f "$ROOT/tests/phase8/test_pjsip_callback_activity.cpp"
+    test -f "$ROOT/tests/unit/test_pjsip_callback_activity.cpp"
 
     printf '===== PHASE 8 CALLBACK ACTIVITY (STANDALONE) =====\n'
-    cmake -S "$ROOT/tests/phase8" -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
+    cmake -S "$ROOT/cmake/phase8-focused" -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
     cmake --build "$FOCUSED" --target phase8_pjsip_callback_activity_tests --parallel 2
     ctest --test-dir "$FOCUSED" -R '^Phase8PjsipCallbackActivityTest$' --output-on-failure
 
@@ -68,10 +69,10 @@ callback_ingress_races() {
     require_tools cmake ctest
     require_distinct_builds
     test -f "$ROOT/src/pjsip/CallbackActivityGate.hpp"
-    test -f "$ROOT/tests/phase8/test_pjsip_callback_ingress_races.cpp"
+    test -f "$ROOT/tests/unit/test_pjsip_callback_ingress_races.cpp"
 
     printf '===== SYNTHETIC EXTERNAL CALLBACK INGRESS (FOCUSED) =====\n'
-    cmake -S "$ROOT/tests/phase8" -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
+    cmake -S "$ROOT/cmake/phase8-focused" -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
     cmake --build "$FOCUSED" --target phase8_pjsip_callback_ingress_races_tests -j 2
     ctest --test-dir "$FOCUSED" --output-on-failure -R '^Phase8PjsipCallbackIngressRacesTest$'
 
@@ -90,8 +91,8 @@ callback_ingress_races() {
 cleanup_timeout() {
     require_tools cmake ctest
     cd "$ROOT"
-    [[ "$(git branch --show-current)" == 'phase/8-multithreading' ]] || {
-        echo 'ABORT: expected phase/8-multithreading' >&2
+    git merge-base --is-ancestor "$PHASE8_REQUIRED_ANCESTOR" HEAD || {
+        echo "ABORT: Phase 8 baseline missing from current HEAD ancestry: $PHASE8_REQUIRED_ANCESTOR" >&2
         exit 1
     }
     [[ -f "$CANONICAL/CMakeCache.txt" ]] || {
@@ -121,10 +122,10 @@ production_lifetime_audit() {
     python3 -B scripts/phase8/audit-pjsip-production-lifetime.py
 
     echo '===== MUTATION-ORIENTED REGRESSIONS ====='
-    python3 -B tests/phase8/test_pjsip_production_lifetime_audit.py
+    python3 -B tests/integration/test_pjsip_production_lifetime_audit.py
 
     echo '===== FOCUSED CTEST REGISTRATION ====='
-    cmake -S tests/phase8 -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
+    cmake -S cmake/phase8-focused -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
     ctest --test-dir "$FOCUSED" --output-on-failure -R '^Phase8PjsipProductionAuditTest$'
 
     echo '===== CANONICAL CTEST REGISTRATION ====='
@@ -139,10 +140,10 @@ shutdown_authorization() {
     require_distinct_builds
     cd "$ROOT"
     test -f src/pjsip/PjsipShutdownAuthorization.hpp
-    test -f tests/phase8/test_pjsip_shutdown_authorization.cpp
+    test -f tests/unit/test_pjsip_shutdown_authorization.cpp
 
     echo '===== PRODUCTION-HEADER AUTHORIZATION (FOCUSED) ====='
-    cmake -S tests/phase8 -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
+    cmake -S cmake/phase8-focused -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
     cmake --build "$FOCUSED" --target phase8_pjsip_shutdown_authorization_tests -j 2
     ctest --test-dir "$FOCUSED" --output-on-failure -R '^Phase8PjsipShutdownAuthorizationTest$'
 
@@ -198,7 +199,7 @@ print('Actual PJ_EBUSY recovery: NOT TESTED')
 PY
 
     echo '===== FOCUSED MODEL TARGET ====='
-    cmake -S tests/phase8 -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
+    cmake -S cmake/phase8-focused -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
     cmake --build "$FOCUSED" --target phase8_pjsip_shutdown_failure_paths_tests -j 2
     ctest --test-dir "$FOCUSED" --output-on-failure -R '^Phase8PjsipShutdownFailurePathsTest$'
 
@@ -237,7 +238,7 @@ shutdown_integration_contract() {
     printf '%s\n' 'PASS: actual PJSUA2 integration remains explicitly BLOCKED'
 
     echo '===== FOCUSED STATIC AUDIT CTEST ====='
-    cmake -S tests/phase8 -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
+    cmake -S cmake/phase8-focused -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
     ctest --test-dir "$FOCUSED" --output-on-failure -R '^Phase8PjsipShutdownIntegrationContractTest$'
 
     echo '===== CANONICAL STATIC AUDIT CTEST ====='
@@ -254,12 +255,12 @@ shutdown_integration_contract() {
 shutdown_order() {
     require_tools python3 cmake ctest
     cd "$ROOT"
-    [[ "$(git branch --show-current)" == 'phase/8-multithreading' ]] || {
-        echo 'ABORT: expected phase/8-multithreading' >&2
+    git merge-base --is-ancestor "$PHASE8_REQUIRED_ANCESTOR" HEAD || {
+        echo "ABORT: Phase 8 baseline missing from current HEAD ancestry: $PHASE8_REQUIRED_ANCESTOR" >&2
         exit 1
     }
 
-    python3 -B -m unittest discover -s tests/phase8 -p test_pjsip_shutdown_order.py -v
+    python3 -B -m unittest discover -s tests/integration -p test_pjsip_shutdown_order.py -v
     printf 'PASS: Phase 8 PJSIP source shutdown-order contract\n'
 
     if [[ "${PHASE8_PJSIP_STATIC_ONLY:-0}" == '1' ]]; then
@@ -289,11 +290,11 @@ shutdown_ownership_policy() {
     require_tools cmake ctest
     require_distinct_builds
     cd "$ROOT"
-    test -f tests/phase8/test_pjsip_shutdown_ownership_policy.cpp
+    test -f tests/unit/test_pjsip_shutdown_ownership_policy.cpp
     test -f src/pjsip/CallbackActivityGate.hpp
 
     printf '===== FOCUSED SYNTHETIC POLICY TARGET =====\n'
-    cmake -S tests/phase8 -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
+    cmake -S cmake/phase8-focused -B "$FOCUSED" -DCMAKE_BUILD_TYPE=Debug
     cmake --build "$FOCUSED" --target phase8_pjsip_shutdown_ownership_policy_tests -j 2
     ctest --test-dir "$FOCUSED" --output-on-failure -R '^Phase8PjsipShutdownOwnershipPolicyTest$'
 
@@ -312,8 +313,8 @@ shutdown_ownership_policy() {
 qt_ownership() {
     require_tools cmake ctest
     cd "$ROOT"
-    [[ "$(git branch --show-current)" == 'phase/8-multithreading' ]] || {
-        echo 'ABORT: expected phase/8-multithreading' >&2
+    git merge-base --is-ancestor "$PHASE8_REQUIRED_ANCESTOR" HEAD || {
+        echo "ABORT: Phase 8 baseline missing from current HEAD ancestry: $PHASE8_REQUIRED_ANCESTOR" >&2
         exit 1
     }
 
@@ -337,7 +338,7 @@ live_evidence() {
     local evidence='evidence/phase8/pjsip-live-lifecycle.txt'
     local doc='docs/phase8/pjsip-live-lifecycle.md'
     local runner='scripts/phase8/run-pjsip-live-lifecycle-probe.sh'
-    local source='tests/phase8/pjsip_live_lifecycle_probe.cpp'
+    local source='labs/pjsip/live-lifecycle/pjsip_live_lifecycle_probe.cpp'
     local marker
 
     for path in "$evidence" "$doc" "$runner" "$source"; do

@@ -19,7 +19,7 @@ option(PHASE8_ENABLE_TSAN "Build standalone Phase 8 tests with ThreadSanitizer" 
 if(PHASE8_ENABLE_TSAN)
     if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
         message(FATAL_ERROR
-            "PHASE8_ENABLE_TSAN requires standalone -S tests/phase8; "
+            "PHASE8_ENABLE_TSAN requires standalone -S cmake/phase8-focused; "
             "do not enable it for the canonical Qt/PJSIP build")
     endif()
     if(NOT CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
@@ -61,22 +61,22 @@ function(phase8_add_test target source ctest_name)
 endfunction()
 
 phase8_add_test(phase8_thread_safe_queue_tests
-    test_thread_safe_queue.cpp Phase8ThreadSafeQueueTest)
+    ${CMAKE_CURRENT_LIST_DIR}/../../tests/unit/test_thread_safe_queue.cpp Phase8ThreadSafeQueueTest)
 phase8_add_test(phase8_serial_task_worker_tests
-    test_serial_task_worker.cpp Phase8SerialTaskWorkerTest)
+    ${CMAKE_CURRENT_LIST_DIR}/../../tests/unit/test_serial_task_worker.cpp Phase8SerialTaskWorkerTest)
 phase8_add_test(phase8_thread_ownership_tests
-    test_thread_ownership.cpp Phase8ThreadOwnershipTest)
+    ${CMAKE_CURRENT_LIST_DIR}/../../tests/unit/test_thread_ownership.cpp Phase8ThreadOwnershipTest)
 phase8_add_test(phase8_mpmc_stress_tests
-    test_mpmc_stress.cpp Phase8MpmcStressTest)
+    ${CMAKE_CURRENT_LIST_DIR}/../../tests/integration/test_mpmc_stress.cpp Phase8MpmcStressTest)
 # Pure C++ polling policy shared with production PJSIP wait_for_call_cleanup().
 # The deterministic test never creates an Endpoint or opens a network socket.
 phase8_add_test(phase8_pjsip_call_slot_cleanup_tests
-    test_pjsip_call_slot_cleanup.cpp Phase8PjsipCallSlotCleanupTest)
+    ${CMAKE_CURRENT_LIST_DIR}/../../tests/unit/test_pjsip_call_slot_cleanup.cpp Phase8PjsipCallSlotCleanupTest)
 
 # Generic callback-in-flight accounting model; no PJSUA2 calls and no
 # production callback hook is wired in this commit.
 phase8_add_test(phase8_pjsip_callback_activity_tests
-    test_pjsip_callback_activity.cpp Phase8PjsipCallbackActivityTest)
+    ${CMAKE_CURRENT_LIST_DIR}/../../tests/unit/test_pjsip_callback_activity.cpp Phase8PjsipCallbackActivityTest)
 
 # Leave headroom for slower, instrumented contention runs.
 set_tests_properties(Phase8MpmcStressTest PROPERTIES TIMEOUT 90)
@@ -88,37 +88,37 @@ if(NOT PHASE8_ENABLE_TSAN)
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
     add_test(NAME Phase8PjsipProductionAuditTest
         COMMAND "${Python3_EXECUTABLE}" -B
-            "${CMAKE_CURRENT_SOURCE_DIR}/test_pjsip_production_lifetime_audit.py")
+            "${CMAKE_CURRENT_LIST_DIR}/../../tests/integration/test_pjsip_production_lifetime_audit.py")
     set_tests_properties(Phase8PjsipProductionAuditTest PROPERTIES TIMEOUT 30)
 
     # Commit 15: deterministic failure-path contract model using the existing
     # production polling and callback-activity helpers. Deliberately excluded
     # from the six-C++-test TSan contract; it does not call live PJSUA2.
     phase8_add_test(phase8_pjsip_shutdown_failure_paths_tests
-        test_pjsip_shutdown_failure_paths.cpp Phase8PjsipShutdownFailurePathsTest)
+        ${CMAKE_CURRENT_LIST_DIR}/../../tests/unit/test_pjsip_shutdown_failure_paths.cpp Phase8PjsipShutdownFailurePathsTest)
 
     # Commit 16: separate a synthetic external callback-source drain from the
     # existing local CallbackActivityGate. This is a model, not a PJSUA2 proof.
     # Keep the isolated Clang18 TSan gate at six pre-existing C++ tests.
     phase8_add_test(phase8_pjsip_callback_ingress_races_tests
-        test_pjsip_callback_ingress_races.cpp Phase8PjsipCallbackIngressRacesTest)
+        ${CMAKE_CURRENT_LIST_DIR}/../../tests/unit/test_pjsip_callback_ingress_races.cpp Phase8PjsipCallbackIngressRacesTest)
 
     # Commit 17: synthetic epoch-bound shutdown ownership policy. Every
     # verification belongs to one attempt; stale completions cannot authorize
     # resource release. This is not wired to real PJSUA2 shutdown.
     phase8_add_test(phase8_pjsip_shutdown_ownership_policy_tests
-        test_pjsip_shutdown_ownership_policy.cpp Phase8PjsipShutdownOwnershipPolicyTest)
+        ${CMAKE_CURRENT_LIST_DIR}/../../tests/unit/test_pjsip_shutdown_ownership_policy.cpp Phase8PjsipShutdownOwnershipPolicyTest)
 
     # Commit 18: exercise the production-facing, receipt-only shutdown
     # authorization helper. Not connected to either SIP client's stop().
     phase8_add_test(phase8_pjsip_shutdown_authorization_tests
-        test_pjsip_shutdown_authorization.cpp Phase8PjsipShutdownAuthorizationTest)
+        ${CMAKE_CURRENT_LIST_DIR}/../../tests/unit/test_pjsip_shutdown_authorization.cpp Phase8PjsipShutdownAuthorizationTest)
 
     # Commit 19: source audit of *real* stop() entry points against the
     # authorization helper. PASS means unsafe blockers identified, NOT safe.
     # Keep the six existing standalone TSan C++ tests unchanged.
     add_test(NAME Phase8PjsipShutdownIntegrationContractTest
         COMMAND "${Python3_EXECUTABLE}" -B
-            "${CMAKE_CURRENT_SOURCE_DIR}/test_pjsip_shutdown_integration_contract.py")
+            "${CMAKE_CURRENT_LIST_DIR}/../../tests/integration/test_pjsip_shutdown_integration_contract.py")
     set_tests_properties(Phase8PjsipShutdownIntegrationContractTest PROPERTIES TIMEOUT 30)
 endif()

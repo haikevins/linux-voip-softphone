@@ -45,7 +45,7 @@ if [[ -z "${VOIP_SIP_PASSWORD:-}" ]]; then
     export VOIP_SIP_PASSWORD
 fi
 
-src='tests/phase8/pjsip_live_lifecycle_probe.cpp'
+src='labs/pjsip/live-lifecycle/pjsip_live_lifecycle_probe.cpp'
 [[ -s "$src" ]] || fail "missing live probe source: $src"
 
 bin="$(mktemp /tmp/phase8-pjsip-live-probe.XXXXXX)"
