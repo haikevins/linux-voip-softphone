@@ -2,44 +2,56 @@
 
 ## Status
 
-Complete. Phase 4 established the SIP/Asterisk lab and the `v0.5-sip-asterisk` milestone.
+Phase 4 is complete and published as the `v0.5-sip-asterisk` milestone.
 
 ## Verification scope
 
-Evidence demonstrates Asterisk PJSIP endpoint registration, SIP call establishment and teardown, SDP/media negotiation observations, and the expected two-leg B2BUA behavior of the lab.
+Evidence covers Asterisk PJSIP registration, SIP call establishment/teardown, SDP/media-negotiation observations, and the expected two-leg B2BUA behavior of the Phase 4 lab.
 
 ## Environment
 
-The completed lab used Asterisk 20 on the Ubuntu host with a second SIP endpoint on the LAN. Runtime addresses and ephemeral contact ports are observations, not stable configuration contracts.
+The accepted lab used Asterisk 20 on Ubuntu with a second SIP endpoint on the LAN. Runtime addresses, contact ports, and similar transport details are observations rather than stable configuration contracts.
 
 ## Automated verification
 
-Phase 4 is primarily a live integration lab rather than a self-contained automated SIP-stack implementation. Repository build/tests remain relevant, while registration and call-flow verification require live Asterisk endpoints.
+Phase 4 is primarily a live integration lab. Repository build/tests remain relevant, while registration and call-flow verification require live Asterisk endpoints.
 
 ## Manual verification
 
-The retained Phase 4 evidence records successful endpoint registration and successful call establishment/teardown through Asterisk. Registration and call-flow evidence are indexed separately under this phase.
+The retained scenario evidence records successful endpoint registration and successful call establishment/teardown through Asterisk.
 
 ## Artifacts
 
-Active evidence scenarios:
+Registration scenario:
 
-- `registration/` — sanitized registration observations.
-- `call-flow/` — sanitized call-flow and media-negotiation observations.
+- `registration/README.md`
+- `registration/asterisk-version.txt`
+- `registration/endpoints.txt`
+- `registration/aors.txt`
+- `registration/contacts.txt`
+- `registration/registration-summary.txt`
 
-Historical `protocol/` and `final/` evidence material from the former layout is preserved under `artifacts/` so it remains available without acting as a parallel documentation taxonomy.
+Call-flow scenario:
+
+- `call-flow/README.md`
+- `call-flow/call-summary.txt`
+- `call-flow/channels-verbose.txt`
+- `call-flow/contacts.txt`
+- `call-flow/pjsip-channels.txt`
+
+The two scenario READMEs use the scenario-evidence schema defined in `evidence/README.md`.
 
 ## Results
 
-The Phase 4 SIP/Asterisk lab was verified successfully, including registration and call-flow behavior. Observed media negotiation belongs to Phase 4 evidence; application-controlled audible media is a later phase concern.
+Phase 4 registration and call-flow verification passed. Observed media negotiation belongs to this SIP lab; application-controlled audible media is a later-phase concern.
 
 ## Security and redaction
 
-Never commit SIP account passwords, live Digest Authorization material, raw secret-bearing SIP logger output, SRTP inline key material, or packet captures containing credentials.
+Never commit SIP passwords, live Digest Authorization material, raw secret-bearing SIP logger output, SRTP inline key material, or packet captures containing credentials.
 
 ## Reproduction
 
-Follow `docs/phase4/README.md` and the scenario procedures under this evidence directory. Record only sanitized outcomes needed to support the result.
+Follow `docs/phase4/README.md` and the procedures in the two scenario READMEs. Retain only sanitized outcomes needed to support the result.
 
 ## References
 

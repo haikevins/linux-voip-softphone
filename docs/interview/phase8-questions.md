@@ -1,15 +1,17 @@
 # Phase 8 Interview Review — Multithreading
 
+Use the repository implementation, documentation, tests, and evidence as the basis for the answers. Explain the engineering decision and the observed behavior; do not memorize isolated one-line definitions.
+
 ## Review scope
 
-This review covers the concurrency work actually implemented and evidenced in
-Phase 8: `ThreadSafeQueue<T>`, `SerialTaskWorker`, MPMC stress, standalone
-ThreadSanitizer, Qt owner-thread handoff, and the PJSUA2 cleanup/shutdown
-lifetime boundary.
-
-It deliberately does not claim that the generic queue replaced Qt queued
-connections, that vendor PJSUA2 callbacks are proven quiescent at shutdown, or
-that live SIP teardown is universally safe.
+- `ThreadSafeQueue<T>` semantics and ownership
+- `SerialTaskWorker` lifecycle
+- repeated MPMC stress verification
+- selected ThreadSanitizer scope
+- Qt owner-thread handoff
+- PJSUA2 callback/lifetime boundaries
+- fail-closed shutdown authorization
+- accepted and unresolved Phase 8 claims
 
 ## Questions and answers
 
@@ -17,123 +19,73 @@ that live SIP teardown is universally safe.
 
 #### Why introduce a generic `ThreadSafeQueue<T>` if Qt already has queued connections?
 
-The generic queue makes C++20 producer/consumer semantics independently
-executable and testable: close/drain behavior, local cancellation, MPMC
-integrity, and ownership are verified without requiring Qt or PJSUA2. It is a
-reusable concurrency primitive, not evidence that the production Qt path was
-rewired to use it.
+The generic queue makes producer/consumer semantics independently testable: close/drain behavior, local cancellation, MPMC integrity, ordering, and ownership can be verified without Qt or PJSUA2. It is a reusable concurrency primitive, not evidence that the production Qt path was rewritten to use it.
 
 #### What is the difference between a consumer stop request and `close()`?
 
-A stop token cancels one waiting consumer. It does not reject producers or
-close the shared queue. `close()` is a queue-wide lifecycle event: future
-pushes are rejected and waiting consumers wake so already accepted work can be
-drained.
+A stop token cancels one waiting consumer. It does not reject producers or close shared queue state. `close()` is queue-wide: future pushes are rejected and waiting consumers wake so already accepted work can be drained.
 
 #### What ordering does the queue guarantee with multiple producers?
 
-Each successful push is serialized by the queue mutex. FIFO is the
-linearization order of those successful pushes, not a guarantee based on
-wall-clock call order across independent producer threads. Separate tests use
-one consumer when checking per-producer FIFO.
+Successful pushes are serialized by the queue mutex. FIFO follows that linearization order, not wall-clock call order across independent producer threads.
 
 #### Why does `SerialTaskWorker` drain instead of discarding queued tasks?
 
-The worker treats accepted tasks as work that must be accounted for before
-shutdown completes. Closing the queue and joining after drain provides a
-simple deterministic contract. Phase 8 does not implement bounded
-backpressure or an abort-pending-work mode.
+Accepted tasks are treated as work that must be accounted for before shutdown completes. Closing the queue and joining after drain provides a deterministic contract.
 
 #### Why can a worker callback request close but not call `shutdown()`?
 
-`shutdown()` joins the owned thread. Calling it from that same worker would be
-a self-join. `request_close()` safely stops accepting new work without trying
-to join from inside the callback.
+`shutdown()` joins the owned worker thread. Calling it from that same worker could self-join. `request_close()` stops new work without attempting the join from inside the callback.
 
 ### Verification and sanitizer scope
 
 #### What does the 100,000-event stress test prove?
 
-For the observed executions it verifies that four producers and four consumers
-can transfer 100,000 distinct IDs without missing, duplicate, malformed, or
-unexpectedly rejected items, and that close/drain accounting holds. It does
-not prove every possible scheduler interleaving or anything about live
-PJSUA2/Qt callback behavior.
+For the observed runs it verifies that multiple producers and consumers transfer 100,000 distinct IDs without missing, duplicate, malformed, or unexpectedly rejected items and that close/drain accounting holds. It does not prove every scheduler interleaving or live Qt/PJSUA2 callback behavior.
 
 #### Why is a passing TSan run not proof that the softphone is race-free?
 
-The recorded Clang 18 TSan gate instruments the standalone Phase 8 C++ tests,
-not the Qt GUI executable or vendor PJSUA2 runtime. It gives strong evidence
-for the exercised queue/worker/model code but cannot cover components that
-were not instrumented or executed.
+The recorded Clang 18 TSan gate instruments six selected C++ tests, not every Qt/PJSUA2 runtime path. It is strong evidence for exercised code only.
 
 #### Why was GCC 13 TSan recorded as BLOCKED instead of PASS?
 
-The ThinkPad GCC 13 runtime failed because of sanitizer memory-mapping issues,
-including a minimal reproduction. Treating an environment where the
-sanitizer cannot execute as race-free would be false evidence. Clang 18 was
-used for the successful standalone TSan verification instead.
+The recorded GCC 13 runtime could not execute reliably because of sanitizer memory-mapping failures, including a minimal reproduction. An unusable sanitizer environment cannot be treated as race-free evidence. Clang 18 provided the successful standalone TSan run.
 
 ### Qt and PJSUA2 ownership
 
 #### How does the production GUI path return work to the UI owner thread?
 
-`QtRegistrationBackend` owns a session `std::jthread` and publishes
-registration/call/RTP events using `QMetaObject::invokeMethod(...,
-Qt::QueuedConnection)`. Those callbacks execute on the QObject/UI side before
-updating `GuiViewModel` / `CallManager` state. The generic Phase 8 worker does
-not replace this path.
+`QtRegistrationBackend` owns a session `std::jthread` and publishes registration, call, and RTP events using queued Qt invocation. Those callbacks execute on the QObject/UI side before mutating `GuiViewModel` or `CallManager`. The generic Phase 8 worker does not replace this path.
 
 #### Why is `pjsua_call_get_count() == 0` not sufficient shutdown evidence?
 
-It reports observed PJSUA call-slot state. It does not prove that all external
-or in-flight vendor callbacks referencing account/call-owned objects have
-completed. Phase 8 therefore treats call-slot cleanup and callback quiescence
-as separate properties.
+It reports observed PJSUA call-slot state. It does not prove that every external or in-flight vendor callback referencing account/call-owned objects has completed. Call-slot cleanup and callback quiescence are therefore separate properties.
 
 #### What is the purpose of the shutdown authorization helper?
 
-It makes the policy decision explicit: destruction/integration is authorized
-only when the modeled preconditions establish a safe enough state. If
-shutdown failure, stale results, external callback activity, or unresolved
-ownership make safety uncertain, the contract fails closed instead of
-assuming teardown is safe.
+It makes the policy decision explicit: teardown/integration is authorized only when modeled preconditions establish a safe-enough state. Unresolved shutdown failures, stale results, external callback activity, or uncertain ownership fail closed instead of being assumed safe.
 
-#### Why can the roadmap exit audit PASS while integration readiness is BLOCKED?
+#### Why can offline verification PASS while integration readiness is BLOCKED?
 
-They answer different questions. The exit audit can confirm that required
-source, tests, documentation, and evidence are present and internally
-consistent. The integration audit separately reports whether production
-PJSUA2 shutdown has enough evidence to authorize a stronger safety claim.
-Phase 8 intentionally preserves `BLOCKED/UNPROVEN` for the latter.
+They answer different questions. Offline tests verify the queue/worker and reviewed source contracts. Integration readiness asks whether production PJSUA2 shutdown has enough live evidence for a stronger safety claim. Phase 8 intentionally preserves `BLOCKED/UNPROVEN` for the latter.
 
-### Phase boundary
+### Verification boundary
 
 #### What is the strongest defensible Phase 8 conclusion?
 
-The project has a tested C++20 concurrency foundation, repeated MPMC stress,
-standalone TSan coverage, explicit Qt owner-thread handoff documentation, and
-fail-closed PJSUA2 lifetime/shutdown models. Final offline GUI acceptance also
-passed. It is not defensible to claim that live PJSUA2 teardown is universally
-safe or that the generic queue is deployed as the Qt/PJSUA2 event transport.
+The project has a tested C++20 concurrency foundation, repeated MPMC stress, standalone TSan coverage, explicit Qt owner-thread handoff, and fail-closed PJSUA2 lifetime/shutdown models. It is not defensible to claim universal live PJSUA2 teardown safety, external callback quiescence, or that the generic queue is the deployed Qt/PJSUA2 event transport.
 
 ## Phase boundary
 
-Phase 8 can be reviewed as an offline/educational multithreading milestone only
-with the remaining PJSUA2 lifetime risks carried explicitly. Live external
-callback quiescence, actual `PJ_EBUSY` recovery, and safe teardown after every
-shutdown failure remain unproven unless later evidence resolves them.
+Phase 8 remains pending final maintainer acceptance. Live external callback quiescence and production-client real `PJ_EBUSY` recovery are **UNPROVEN**, and PJSUA2 integration readiness is **BLOCKED**.
 
-Phase 9 should start only after Phase 8 is explicitly accepted, merged, and
-released according to the repository workflow.
+Phase 9 must not be treated as started until Phase 8 is explicitly accepted.
 
 ## References
 
 - `docs/phase8/README.md`
 - `docs/architecture/threading-model.md`
-- `docs/phase8/roadmap-exit-review.md`
-- `docs/phase8/final-runtime-acceptance.md`
 - `evidence/phase8/README.md`
-- `evidence/phase8/roadmap-closure.md`
-- `tests/unit/` and `tests/integration/`; focused CMake harness: `cmake/phase8-focused/`
+- `tests/unit/`
+- `tests/integration/`
 - `scripts/phase8/`

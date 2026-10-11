@@ -2,43 +2,17 @@
 
 ## Status
 
-Complete. Phase 1 established the Modern C++ core and the `v0.2-cpp-core` milestone.
+Phase 1 is complete and published as the `v0.2-cpp-core` milestone.
 
 ## Verification scope
 
-Evidence covers the C++20 core, call state machine behavior, ownership and move-semantics labs, formatting, sanitizer execution, tests, and static analysis.
+Evidence covers the C++20 core, call-state behavior, ownership/move-semantics labs, formatting, sanitizers, unit tests, static analysis, and captured toolchain.
 
 ## Environment
 
-Historical toolchain snapshots retained in this directory are authoritative for the original run. Current build requirements are documented in `docs/phase1/README.md`.
+The retained `toolchain.txt` and logs record the original run. Current build requirements belong in `docs/phase1/README.md`.
 
 ## Automated verification
-
-The Phase 1 verifier is:
-
-```bash
-./scripts/phase1/verify.sh
-```
-
-The recorded Phase 1 gate passed, including 11/11 tests in the normal test run and 11/11 under sanitizers, plus formatting and clang-tidy gates.
-
-## Manual verification
-
-The Phase 1 C++ labs are exercised by the verifier. No external SIP endpoint or manual telephony flow is required.
-
-## Artifacts
-
-Existing committed Phase 1 logs and summaries remain historical evidence. They should be treated as captured outcomes, not as normative documentation.
-
-## Results
-
-Phase 1 verification passed and the C++ core became the stable base for Linux systems work.
-
-## Security and redaction
-
-No SIP credentials or secret-bearing packet traces belong in this phase.
-
-## Reproduction
 
 Run:
 
@@ -46,7 +20,37 @@ Run:
 ./scripts/phase1/verify.sh
 ```
 
-Use `scripts/phase1/collect-evidence.sh` only when intentionally refreshing Phase 1 evidence; its destination is `evidence/phase1/`.
+The accepted Phase 1 gate recorded 11/11 normal tests and 11/11 sanitizer tests, plus formatting and clang-tidy checks.
+
+## Manual verification
+
+The Phase 1 labs are exercised locally by the verifier. No external SIP endpoint or manual telephony flow is required.
+
+## Artifacts
+
+- `toolchain.txt`
+- `build.log`
+- `unit-tests.log`
+- `sanitizers.log`
+- `format-check.log`
+- `clang-tidy.log`
+- `raii-demo.log`
+- `smart-pointers-demo.log`
+- `move-semantics-demo.log`
+
+These are historical captured outcomes, not normative documentation.
+
+## Results
+
+Phase 1 verification passed and the Modern C++ core became the base for Phase 2.
+
+## Security and redaction
+
+No SIP credentials, authentication material, or secret-bearing packet traces belong in Phase 1 evidence.
+
+## Reproduction
+
+Run `./scripts/phase1/verify.sh`. Use `scripts/phase1/collect-evidence.sh` only when intentionally collecting a new evidence run; do not overwrite historical observations to make them appear current.
 
 ## References
 

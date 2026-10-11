@@ -1,308 +1,158 @@
 # Phase 8 — Multithreading
 
-Phase 8 was merged to `main` by PR #9 at
-`4a6a66bd9645b2f0d891fb6000217746f90162de`. The merged Phase 8 branch tip is
-`34931aa8445f89adb6b4a370e1a519363873419f`. The post-merge layout correction
-was merged by PR #10 at
-`89f03e2cf095ab7e377a3a1b9dd38222b8db8353`; it changes repository
-organization and verification paths only, not production source or the Phase 8
-safety boundary. The latest production-affecting hotfix remains
-`b6c84ac48f9dbb9d442a446dc05bdd47ec1f08ca`; documentation/evidence Commit 34
-is `ba050bb9bcdd01391e2860b16e2f273c824b3ddc`.
-
-GitHub CI completed **3/3 SUCCESS** on the production hotfix commit: Build,
-Static Analysis, and Tests and Sanitizers all passed. The offline runtime
-acceptance on that production commit also passed, including the manual GUI gate;
-that historical runtime record is
-`evidence/phase8/final-runtime-acceptance-b6c84ac.txt`.
-
-After PR #10, the `main` merge commit
-`89f03e2cf095ab7e377a3a1b9dd38222b8db8353` passed all three main-push GitHub
-workflows and the complete Phase 8 automated verifier directly on `main`.
-These post-merge checks do not change the remaining PJSUA2 safety boundary or
-constitute final maintainer acceptance.
-
-The Phase 8 documentation and verification entry points are intentionally
-consolidated. Historical per-commit documents and one-off wrapper scripts remain
-available in Git history and in the chronological evidence that recorded their
-original paths. Consolidation does not rewrite that evidence and does not turn
-historical observations into new current-head runtime proof.
-
 ## Status
 
-### Current safety boundary
+Phase 8 is merged to `main`; automated verification passes, but final maintainer acceptance remains **PENDING**.
 
-The strongest current claims are deliberately narrow:
+The unresolved production boundary is unchanged:
 
-- controlled PJSUA2 2.17 `PJ_EBUSY` recovery behavior: **LIVE OBSERVED /
-  EVIDENCED** in the recorded Commit 30 lab run;
-- late registration callback after successful account shutdown in that recorded
-  run: **NONE OBSERVED**;
-- Commit 31 production registration/teardown observation: **3/3 PASS** on the
-  exact source bytes later committed as `6b19d5e`;
-- live external callback quiescence as a general guarantee: **UNPROVEN**;
-- production-client recovery from an injected real `PJ_EBUSY`: **UNPROVEN**;
-- PJSUA2 production integration readiness: **BLOCKED**.
+- controlled PJSUA2 `PJ_EBUSY` recovery was observed in the recorded live probe;
+- no late registration callback was observed after `shutdown2` in that recorded run;
+- live external callback quiescence is **UNPROVEN**;
+- production-client real `PJ_EBUSY` recovery is **UNPROVEN**;
+- PJSUA2 integration readiness is **BLOCKED**.
 
-Do not describe Phase 8 as proving universal race freedom, universal PJSUA2
-callback quiescence, live SIP/media teardown safety, leak freedom, or sustained
-GUI frame-rate performance.
+There is no separate Phase 8 release tag.
 
 ## Objective
 
-Make the softphone concurrency model explicit and testable through:
-
-- a reusable C++20 thread-safe queue;
-- deterministic serial worker ownership and shutdown behavior;
-- high-contention producer/consumer stress testing;
-- independent ThreadSanitizer verification;
-- explicit Qt/PJSUA2 ownership and lifetime review;
-- fail-closed modeling of unsafe PJSUA2 shutdown cases; and
-- repeatable offline GUI/runtime acceptance without changing Phase 7 SIP
-  behavior.
-
-The generic `ThreadSafeQueue<T>` / `SerialTaskWorker` path remains separate
-from the production Qt/PJSUA2 event path. Phase 8 does not claim that the
-generic queue replaced Qt queued delivery.
+Make concurrency ownership and shutdown behavior explicit and testable without changing the Phase 7 user-facing call feature set.
 
 ## Scope
 
-In scope:
+Phase 8 covers:
 
-- `ThreadSafeQueue<T>` queue semantics, cancellation, close/drain behavior,
-  producer/consumer integrity, and ownership requirements;
-- `SerialTaskWorker` FIFO execution, exception containment, lifecycle, and
-  non-reentrant task handoff;
-- canonical CTest registration of Phase 8 tests;
-- 100,000-event MPMC stress and repeated stress execution;
-- opt-in standalone TSan with documented toolchain boundaries;
-- Qt/PJSUA2 source ownership and callback-lifetime audits;
-- bounded call-slot cleanup and deterministic cleanup policy tests;
-- callback activity, shutdown failure-path, stale-result, and external-ingress
-  race models;
-- shutdown-authorization policy and integration contract checks;
-- roadmap-required threading evidence and final offline GUI acceptance.
+- `ThreadSafeQueue<T>` close, cancellation, FIFO, and drain semantics;
+- owned `SerialTaskWorker` lifecycle and exception containment;
+- repeated 100,000-event MPMC stress;
+- ThreadSanitizer verification;
+- Qt owner-thread handoff;
+- PJSUA2 call-slot/callback/shutdown lifetime contracts;
+- one controlled live PJSUA2 lifecycle observation.
 
-Out of scope:
-
-- new user-facing call features or SIP account features;
-- replacing Qt queued connections with the generic Phase 8 queue;
-- claiming dedicated Metrics/Logging runtime threads exist merely because the
-  roadmap diagram illustrates them;
-- live SIP registration/call verification as part of the offline final runtime
-  gate;
-- treating one controlled live PJSUA2 recovery observation as proof of
-  universal callback quiescence or production-client shutdown safety;
-- changing or recreating the Phase 7 tag `v0.8-qt-gui`.
+It does not claim that the generic queue replaced Qt queued delivery or that all PJSUA2 teardown paths are proven safe.
 
 ## Deliverables
 
-### Consolidated documentation
-
-Current Phase 8 documentation is intentionally limited to five files:
-
-- `README.md` — phase scope, current status, entry points and exit criteria;
-- `pjsip-shutdown-safety.md` — consolidated ownership/lifetime/shutdown design
-  and verification boundary;
-- `pjsip-live-lifecycle.md` — controlled live PJSUA2 lifecycle observation;
-- `final-runtime-acceptance.md` — current offline runtime/manual GUI protocol and
-  recorded results;
-- `roadmap-exit-review.md` — roadmap requirements, evidence mapping and
-  maintainer sign-off boundary.
-
-The former `commit7-*` through `commit19-*`, `commit30-*`, `commit32-*`, and
-`commit34-*` documents are historical provenance. Their content is represented
-by the consolidated documents above and remains recoverable from Git history.
+- reusable C++20 queue and serial worker;
+- unit/integration tests under the normal `tests/unit` and `tests/integration` taxonomy;
+- canonical CTest registration without a phase-specific CMake subtree;
+- repeatable stress/TSan verification;
+- concise threading architecture documentation;
+- sanitized Phase 8 evidence.
 
 ## Architecture and design
 
-The authoritative architecture document is
-[`docs/architecture/threading-model.md`](../architecture/threading-model.md).
-The key boundary is:
+`docs/architecture/threading-model.md` is the architecture source of truth.
+
+The production GUI retains the Phase 7 model:
 
 ```text
-Qt/PJSUA2 production path
-    QtRegistrationBackend std::jthread
-        -> RegistrationSession / PJSUA2 client
-        -> QMetaObject::invokeMethod(..., Qt::QueuedConnection)
-        -> GuiViewModel / CallManager owner thread
-
-Generic Phase 8 path
-    ThreadSafeQueue<T>
-        -> SerialTaskWorker
-        -> standalone concurrency/stress/TSan tests
+QtRegistrationBackend session worker
+        -> PJSUA2 session/client operations
+        -> Qt::QueuedConnection
+        -> QObject/UI owner thread
 ```
 
-For PJSUA2 lifetime work, call-slot cleanup, callback admission/drain, retained
-callback targets, fail-closed destruction and shutdown-authorization models are
-defensive contracts. A zero active-call count or a drained local callback gate
-is not by itself proof that the external library can never enter another
-callback.
+The generic concurrency primitives are independently reusable:
+
+```text
+producers -> ThreadSafeQueue<T> -> consumers
+producers -> SerialTaskWorker   -> one owned worker thread
+```
+
+These paths are related by ownership principles, not by an assertion that the generic queue transports every production Qt/PJSUA2 callback.
 
 ## Build and run
 
-### Verification entry points
-
-Threading/focused verification:
-
-```bash
-bash scripts/phase8/verify-threading.sh queue
-PHASE8_STRESS_REPEATS=100 bash scripts/phase8/verify-threading.sh stress
-CXX="$(command -v clang++-18)" \
-PHASE8_TSAN_BUILD_DIR="$PWD/build/phase8-tsan-clang18-debug" \
-PHASE8_TSAN_REPEATS=3 \
-    bash scripts/phase8/verify-threading.sh tsan
-```
-
-Local reproduction of GitHub static-analysis gates:
-
-```bash
-bash scripts/phase8/verify-static-analysis.sh all
-```
-
-PJSIP/Qt offline verification is consolidated behind subcommands:
-
-```bash
-bash scripts/phase8/verify-pjsip.sh shutdown-order
-bash scripts/phase8/verify-pjsip.sh production-lifetime-audit
-bash scripts/phase8/verify-pjsip.sh shutdown-integration-contract
-bash scripts/phase8/verify-pjsip.sh live-evidence
-```
-
-The controlled live experiment remains a separate explicit opt-in action and is
-never run by the offline aggregate:
-
-```bash
-PHASE8_LIVE_SIP=1 bash scripts/phase8/run-pjsip-live-lifecycle-probe.sh
-```
-
-Final offline automatic acceptance:
-
-```bash
-bash scripts/phase8/verify-final-runtime-acceptance.sh --automatic
-```
-
-The human GUI stage must be run from a graphical desktop using the evidence
-directory emitted by the automatic stage. See `final-runtime-acceptance.md`.
-
-The aggregate offline gate is:
+Aggregate offline verification:
 
 ```bash
 bash scripts/phase8/verify.sh
 ```
 
+Concurrency/stress verification:
+
+```bash
+bash scripts/phase8/verify-threading.sh core
+THREADING_STRESS_REPEATS=100 bash scripts/phase8/verify-threading.sh stress
+```
+
+ThreadSanitizer uses the normal root CMake project in a separate build:
+
+```bash
+CXX="$(command -v clang++-18)" \
+THREADING_TSAN_REPEATS=3 \
+bash scripts/phase8/verify-threading.sh tsan
+```
+
+The live lifecycle probe is explicit opt-in only:
+
+```bash
+PHASE8_LIVE_SIP=1 bash scripts/phase8/run-pjsip-live-lifecycle-probe.sh
+```
+
 ## Verification
 
-### Recorded current production-head acceptance
+Recorded Phase 8 results include:
 
-The final acceptance rerun tied to hotfix `b6c84ac` recorded:
-
-- GitHub CI: **3/3 SUCCESS**;
-- canonical CTest: **147/147 PASS**;
-- Qt worker/event-handoff repeat: **10/10 PASS**;
-- focused Phase 8 CTest: **12/12 PASS**;
+- canonical CTest: **147/147 PASS** on the recorded final gate;
 - repeated 100,000-event MPMC stress: **PASS**;
-- Clang 18 standalone TSan: **18/18 PASS**;
-- PJSIP non-live regression: **45/45 PASS**;
-- GUI headless startup/normal exit: **40/40 PASS**;
-- manual preview-mode GUI acceptance: **PASS**, 92.97 seconds, 185 samples,
-  normal exit `0`.
+- Clang 18 TSan: **18/18 PASS** in the recorded six-test gate;
+- Qt/PJSIP ownership and shutdown source regressions: **PASS** within their offline scope;
+- historical preview-mode manual GUI acceptance: **PASS**;
+- controlled live PJSUA2 `PJ_EBUSY` recovery: **OBSERVED/EVIDENCED**.
 
-These observations remain tied to their recorded commit/evidence. A later
-document/script consolidation was reverified after merge on `main` at `89f03e2cf095ab7e377a3a1b9dd38222b8db8353`;
-consolidation alone is not new runtime evidence.
+Offline PASS does not upgrade the unresolved live production shutdown boundary.
 
 ## Evidence
 
-Chronological Phase 8 evidence is retained under `evidence/phase8/`. Roadmap
-closure artifacts remain under `evidence/phase8/`. Historical evidence is
-not rewritten merely because current documentation and scripts were
-consolidated.
+The concise evidence index is `evidence/phase8/README.md`.
 
-The controlled live lifecycle summary is
-`evidence/phase8/pjsip-live-lifecycle.txt`. Raw SIP passwords, Digest
-Authorization material, nonce/cnonce/response material, SRTP inline keys and raw
-packet captures must not be committed.
+Retained artifacts cover manual GUI acceptance, controlled live PJSUA2 lifecycle behavior, MPMC stress, and TSan. Commit-by-commit closure logs are intentionally left to Git history rather than duplicated in the current evidence tree.
+
+Never commit SIP passwords, Digest response/nonce/cnonce material, SRTP inline keys, raw sensitive SIP traces, or protected packet captures.
 
 ## Interview focus
 
-The review-oriented explanation for this phase is
-[`docs/interview/phase8-questions.md`](../interview/phase8-questions.md).
-Important topics include:
+Be able to explain:
 
-- why the generic queue is not automatically a replacement for Qt queued
-  connections;
-- the difference between queue shutdown, worker shutdown, and PJSUA2 object
-  lifetime;
-- what the 100,000-event MPMC stress test proves and does not prove;
-- why isolated TSan coverage is useful but limited;
-- how owner-thread rules are enforced for `CallManager` and Qt handoff;
-- why call-slot count is not callback quiescence; and
-- why Phase 8 records `BLOCKED/UNPROVEN` instead of manufacturing a PASS for
-  live PJSUA2 teardown.
+- queue close versus local stop-token cancellation;
+- serial-worker ownership and drain semantics;
+- what MPMC stress and TSan do and do not prove;
+- why Qt queued delivery remains the production UI handoff;
+- why call-slot count is not external callback quiescence;
+- why the current PJSUA2 integration boundary remains fail-closed.
+
+See `docs/interview/phase8-questions.md`.
 
 ## Exit criteria
 
 | Criterion | State |
 |---|---|
-| `ThreadSafeQueue`, mutex, condition variable, atomic | Implemented/tested |
-| Owned serial worker thread | Implemented/tested in isolation |
-| 100,000 events with multiple producers/consumers | PASS evidence |
-| ThreadSanitizer where feasible | Clang 18 standalone PASS evidence |
-| Qt/PJSUA2 ownership and lifetime review | Implemented/audited |
-| Offline GUI/runtime acceptance | Historical manual GUI PASS; post-merge automated revalidation PASS on `89f03e2` |
-| GitHub CI | PR #10 checks PASS; all three main-push workflows PASS on `89f03e2` |
+| Queue/worker implementation and deterministic tests | PASS |
+| 100,000-event MPMC stress | PASS evidence |
+| Clang 18 TSan | PASS evidence |
+| Qt owner-thread handoff regression | PASS |
+| Controlled PJSUA2 `PJ_EBUSY` recovery | OBSERVED/EVIDENCED |
 | Live external callback quiescence | UNPROVEN |
 | Production-client real `PJ_EBUSY` recovery | UNPROVEN |
 | PJSUA2 integration readiness | BLOCKED |
-| Final maintainer Phase 8 sign-off | PENDING |
-| Merge to `main` | DONE — PR #9 plus corrective PR #10 |
-| Phase 8 release tag | No separate tag defined by the current roadmap |
+| Final maintainer acceptance | PENDING |
+| Separate Phase 8 release tag | None defined |
 
-Final maintainer acceptance must explicitly acknowledge the remaining PJSUA2
-boundary. The merges above are recorded Git history, not an acceptance signal.
-This document does not authorize a new Phase 8 tag or any history rewrite.
+Final acceptance must explicitly acknowledge the unresolved PJSUA2 boundary; merge history alone is not acceptance.
 
 ## References
 
-- [`README_roadmap.md`](../../README_roadmap.md), Phase 8 — Multithreading.
-- [`docs/architecture/threading-model.md`](../architecture/threading-model.md).
-- [`pjsip-shutdown-safety.md`](pjsip-shutdown-safety.md).
-- [`pjsip-live-lifecycle.md`](pjsip-live-lifecycle.md).
-- [`final-runtime-acceptance.md`](final-runtime-acceptance.md).
-- [`roadmap-exit-review.md`](roadmap-exit-review.md).
+- `README_roadmap.md`
+- `docs/architecture/threading-model.md`
+- `docs/interview/phase8-questions.md`
+- `evidence/phase8/README.md`
+- `tests/unit/`
+- `tests/integration/`
+- `scripts/phase8/`
 
 ## Next phase
 
-Do not start Phase 9 until Phase 8 is explicitly accepted by the maintainer.
-Merge and synchronization to `main` are complete. The current roadmap defines
-`v0.9-diagnostics` for Phase 9 and does not define a separate release tag for
-Phase 8.
-
-The roadmap next phase is Phase 9 — debugging, memory, and core dump. The open
-production PJSUA2 shutdown risks from Phase 8 must remain visible as carried
-technical debt unless they are resolved with real evidence before Phase 8
-closure.
-
-
-
-<!-- PHASE8_MANUAL_ACCEPTANCE_BA050BB -->
-
-### Final manual runtime acceptance refresh
-
-A final graphical GUI acceptance run was completed on parent runtime HEAD
-`ba050bb9bcdd01391e2860b16e2f273c824b3ddc`.
-
-Result: **PASS**.
-
-The preview/no-SIP UI remained responsive through the required interaction
-and idle-soak checks and exited normally through the window close path.
-
-The complete observed record is:
-
-`evidence/phase8/final-runtime-acceptance-ba050bb.txt`
-
-This refresh is offline GUI evidence only. It does not establish live SIP
-acceptance, external callback quiescence, or universal PJSUA2 shutdown safety.
-Those boundaries remain explicitly **BLOCKED/UNPROVEN** where already
-documented.
+Do not start Phase 9 until Phase 8 receives explicit maintainer acceptance. The roadmap assigns `v0.9-diagnostics` to Phase 9.

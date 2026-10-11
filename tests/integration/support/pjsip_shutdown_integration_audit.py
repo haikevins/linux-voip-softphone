@@ -17,9 +17,9 @@ import json
 from pathlib import Path
 import sys
 
-ROOT = Path(__file__).resolve().parents[2]
-AUDIT = ROOT / 'scripts/phase8/audit-pjsip-production-lifetime.py'
-spec = importlib.util.spec_from_file_location('phase8_existing_source_audit', AUDIT)
+ROOT = Path(__file__).resolve().parents[3]
+AUDIT = Path(__file__).with_name('pjsip_production_lifetime_audit.py')
+spec = importlib.util.spec_from_file_location('pjsip_existing_source_audit', AUDIT)
 if spec is None or spec.loader is None:
     raise RuntimeError('existing production source audit cannot be imported')
 lifetime = importlib.util.module_from_spec(spec)

@@ -2,25 +2,25 @@
 
 ## Status
 
-Complete. Phase 3 established TCP/UDP networking and the `v0.4-networking` milestone.
+Phase 3 is complete and published as the `v0.4-networking` milestone.
 
 ## Verification scope
 
-Evidence covers IPv4 endpoint handling, TCP client/server behavior, UDP sockets, network integration tests, the full regression suite, sanitizers, formatting, and static analysis.
+Evidence covers IPv4 endpoint handling, TCP client/server behavior, UDP sockets, focused network integration, full regression testing, sanitizers, formatting, static analysis, and toolchain capture.
 
 ## Environment
 
-Historical artifacts retained in this directory are authoritative for the original verification environment. Current requirements are documented in `docs/phase3/README.md`.
+The retained `toolchain.txt` and logs record the original verification environment. Current requirements belong in `docs/phase3/README.md`.
 
 ## Automated verification
 
-The Phase 3 verifier is:
+Run:
 
 ```bash
 ./scripts/phase3/verify.sh
 ```
 
-The completed Phase 3 gates recorded 28/28 network-focused checks, 60/60 full tests, 60/60 sanitizer tests, and 43/43 clang-tidy build targets/checks, with the phase verifier passing.
+The accepted gates recorded 28/28 network checks, 60/60 full tests, 60/60 sanitizer tests, and 43/43 clang-tidy build/check targets.
 
 ## Manual verification
 
@@ -28,7 +28,14 @@ No external SIP endpoint is required. TCP/UDP behavior is reproduced by the auto
 
 ## Artifacts
 
-Existing committed Phase 3 evidence remains the historical record of the networking verification run. New evidence should prefer concise summaries over duplicated complete terminal transcripts.
+- `toolchain.txt`
+- `build.log`
+- `network-tests.log`
+- `full-tests.log`
+- `sanitizers.log`
+- `format-check.log`
+- `clang-tidy.log`
+- `phase3-summary.txt`
 
 ## Results
 
@@ -40,13 +47,7 @@ Packet captures are not required for normal Phase 3 evidence and should not be c
 
 ## Reproduction
 
-Run:
-
-```bash
-./scripts/phase3/verify.sh
-```
-
-Any evidence collector for this phase must write under `evidence/phase3/`.
+Run `./scripts/phase3/verify.sh`. Any new collected evidence must remain under `evidence/phase3/` and must not rewrite the historical run.
 
 ## References
 

@@ -171,10 +171,106 @@ if(ENABLE_QT_GUI)
     )
 endif()
 
-# Phase 8 focused CTest registration.
-# Test sources follow the repository unit/integration taxonomy; the standalone
-# harness lives outside tests/ so phase names are not used as test categories.
-add_subdirectory(
-    "${PROJECT_SOURCE_DIR}/cmake/phase8-focused"
-    "${CMAKE_CURRENT_BINARY_DIR}/phase8-focused"
+# Concurrency and PJSIP lifetime contract tests use the normal repository
+# unit/integration taxonomy. They are ordinary canonical CTest entries rather
+# than a phase-specific CMake subtree.
+find_package(Threads REQUIRED)
+
+function(add_plain_cpp_test target source ctest_name labels)
+    add_executable(${target} ${source})
+    target_compile_features(${target} PRIVATE cxx_std_20)
+    target_include_directories(${target} PRIVATE "${PROJECT_SOURCE_DIR}/src")
+    target_link_libraries(${target} PRIVATE Threads::Threads)
+    project_set_warnings(${target})
+    project_enable_sanitizers(${target})
+    add_test(NAME ${ctest_name} COMMAND $<TARGET_FILE:${target}>)
+    set_tests_properties(${ctest_name} PROPERTIES
+        LABELS "${labels}"
+        TIMEOUT 30
+    )
+endfunction()
+
+add_plain_cpp_test(
+    thread_safe_queue_tests
+    unit/test_thread_safe_queue.cpp
+    ThreadSafeQueueTest
+    "threading;concurrency;unit;tsan"
+)
+add_plain_cpp_test(
+    serial_task_worker_tests
+    unit/test_serial_task_worker.cpp
+    SerialTaskWorkerTest
+    "threading;concurrency;unit;tsan"
+)
+add_plain_cpp_test(
+    thread_ownership_tests
+    unit/test_thread_ownership.cpp
+    ThreadOwnershipTest
+    "threading;concurrency;unit;tsan"
+)
+add_plain_cpp_test(
+    mpmc_stress_tests
+    integration/test_mpmc_stress.cpp
+    MpmcStressTest
+    "threading;concurrency;integration;stress;tsan"
+)
+set_tests_properties(MpmcStressTest PROPERTIES TIMEOUT 90)
+
+add_plain_cpp_test(
+    pjsip_call_slot_cleanup_policy_tests
+    unit/test_pjsip_call_slot_cleanup.cpp
+    PjsipCallSlotCleanupPolicyTest
+    "threading;pjsip;unit;tsan"
+)
+add_plain_cpp_test(
+    pjsip_callback_activity_tests
+    unit/test_pjsip_callback_activity.cpp
+    PjsipCallbackActivityTest
+    "threading;pjsip;unit;tsan"
+)
+add_plain_cpp_test(
+    pjsip_shutdown_failure_paths_tests
+    unit/test_pjsip_shutdown_failure_paths.cpp
+    PjsipShutdownFailurePathsTest
+    "threading;pjsip;unit"
+)
+add_plain_cpp_test(
+    pjsip_callback_ingress_races_tests
+    unit/test_pjsip_callback_ingress_races.cpp
+    PjsipCallbackIngressRacesTest
+    "threading;pjsip;unit"
+)
+add_plain_cpp_test(
+    pjsip_shutdown_ownership_policy_tests
+    unit/test_pjsip_shutdown_ownership_policy.cpp
+    PjsipShutdownOwnershipPolicyTest
+    "threading;pjsip;unit"
+)
+add_plain_cpp_test(
+    pjsip_shutdown_authorization_tests
+    unit/test_pjsip_shutdown_authorization.cpp
+    PjsipShutdownAuthorizationTest
+    "threading;pjsip;unit"
+)
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+add_test(
+    NAME PjsipProductionLifetimeAuditTest
+    COMMAND "${Python3_EXECUTABLE}" -B
+        "${CMAKE_CURRENT_SOURCE_DIR}/integration/test_pjsip_production_lifetime_audit.py"
+)
+set_tests_properties(PjsipProductionLifetimeAuditTest PROPERTIES
+    LABELS "pjsip;integration;audit"
+    TIMEOUT 30
+)
+
+add_test(
+    NAME PjsipShutdownIntegrationContractTest
+    COMMAND "${Python3_EXECUTABLE}" -B
+        "${CMAKE_CURRENT_SOURCE_DIR}/integration/test_pjsip_shutdown_integration_contract.py"
+)
+set_tests_properties(PjsipShutdownIntegrationContractTest PROPERTIES
+    LABELS "pjsip;integration;audit"
+    TIMEOUT 30
 )

@@ -14,8 +14,7 @@ fail() {
 [[ "${PHASE8_LIVE_SIP:-}" == '1' ]] || \
     fail 'set PHASE8_LIVE_SIP=1 to acknowledge that this performs real SIP traffic'
 
-[[ "$(git branch --show-current)" == 'phase/8-multithreading' ]] || \
-    fail 'expected phase/8-multithreading'
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || fail 'run inside the project Git checkout'
 
 initial_status="$(git status --porcelain=v1 --untracked-files=all)"
 if [[ -n "$initial_status" && "${PHASE8_ALLOW_DIRTY:-}" != '1' ]]; then

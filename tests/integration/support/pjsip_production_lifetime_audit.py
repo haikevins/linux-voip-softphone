@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 8: bounded structural inventory for production PJSUA2 callback targets.
+"""Bounded structural inventory for production PJSUA2 callback targets.
 
 This audits reviewed offline teardown invariants for the registration-only,
 outgoing-call, and incoming-call clients. It records implementation-reviewed
@@ -368,7 +368,7 @@ def audit_pair(outgoing: str, incoming: str, registration: str | None = None) ->
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source-root', type=Path,
-                        default=Path(__file__).resolve().parents[2])
+                        default=Path(__file__).resolve().parents[3])
     parser.add_argument('--json', action='store_true')
     parser.add_argument('--require-live-proof', action='store_true',
                         help='Exit nonzero while real PJSUA2 callback quiescence is unverified')

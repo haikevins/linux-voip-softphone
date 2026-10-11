@@ -7,7 +7,7 @@ import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-TOOL = ROOT / 'scripts/phase8/audit-pjsip-production-lifetime.py'
+TOOL = ROOT / 'tests/integration/support/pjsip_production_lifetime_audit.py'
 spec = importlib.util.spec_from_file_location('pjsip_lifetime_audit', TOOL)
 if spec is None or spec.loader is None:
     raise RuntimeError('Unable to load production audit')

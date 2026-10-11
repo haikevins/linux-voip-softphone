@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
-# Aggregate Phase 8 automated offline verification.
-# This script does NOT prove live SIP/PJSUA2 shutdown safety.
+# Aggregate Phase 8 offline verification. Live SIP remains explicit opt-in.
 set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd "$ROOT"
-
-# Verification must never leave Python bytecode inside the source checkout.
 export PYTHONDONTWRITEBYTECODE=1
 
 fail() {
@@ -14,83 +11,69 @@ fail() {
     exit 1
 }
 
-require_command() {
-    local command_name="$1"
-    command -v "$command_name" >/dev/null 2>&1 || \
-        fail "required command not found: $command_name"
-}
-
-for command_name in bash git python3; do
-    require_command "$command_name"
+for tool in bash cmake ctest git python3; do
+    command -v "$tool" >/dev/null 2>&1 || fail "required command not found: $tool"
 done
 
-PHASE8_REQUIRED_ANCESTOR="34931aa8445f89adb6b4a370e1a519363873419f"
-git merge-base --is-ancestor "$PHASE8_REQUIRED_ANCESTOR" HEAD || \
-    fail "required Phase 8 baseline missing from current HEAD ancestry: $PHASE8_REQUIRED_ANCESTOR"
-
-required_paths=(
-    scripts/quality/verify-docs-structure.sh
-    scripts/quality/verify-evidence-structure.sh
-    scripts/phase8/verify-final-runtime-acceptance.sh
-    scripts/phase8/verify-pjsip.sh
-    scripts/phase8/verify-threading.sh
-    scripts/phase8/verify-roadmap-exit.sh
-)
-for path in "${required_paths[@]}"; do
-    [[ -f "$path" ]] || fail "required verification entry point missing: $path"
-done
-
-echo '== repository scope =='
-git diff --check
-git diff --cached --check
 initial_status="$(git status --porcelain=v1 --untracked-files=all)"
 
-echo '== documentation structure =='
+echo '== repository quality =='
+git diff --check
+git diff --cached --check
 bash scripts/quality/verify-docs-structure.sh
-
-echo '== evidence structure =='
 bash scripts/quality/verify-evidence-structure.sh
 
-echo '== Phase 8 shell syntax =='
-while IFS= read -r -d '' script; do
-    bash -n "$script"
-done < <(find scripts/phase8 -maxdepth 1 -type f -name '*.sh' -print0 | sort -z)
-echo 'Phase 8 shell syntax: PASS'
+echo '== canonical Qt/PJSIP build and CTest =='
+cmake --preset qt-pjsip-gui-debug
+cmake --build --preset qt-pjsip-gui-debug --parallel 2
+ctest --preset qt-pjsip-gui-debug
 
-echo '== Phase 8 Python syntax =='
-python3 -B - <<'PY'
-from pathlib import Path
+echo '== production PJSIP shutdown-order source regression =='
+python3 -B tests/integration/test_pjsip_shutdown_order.py
 
-paths = sorted(Path('scripts/phase8').glob('*.py'))
-paths += sorted(Path('tests/integration').glob('*.py'))
-if not paths:
-    raise SystemExit('ERROR: no Phase 8 Python files found')
-for path in paths:
-    compile(path.read_text(encoding='utf-8'), str(path), 'exec')
-print(f'Phase 8 Python syntax: PASS ({len(paths)} file(s))')
-PY
+echo '== concurrency core =='
+bash scripts/phase8/verify-threading.sh core
 
-echo '== recorded live PJSUA2 lifecycle evidence =='
-bash scripts/phase8/verify-pjsip.sh live-evidence
+echo '== repeated MPMC stress =='
+THREADING_STRESS_REPEATS="${THREADING_STRESS_REPEATS:-30}" \
+    bash scripts/phase8/verify-threading.sh stress
 
-echo '== Phase 8 final automated offline runtime acceptance =='
-bash scripts/phase8/verify-final-runtime-acceptance.sh --automatic
+echo '== fail-closed production shutdown boundary =='
+python3 -B tests/integration/support/pjsip_shutdown_integration_audit.py \
+    --source-root "$ROOT"
 
-echo '== Phase 8 roadmap/source boundary audit =='
-bash scripts/phase8/verify-roadmap-exit.sh
+set +e
+python3 -B tests/integration/support/pjsip_shutdown_integration_audit.py \
+    --source-root "$ROOT" --require-ready >/dev/null
+ready_rc=$?
+set -e
+[[ "$ready_rc" -eq 3 ]] || fail "shutdown readiness audit returned unexpected status: $ready_rc"
 
-echo '== source checkout cleanliness =='
-final_status="$(git status --porcelain=v1 --untracked-files=all)"
-if [[ "$final_status" != "$initial_status" ]]; then
-    echo 'ERROR: verification modified the source checkout' >&2
-    diff -u \
-        <(printf '%s\n' "$initial_status") \
-        <(printf '%s\n' "$final_status") || true
-    exit 1
+echo '== recorded controlled live lifecycle evidence =='
+evidence='evidence/phase8/pjsip-live-lifecycle.txt'
+[[ -s "$evidence" ]] || fail "missing $evidence"
+for marker in \
+    'FIRST_SHUTDOWN=PJ_EBUSY' \
+    'SECOND_SHUTDOWN=SUCCESS' \
+    'PROBE_RESULT=PASS' \
+    'CONTROLLED_PJSUA2_PJ_EBUSY_RECOVERY=LIVE_OBSERVED_EVIDENCED' \
+    'LIVE_EXTERNAL_CALLBACK_QUIESCENCE=UNPROVEN' \
+    'PRODUCTION_INTEGRATION_READINESS=BLOCKED'
+do
+    grep -Fxq "$marker" "$evidence" || fail "missing evidence marker: $marker"
+done
+
+if grep -Ein \
+    '^[[:space:]]*(Proxy-)?Authorization:[[:space:]]*Digest|nonce="|cnonce="|response="|a=crypto:.*inline:' \
+    "$evidence" >/dev/null 2>&1; then
+    fail 'secret-bearing SIP/SRTP material detected in live evidence'
 fi
-echo 'Source checkout cleanliness: PASS'
 
-echo 'Phase 8 automated offline verification: PASS'
-echo 'EVIDENCE: controlled PJSUA2 PJ_EBUSY recovery was observed in the recorded live run.'
-echo 'BOUNDARY: live SIP/PJSUA2 shutdown safety remains BLOCKED/UNPROVEN.'
-echo 'BOUNDARY: manual graphical GUI acceptance remains a separate explicit gate.'
+final_status="$(git status --porcelain=v1 --untracked-files=all)"
+[[ "$final_status" == "$initial_status" ]] || fail 'verification modified the source checkout'
+
+echo 'Phase 8 offline verification: PASS'
+echo 'EVIDENCE: controlled PJSUA2 PJ_EBUSY recovery was observed in the recorded live probe.'
+echo 'BOUNDARY: live external callback quiescence remains UNPROVEN.'
+echo 'BOUNDARY: production-client real PJ_EBUSY recovery remains UNPROVEN.'
+echo 'BOUNDARY: PJSUA2 integration readiness remains BLOCKED.'
