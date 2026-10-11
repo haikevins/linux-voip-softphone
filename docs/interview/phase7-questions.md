@@ -39,9 +39,9 @@ A call can reach confirmed/media-active state and disconnect before the worker p
 
 Declining an unanswered INVITE is a final response to call setup. Hanging up an established dialog is teardown. Phase 7 therefore sends explicit SIP `603 Decline` on the softphone callee-side leg.
 
-#### Why did the peer display `403 Forbidden` even though the softphone sent `603 Decline`?
+#### Why did the caller originally receive `403 Forbidden` after the softphone sent `603 Decline`, and what is the final lab behavior?
 
-Asterisk is a B2BUA and owns separate call legs. The observed trace showed Asterisk receiving `603 Decline` from the softphone leg and generating `403 Forbidden` toward the other leg with Q.850 cause 21. The responses belong to different SIP dialogs.
+Asterisk is a B2BUA and owns separate call legs. The original dialplan accepted `603 Decline` from the softphone but terminated the caller leg generically, producing `403 Forbidden` with Q.850 cause 21. The post-closure dialplan now uses `PJSIPHangup(603)`, so the final Phase 7 lab preserves `603 Decline` end-to-end; the earlier `403` remains historical evidence.
 
 #### When should call duration start?
 

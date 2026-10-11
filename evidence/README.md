@@ -42,6 +42,8 @@ evidence/
 
 A phase may contain additional scenario directories or artifacts when they represent a real verification boundary. Symmetry between phases is not required.
 
+Historical per-commit/checkpoint artifacts that remain useful for provenance but are no longer part of the phase's current/core evidence may be grouped under `history/`. Moving such files is organizational only: preserve their bytes, record the move, and keep the phase README focused on the current evidence boundary.
+
 ## Phase README schema
 
 Each `evidence/phaseN/README.md` uses:
@@ -68,6 +70,17 @@ Scenario-specific READMEs use:
 ## Observations
 ## Result
 ## Artifacts
+## Security and redaction
+## References
+```
+
+Historical evidence indexes use:
+
+```text
+## Purpose
+## Contents
+## Provenance
+## Retention
 ## Security and redaction
 ## References
 ```

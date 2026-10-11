@@ -106,7 +106,7 @@ Manual live verification covered:
 - outgoing call reuse without re-registering;
 - live RTP/audio diagnostics across sequential calls.
 
-For Decline, the softphone sent SIP `603 Decline` to Asterisk. Asterisk, acting as a B2BUA, produced `403 Forbidden` toward the other call leg; these are different SIP dialogs.
+For Decline, the softphone sends SIP `603 Decline` to Asterisk. An earlier lab capture showed Asterisk mapping that result to `403 Forbidden` on the caller-facing leg; the post-closure dialplan correction now preserves `603 Decline` end-to-end with Q.850 cause 21. The earlier `403` remains historical evidence, not the final Phase 7 state.
 
 ## Evidence
 
@@ -114,7 +114,7 @@ Curated Phase 7 evidence is indexed at `evidence/phase7/README.md` and includes:
 
 - automated verification;
 - manual GUI/call lifecycle verification;
-- sanitized SIP Decline mapping;
+- sanitized SIP Decline mapping and final end-to-end `603` correction;
 - representative RTP/audio diagnostics.
 
 Do not commit SIP passwords, Digest authorization material, complete raw SIP/PJSIP transcripts, raw audio, unrelated peer identifiers, or packet captures containing voice payloads.

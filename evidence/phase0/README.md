@@ -2,39 +2,43 @@
 
 ## Status
 
-Complete. Phase 0 established the repository, CMake project skeleton, baseline tests, and the `v0.1-project-skeleton` milestone.
+Phase 0 is complete and published as the `v0.1-project-skeleton` milestone.
 
 ## Verification scope
 
-Evidence for this phase demonstrates that the initial project skeleton configured, built, and provided a usable baseline for subsequent phases.
+Evidence covers the initial repository/CMake skeleton, baseline build, test, sanitizer, static-analysis, and toolchain capture used as the starting point for later phases.
 
 ## Environment
 
-The historical Phase 0 artifacts in this directory are the source of truth for the exact captured environment. Current setup details are documented in `docs/phase0/README.md`.
+The retained `toolchain.txt` and logs are the authoritative record of the original environment. Current setup instructions belong in `docs/phase0/README.md`.
 
 ## Automated verification
 
-Phase 0 predates the later per-phase verification contract. Its retained evidence records the initial build and test baseline rather than a modern `verify_phaseN.sh` gate.
+Phase 0 predates the later per-phase wrapper convention. Its retained build/test/static-analysis artifacts record the accepted baseline rather than a modern aggregate verifier run.
 
 ## Manual verification
 
-No live SIP or media verification belongs to this phase.
+No live SIP, media, or external telephony verification applies to Phase 0.
 
 ## Artifacts
 
-Existing committed artifacts in this directory are retained as historical verification evidence. This README is an index and does not redefine their captured contents.
+- `toolchain.txt` — captured toolchain information.
+- `build.log` — build result.
+- `test.log` — baseline test result.
+- `sanitizers.log` — sanitizer result.
+- `clang-tidy.log` — static-analysis result.
 
 ## Results
 
-The repository skeleton and initial build/test baseline were completed successfully and became the base for Phase 1.
+The project skeleton configured, built, and established the baseline used by Phase 1.
 
 ## Security and redaction
 
-No SIP credentials or secret-bearing network traces belong in Phase 0 evidence.
+No SIP credentials, authentication material, or secret-bearing network traces belong in Phase 0 evidence.
 
 ## Reproduction
 
-Use the build and run procedure documented in `docs/phase0/README.md` against the current repository state. Historical output should not be regenerated merely to make old timestamps match.
+Follow `docs/phase0/README.md` for the current build/test procedure. Do not regenerate historical artifacts merely to replace their original timestamps or environment.
 
 ## References
 
