@@ -967,7 +967,7 @@ v0.6-pjsip-cli
 
 # 9. Phase 6 — RTP + Audio
 
-**Trạng thái:** đã nghiệm thu cho lab nội bộ. Source, automated tests, kiến trúc và bằng chứng kiểm thử thực tế nằm trong `docs/phase6/README.md`, `docs/architecture/audio-rtp.md` và `evidence/phase6/`. Milestone release identifier: `v0.7-rtp-audio` (chỉ tạo và push annotated tag sau khi closure commit được xác minh; kiểm tra Git refs để xác nhận trạng thái thực tế).
+**Trạng thái:** đã nghiệm thu cho lab nội bộ. Source, automated tests, kiến trúc và bằng chứng kiểm thử thực tế nằm trong `docs/phase6/README.md`, `docs/architecture/audio-rtp.md` và `evidence/phase6/`. Milestone release identifier `v0.7-rtp-audio` đã được publish dưới dạng annotated tag; Git refs là nguồn xác nhận trạng thái release thực tế.
 
 Thời gian:
 
@@ -1069,7 +1069,7 @@ v0.7-rtp-audio
 
 # 10. Phase 7 — Qt/QML GUI
 
-**Trạng thái:** đã nghiệm thu cho lab nội bộ. Phase 7 đặt Qt/QML lên signaling/media path đã kiểm thử, giữ PJSUA2 ngoài UI thread và cung cấp registration, outgoing/incoming call, Answer/Decline, call duration và live RTP/audio diagnostics. Release identifier: `v0.8-qt-gui` (chỉ tạo/push annotated tag sau khi closure commit được xác minh và merge theo release workflow).
+**Trạng thái:** đã nghiệm thu cho lab nội bộ. Phase 7 đặt Qt/QML lên signaling/media path đã kiểm thử, giữ PJSUA2 ngoài UI thread và cung cấp registration, outgoing/incoming call, Answer/Decline, call duration và live RTP/audio diagnostics. Release identifier `v0.8-qt-gui` đã được publish dưới dạng annotated tag và Phase 7 đã merge vào `main`; Git refs là nguồn xác nhận trạng thái release thực tế.
 
 Thời gian kế hoạch:
 
@@ -1164,6 +1164,8 @@ v0.8-qt-gui
 ---
 
 # 11. Phase 8 — Multithreading
+
+**Trạng thái hiện tại:** đã merge vào `main` và post-merge automated verification đã **PASS**. Final maintainer acceptance vẫn **PENDING**; live external callback quiescence và production-client real `PJ_EBUSY` recovery vẫn **UNPROVEN**, còn PJSUA2 integration readiness vẫn **BLOCKED**. Roadmap hiện tại không định nghĩa release tag riêng cho Phase 8; `v0.9-diagnostics` thuộc Phase 9.
 
 Thời gian:
 
@@ -1914,7 +1916,7 @@ Bạn nói:
 
 ## Tiến độ hiện tại
 
-Repository đã nghiệm thu **Phase 0 đến Phase 7** cho các môi trường đã ghi lại trong evidence. Phase 7 có release identifier:
+Repository đã nghiệm thu **Phase 0 đến Phase 7** cho các môi trường đã ghi lại trong evidence. Phase 8 — Multithreading đã merge vào `main` và post-merge automated verification đã PASS, nhưng final maintainer acceptance vẫn **PENDING**. Milestone release gần nhất đã publish là:
 
 ```text
 v0.8-qt-gui
@@ -1940,6 +1942,6 @@ Phase 6 — RTP + Audio
 Phase 7 — Qt/QML GUI
 ```
 
-Bước tiếp theo là **Phase 8 — Multithreading**: tổng quát hóa thread model/event handoff, kiểm thử race/lifetime và bổ sung stress/ThreadSanitizer evidence mà không làm thay đổi kết quả nghiệm thu Phase 7. Việc tạo/push annotated tag `v0.8-qt-gui` và merge branch là thao tác release riêng biệt; kiểm tra Git refs thay vì suy đoán từ roadmap.
+Phase 8 — Multithreading đã được merge vào `main`, đồng bộ và post-merge automated verification đã PASS. Final maintainer acceptance vẫn **PENDING** và các boundary PJSUA2 đã ghi nhận vẫn **BLOCKED/UNPROVEN**. Bước tiếp theo theo roadmap là **Phase 9 — Debugging, memory và core dump**, chỉ bắt đầu sau explicit Phase 8 maintainer acceptance. `v0.9-diagnostics` thuộc Phase 9; roadmap hiện tại không định nghĩa release tag riêng cho Phase 8.
 
 Mục tiêu không phải hoàn thành softphone càng nhanh càng tốt. Mục tiêu là đến cuối project, **mỗi dòng quan trọng trong JD đều có một artifact trong GitHub để bạn chỉ thẳng cho interviewer xem**.

@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 7 acceptance is complete for the documented local Asterisk lab. Commits 1–7 delivered the optional Qt/QML shell, Qt-free application layer, live SIP registration, outgoing and incoming calls, explicit Answer/Decline behavior, connected-call duration, and live RTP/audio diagnostics. The final implementation checkpoint before this closure documentation is Commit 7 (`abb0b27`). Phase 7 release identifier: `v0.8-qt-gui`; publishing the annotated tag and merging the branch are separate operations after the closure commit is verified and pushed.
+Phase 7 acceptance is complete for the documented local Asterisk lab. Commits 1–7 delivered the optional Qt/QML shell, Qt-free application layer, live SIP registration, outgoing and incoming calls, explicit Answer/Decline behavior, connected-call duration, and live RTP/audio diagnostics. The final implementation checkpoint before this closure documentation is Commit 7 (`abb0b27`). Phase 7 release identifier: `v0.8-qt-gui`; the annotated tag is published and Phase 7 was merged to `main` by PR #8 at `2bd8740373a02bc38009df9a031b8863b7e0d824`.
 
 ## Objective
 
@@ -101,7 +101,7 @@ Be able to explain why QML does not call PJSUA2 directly; why `CallManager` is Q
 
 Acceptance is complete for the documented local lab: both Qt build modes compile; selected Qt tests pass in both modes; the full inherited Phase 5/6 regression gate passes; real registration succeeds; outgoing and incoming calls provide two-way audio; Answer/Decline/local/remote/cancel paths recover to a reusable registered state; call duration behaves deterministically; and live RTP diagnostics appear, update, clear, and repopulate on a later call. The evidence applies to the tested revision and environment and is not a guarantee for other SIP servers, devices, or networks.
 
-Publishing `v0.8-qt-gui`, opening/merging a pull request, or deleting the Phase 7 branch are separate Git/release operations and must be verified with Git refs rather than inferred from this document.
+The annotated `v0.8-qt-gui` tag and the Phase 7 merge are now present in Git refs. Branch deletion remains a separate repository-maintenance operation and should not be inferred from this document.
 
 ## References
 

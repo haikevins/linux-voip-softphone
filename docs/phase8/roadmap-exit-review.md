@@ -150,3 +150,28 @@ Integration readiness: BLOCKED.
 External callback quiescence: UNPROVEN.
 Controlled PJSUA2 PJ_EBUSY recovery: LIVE OBSERVED / EVIDENCED.
 Production-client recovery from an injected real PJ_EBUSY: UNPROVEN.
+
+<!-- PHASE8_POST_MERGE_STATUS_89F03E2 -->
+
+## Post-merge status addendum — 2026-10-11
+
+The sections above remain the historical roadmap-exit snapshot and are not
+rewritten to manufacture hindsight.
+
+Subsequent repository state is now:
+
+- Phase 8 PR #9 merged to `main` at
+  `4a6a66bd9645b2f0d891fb6000217746f90162de`;
+- the layout-only corrective PR #10 merged to `main` at
+  `89f03e2cf095ab7e377a3a1b9dd38222b8db8353`;
+- the corrective merge changed no production `src/` file;
+- all three main-push GitHub workflows passed on `89f03e2`;
+- `scripts/phase8/verify.sh` passed directly on `main` after the merge;
+- final maintainer Phase 8 acceptance remains **PENDING**;
+- live external callback quiescence remains **UNPROVEN**;
+- production-client real `PJ_EBUSY` recovery remains **UNPROVEN**;
+- PJSUA2 integration readiness remains **BLOCKED**.
+
+These merge and verification facts do not upgrade the Phase 8 safety claim.
+The current roadmap defines no separate Phase 8 release tag;
+`v0.9-diagnostics` belongs to Phase 9.

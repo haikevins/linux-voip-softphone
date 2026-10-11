@@ -3,16 +3,24 @@
 Phase 8 was merged to `main` by PR #9 at
 `4a6a66bd9645b2f0d891fb6000217746f90162de`. The merged Phase 8 branch tip is
 `34931aa8445f89adb6b4a370e1a519363873419f`. The post-merge layout correction
-changes repository organization and verification paths only; it does not change
-production source or the Phase 8 safety boundary. The latest
-production-affecting hotfix remains
+was merged by PR #10 at
+`89f03e2cf095ab7e377a3a1b9dd38222b8db8353`; it changes repository
+organization and verification paths only, not production source or the Phase 8
+safety boundary. The latest production-affecting hotfix remains
 `b6c84ac48f9dbb9d442a446dc05bdd47ec1f08ca`; documentation/evidence Commit 34
 is `ba050bb9bcdd01391e2860b16e2f273c824b3ddc`.
 
-GitHub CI completed **3/3 SUCCESS** on the hotfix commit: Build, Static Analysis,
-and Tests and Sanitizers all passed. The final offline runtime acceptance on
-that production commit also passed, including the manual GUI gate. The current
-runtime record is `evidence/phase8/final-runtime-acceptance-b6c84ac.txt`.
+GitHub CI completed **3/3 SUCCESS** on the production hotfix commit: Build,
+Static Analysis, and Tests and Sanitizers all passed. The offline runtime
+acceptance on that production commit also passed, including the manual GUI gate;
+that historical runtime record is
+`evidence/phase8/final-runtime-acceptance-b6c84ac.txt`.
+
+After PR #10, the `main` merge commit
+`89f03e2cf095ab7e377a3a1b9dd38222b8db8353` passed all three main-push GitHub
+workflows and the complete Phase 8 automated verifier directly on `main`.
+These post-merge checks do not change the remaining PJSUA2 safety boundary or
+constitute final maintainer acceptance.
 
 The Phase 8 documentation and verification entry points are intentionally
 consolidated. Historical per-commit documents and one-off wrapper scripts remain
@@ -201,7 +209,7 @@ The final acceptance rerun tied to hotfix `b6c84ac` recorded:
   normal exit `0`.
 
 These observations remain tied to their recorded commit/evidence. A later
-document/script consolidation must be reverified before maintainer sign-off;
+document/script consolidation was reverified after merge on `main` at `89f03e2cf095ab7e377a3a1b9dd38222b8db8353`;
 consolidation alone is not new runtime evidence.
 
 ## Evidence
@@ -242,16 +250,18 @@ Important topics include:
 | 100,000 events with multiple producers/consumers | PASS evidence |
 | ThreadSanitizer where feasible | Clang 18 standalone PASS evidence |
 | Qt/PJSUA2 ownership and lifetime review | Implemented/audited |
-| Offline GUI/runtime acceptance | PASS on `b6c84ac`; consolidation revalidation required |
-| GitHub CI | 3/3 PASS on `b6c84ac`; consolidation commit must pass again |
+| Offline GUI/runtime acceptance | Historical manual GUI PASS; post-merge automated revalidation PASS on `89f03e2` |
+| GitHub CI | PR #10 checks PASS; all three main-push workflows PASS on `89f03e2` |
 | Live external callback quiescence | UNPROVEN |
 | Production-client real `PJ_EBUSY` recovery | UNPROVEN |
 | PJSUA2 integration readiness | BLOCKED |
 | Final maintainer Phase 8 sign-off | PENDING |
-| Merge to `main` / release tag | NOT STARTED |
+| Merge to `main` | DONE — PR #9 plus corrective PR #10 |
+| Phase 8 release tag | No separate tag defined by the current roadmap |
 
 Final maintainer acceptance must explicitly acknowledge the remaining PJSUA2
-boundary. No merge, tag, or history rewrite is authorized by this document.
+boundary. The merges above are recorded Git history, not an acceptance signal.
+This document does not authorize a new Phase 8 tag or any history rewrite.
 
 ## References
 
@@ -264,9 +274,10 @@ boundary. No merge, tag, or history rewrite is authorized by this document.
 
 ## Next phase
 
-Do not start Phase 9 from this branch until Phase 8 is explicitly accepted,
-merged to `main`, synchronized, and (if the project release plan requires it)
-tagged.
+Do not start Phase 9 until Phase 8 is explicitly accepted by the maintainer.
+Merge and synchronization to `main` are complete. The current roadmap defines
+`v0.9-diagnostics` for Phase 9 and does not define a separate release tag for
+Phase 8.
 
 The roadmap next phase is Phase 9 — debugging, memory, and core dump. The open
 production PJSUA2 shutdown risks from Phase 8 must remain visible as carried
