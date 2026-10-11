@@ -116,6 +116,14 @@ ThreadSanitizer uses the root CMake project with `ENABLE_TSAN=ON` in a separate 
 Source-contract tests inspect production PJSUA2 shutdown structure and intentionally remain fail-closed: an offline audit may PASS while integration readiness remains BLOCKED.
 The shutdown-attempt injection test additionally exercises the helper invoked by all three clients, without attributing fake errors to a live SIP session.
 
+The opt-in P8-R2A lab (`labs/pjsip/production-stop-reuse/` and
+`scripts/phase8/run-production-stop-reuse-lab.sh`) exercises one **production**
+`SipOutgoingCallClient`: registration, an outgoing attempt, disconnection,
+explicit stop, and registration after same-object restart. Its second `start()`
+rejects retained teardown state. This tests the observed stop/reuse lifecycle,
+not an early `shutdown2(false)` busy case. It cannot prove real production
+`PJ_EBUSY` recovery or external callback quiescence.
+
 ## Design rationale
 
 ### Explicit ownership

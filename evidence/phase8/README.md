@@ -17,6 +17,13 @@ Retained evidence covers:
 
 Normal unit/integration/source-contract results are reproducible from the current tests and verification scripts and do not need separate per-commit evidence files.
 
+P8-R2A is an **opt-in live experiment** with a bounded 2026-10-12
+maintainer-reported observation retained in `p8-r2a-live-stop-reuse-20261012.txt`.
+The record includes one rejected-call FAIL and two subsequent stop/reuse PASS
+runs. The PASS runs support only the production outgoing-client lifecycle
+after a pending call attempt, **not** successful target delivery, real
+`PJ_EBUSY` recovery, or universal callback quiescence.
+
 ## Environment
 
 Recorded runs used the maintainer Linux/ThinkPad environment, Qt 6, PJPROJECT/PJSIP 2.17 where applicable, and Clang 18 for the successful TSan run.
@@ -53,6 +60,12 @@ reported separately from the retained historical artifacts.
 
 `manual-verification.txt` records the historical preview-mode GUI interaction/window-close acceptance.
 
+P8-R2A was observed live on 2026-10-12: one rejected-call FAIL followed by
+two PASS stop/reuse runs with an outgoing call response still `PENDING`. Each
+PASS run recorded a disconnect, two returned stops, same-object restart, a
+second successful registration, returned destructor, and process exit `0`.
+The target extension was not confirmed to have received or answered the call.
+
 `pjsip-live-lifecycle.txt` records a separate controlled PJSUA2 lifecycle run. It observed `PJ_EBUSY`, successful retry after hangup/call-slot cleanup, and no late registration callback in the recorded observation window.
 
 Neither result proves universal external callback quiescence.
@@ -61,6 +74,7 @@ Neither result proves universal external callback quiescence.
 
 - `manual-verification.txt` — historical GUI usability/window-close observation.
 - `pjsip-live-lifecycle.txt` — controlled live PJSUA2 lifecycle observation.
+- `p8-r2a-live-stop-reuse-20261012.txt` — bounded production-client outgoing stop/reuse observations (one FAIL, two PASS).
 - `stress-test.txt` — 100,000-event MPMC stress summary.
 - `tsan-report.txt` — ThreadSanitizer summary and scope.
 
@@ -73,6 +87,7 @@ Per-commit closure/hotfix logs are intentionally left to Git history rather than
 - Clang 18 TSan: PASS;
 - historical preview-mode GUI acceptance: PASS;
 - controlled live PJSUA2 `PJ_EBUSY` recovery: OBSERVED/EVIDENCED;
+- P8-R2A production outgoing stop/reuse after pending call attempt: **OBSERVED/EVIDENCED** (two PASS runs; one earlier rejected-call FAIL);
 - live external callback quiescence: **UNPROVEN**;
 - production-client real `PJ_EBUSY` recovery: **UNPROVEN**;
 - PJSUA2 integration readiness: **BLOCKED**;
@@ -93,6 +108,17 @@ Use `scripts/phase8/verify-threading.sh` for focused concurrency/stress/TSan rep
 ```bash
 PHASE8_LIVE_SIP=1 bash scripts/phase8/run-pjsip-live-lifecycle-probe.sh
 ```
+
+For P8-R2A, after explicitly approving a lab call to extension `1001`, run:
+
+```bash
+PHASE8_LIVE_SIP=1 PHASE8_R2A_CONFIRM=1002-to-1001 \
+    bash scripts/phase8/run-production-stop-reuse-lab.sh
+```
+
+It outputs a sanitized, allowlisted local summary (default: `~/Downloads/`).
+The maintainer must review the summary and the source tree state before any
+new evidence is committed; raw vendor logs and credentials are discarded.
 
 A new run is a new observation; do not rewrite historical results to appear current.
 
