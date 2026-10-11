@@ -600,7 +600,7 @@ bool SipOutgoingCallClient::wait_for_call_cleanup(const std::chrono::millisecond
     return slots_drained;
 }
 
-bool SipOutgoingCallClient::shutdown_account_safely() noexcept
+bool SipOutgoingCallClient::shutdown_account_safely(int *error_status) noexcept
 {
     if (account_ == nullptr || !account_->isValid()) {
         return true;
@@ -612,6 +612,9 @@ bool SipOutgoingCallClient::shutdown_account_safely() noexcept
     const bool shutdown_ok = detail::attempt_account_shutdown<pj::Error>(
         [&] { account_->shutdown2(parameter); },
         [&](const pj::Error &error) {
+            if (error_status != nullptr) {
+                *error_status = static_cast<int>(error.status);
+            }
             std::fprintf(stderr, "PJSIP account shutdown failed: %s\n", error.info().c_str());
         },
         [&] { std::fputs("PJSIP account shutdown failed during call-session cleanup\n", stderr); });
@@ -620,6 +623,57 @@ bool SipOutgoingCallClient::shutdown_account_safely() noexcept
     }
     return true;
 }
+
+#if defined(VOIP_PHASE8_R2B_LAB)
+SipOutgoingCallClient::LabBusyShutdownResult
+SipOutgoingCallClient::lab_try_shutdown_while_call_active() noexcept
+{
+    // This is a controlled lab-only deviation from stop() ordering. The
+    // production Account, TrackedCall, Endpoint and callback gates remain in
+    // place; only the real, non-forced Account shutdown is attempted early.
+    if (!started_ || !library_created_ || endpoint_ == nullptr || account_ == nullptr ||
+        !account_->isValid()) {
+        return LabBusyShutdownResult::PreconditionsNotMet;
+    }
+    {
+        const std::lock_guard lock{call_object_mutex_};
+        if (call_ == nullptr) {
+            return LabBusyShutdownResult::PreconditionsNotMet;
+        }
+    }
+    {
+        const std::lock_guard lock{call_mutex_};
+        if (call_disconnected_) {
+            return LabBusyShutdownResult::PreconditionsNotMet;
+        }
+    }
+    if (pjsua_call_get_count() == 0U) {
+        return LabBusyShutdownResult::PreconditionsNotMet;
+    }
+
+    const auto *account_before = account_.get();
+    const auto *endpoint_before = endpoint_.get();
+    int error_status = 0;
+    const bool shutdown_ok = shutdown_account_safely(&error_status);
+    if (shutdown_ok) {
+        return LabBusyShutdownResult::UnexpectedSuccess;
+    }
+    if (error_status != PJ_EBUSY) {
+        return LabBusyShutdownResult::OtherFailure;
+    }
+    if (!started_ || !library_created_ || account_.get() != account_before ||
+        endpoint_.get() != endpoint_before || account_ == nullptr || !account_->isValid()) {
+        return LabBusyShutdownResult::BusyOwnerCheckFailed;
+    }
+    {
+        const std::lock_guard lock{call_object_mutex_};
+        if (call_ == nullptr) {
+            return LabBusyShutdownResult::BusyOwnerCheckFailed;
+        }
+    }
+    return LabBusyShutdownResult::BusyWithOwnersRetained;
+}
+#endif
 
 void SipOutgoingCallClient::on_registration_state(const pj::OnRegStateParam &parameter,
                                                   const pj::AccountInfo &info)

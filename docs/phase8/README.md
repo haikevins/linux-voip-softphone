@@ -8,8 +8,8 @@ The unresolved production boundary is unchanged:
 
 - controlled PJSUA2 `PJ_EBUSY` recovery was observed in the recorded live probe;
 - no late registration callback was observed after `shutdown2` in that recorded run;
-- live external callback quiescence is **UNPROVEN**;
-- production-client real `PJ_EBUSY` recovery is **UNPROVEN**;
+- P8-R2B observed real `PJ_EBUSY` and bounded recovery on a production-owned outgoing Account in one operator-approved lab run (2026-10-12);
+- external callback quiescence is **UNPROVEN**, as are other production-client shutdown scenarios;
 - PJSUA2 integration readiness is **BLOCKED**.
 
 There is no separate Phase 8 release tag.
@@ -47,6 +47,7 @@ Deliberately excluded:
 | Offline verification | Run concurrency, 100,000-event stress, and TSan checks | `scripts/phase8/verify.sh`, `scripts/phase8/verify-threading.sh` |
 | Live probe | Record bounded PJSUA2 lifecycle observations through explicit opt-in | `scripts/phase8/run-pjsip-live-lifecycle-probe.sh` |
 | Production live stop/reuse lab (P8-R2A) | Build an opt-in outgoing-client harness; record only allowlisted outcome markers | `labs/pjsip/production-stop-reuse/`, `scripts/phase8/run-production-stop-reuse-lab.sh` |
+| Real production Account busy/recovery lab (P8-R2B) | Opt-in active-call `shutdown2(false)` on production-owned Account; guarded real-status and same-object restart observation | `labs/pjsip/production-busy-recovery/`, `scripts/phase8/run-production-busy-recovery-lab.sh` |
 | Architecture | Document Qt/PJSUA2 ownership and unproven shutdown boundaries | `docs/architecture/threading-model.md` |
 | Evidence | Preserve sanitized stress, TSan, GUI, and controlled live observations | `evidence/phase8/README.md` |
 
@@ -110,6 +111,26 @@ allowlisted summary only. Build output stays outside the Git archive under
 `evidence/phase8/README.md`; their outcomes are not a general SIP call
 delivery or PJSUA2 teardown guarantee.
 
+P8-R2B is an additional **single-run, operator-approved** live experiment
+for PJPROJECT 2.17. It deliberately attempts non-forced account shutdown
+while a production outgoing call is still active. The target may ring;
+there are no automatic retries. This is disabled in normal and CI builds:
+
+```bash
+PHASE8_LIVE_SIP=1 PHASE8_R2B_CONFIRM=1002-to-1001-active-shutdown \
+    bash scripts/phase8/run-production-busy-recovery-lab.sh
+```
+
+The test fails closed if real `PJ_EBUSY`, retained Account/Endpoint, call
+cleanup, production `stop()`, same-object restart and registration are not
+all observed. It reports an explicit inconclusive result if active-call
+preconditions disappear before the early attempt. A single P8-R2B lab run on
+2026-10-12 observed real `PJ_EBUSY`, retained owners, disconnection, returned
+production `stop()`, same-object restart, renewed registration and clean exit.
+See `evidence/phase8/p8-r2b-live-pj-ebusy-20261012.txt`. This verifies only
+the observed outgoing lab-only early-shutdown sequence; it does not prove
+universal production shutdown safety or external callback quiescence.
+
 The live lifecycle probe is explicit opt-in only:
 
 ```bash
@@ -139,8 +160,10 @@ cycles following an outgoing call attempt with response `PENDING`, and one
 earlier **FAIL** after a rejected call response. The two PASS runs observed
 explicit disconnect, same-object restart, renewed registration, second stop,
 and normal destruction. They do not establish that extension `1001` received
-or answered the call. Real production-client `PJ_EBUSY` recovery and external
-callback quiescence remain **UNPROVEN**.
+or answered the call. The separate P8-R2B live run observed real `PJ_EBUSY` on
+a production-owned outgoing Account and successful subsequent stop/restart in
+its deliberately early-shutdown lab sequence; results for other production
+clients and external callback quiescence remain **UNPROVEN**.
 
 ## Evidence
 
@@ -173,7 +196,8 @@ See `docs/interview/phase8-questions.md`.
 | Qt owner-thread handoff regression | PASS |
 | Controlled PJSUA2 `PJ_EBUSY` recovery | OBSERVED/EVIDENCED |
 | Live external callback quiescence | UNPROVEN |
-| Production-client real `PJ_EBUSY` recovery | UNPROVEN |
+| Production outgoing Account real `PJ_EBUSY` / lab-only early-shutdown recovery | OBSERVED/EVIDENCED (one bounded run; not normal `stop()` busy injection) |
+| Other production-client `PJ_EBUSY` paths and external callback-source safety | UNPROVEN |
 | PJSUA2 integration readiness | BLOCKED |
 | Final maintainer acceptance | PENDING |
 | Separate Phase 8 release tag | None defined |

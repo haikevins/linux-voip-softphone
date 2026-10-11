@@ -57,6 +57,20 @@ class SipOutgoingCallClient
     void start();
     void stop() noexcept;
 
+#if defined(VOIP_PHASE8_R2B_LAB)
+    // LAB ONLY: attempt the real production-owned account shutdown early.
+    // Never called from normal stop(), GUI, or other production entry points.
+    enum class LabBusyShutdownResult
+    {
+        PreconditionsNotMet,
+        BusyWithOwnersRetained,
+        BusyOwnerCheckFailed,
+        UnexpectedSuccess,
+        OtherFailure
+    };
+    [[nodiscard]] LabBusyShutdownResult lab_try_shutdown_while_call_active() noexcept;
+#endif
+
     [[nodiscard]] RegistrationResult wait_for_registration(std::chrono::milliseconds timeout);
 
     void make_call(const std::string &destination_uri);
@@ -84,7 +98,7 @@ class SipOutgoingCallClient
     void on_call_callback_error(std::string reason) noexcept;
     void on_call_media_callback_error(std::string reason) noexcept;
     [[nodiscard]] bool wait_for_call_cleanup(std::chrono::milliseconds timeout) noexcept;
-    [[nodiscard]] bool shutdown_account_safely() noexcept;
+    [[nodiscard]] bool shutdown_account_safely(int *error_status = nullptr) noexcept;
     void reset_call_state();
 
     SipEndpointConfig endpoint_config_;

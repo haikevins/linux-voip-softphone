@@ -68,6 +68,12 @@ if(ENABLE_PJSIP)
     project_set_warnings(voip_pjsip)
     project_enable_sanitizers(voip_pjsip)
 
+    # Extra symbol is compiled into the production client implementation ONLY
+    # for the explicit lab build. No production class layout is changed.
+    if(ENABLE_PHASE8_R2B_LAB)
+        target_compile_definitions(voip_pjsip PRIVATE VOIP_PHASE8_R2B_LAB=1)
+    endif()
+
     add_executable(voip_sip_register
         app/sip_register_main.cpp
     )
@@ -109,6 +115,16 @@ if(ENABLE_PJSIP)
 
     project_set_warnings(voip_sip_listen)
     project_enable_sanitizers(voip_sip_listen)
+
+    if(ENABLE_PHASE8_R2B_LAB)
+        add_executable(phase8_r2b_production_busy_recovery
+            "${PROJECT_SOURCE_DIR}/labs/pjsip/production-busy-recovery/phase8_r2b_production_busy_recovery.cpp"
+        )
+        target_compile_definitions(phase8_r2b_production_busy_recovery PRIVATE VOIP_PHASE8_R2B_LAB=1)
+        target_link_libraries(phase8_r2b_production_busy_recovery PRIVATE voip::pjsip)
+        project_set_warnings(phase8_r2b_production_busy_recovery)
+        project_enable_sanitizers(phase8_r2b_production_busy_recovery)
+    endif()
 
     if(ENABLE_PHASE8_R2A_LAB)
         add_executable(phase8_r2a_production_stop_reuse

@@ -4,7 +4,7 @@
 
 **PENDING** — Phase 8 is merged to `main`, and its concurrency foundation and offline ownership/shutdown contracts are implemented and tested. Final maintainer acceptance has not been recorded.
 
-Controlled live PJSUA2 `PJ_EBUSY` recovery was observed, but live external callback quiescence and production-client real `PJ_EBUSY` recovery remain **UNPROVEN**; PJSUA2 integration readiness remains **BLOCKED**.
+Controlled live PJSUA2 `PJ_EBUSY` recovery and one lab-only early-shutdown / recovery cycle on the production-owned outgoing Account were observed. Other production-client recovery paths and external callback quiescence remain **UNPROVEN**; PJSUA2 integration readiness remains **BLOCKED**.
 
 ## Purpose
 
@@ -103,7 +103,7 @@ A controlled vendor-level live probe observed:
 - second shutdown -> success;
 - no late registration callback in the recorded observation window.
 
-That observation does not prove production-client recovery or universal callback quiescence.
+That earlier vendor-level probe alone did not prove production-client recovery or universal callback quiescence. The later P8-R2B experiment adds separate, bounded outgoing production-owned Account evidence.
 
 ## Verification strategy
 
@@ -121,8 +121,24 @@ The opt-in P8-R2A lab (`labs/pjsip/production-stop-reuse/` and
 `SipOutgoingCallClient`: registration, an outgoing attempt, disconnection,
 explicit stop, and registration after same-object restart. Its second `start()`
 rejects retained teardown state. This tests the observed stop/reuse lifecycle,
-not an early `shutdown2(false)` busy case. It cannot prove real production
-`PJ_EBUSY` recovery or external callback quiescence.
+not an early `shutdown2(false)` busy case. By itself it cannot prove real
+production `PJ_EBUSY` recovery or external callback quiescence.
+
+The opt-in P8-R2B lab differs from the P8-R2A normal-stop
+observation: it invokes the **existing production Account** non-forced
+`shutdown2(false)` through `shutdown_account_safely()` while a live
+`TrackedCall` and vendor call slot are still present. A build-only
+`VOIP_PHASE8_R2B_LAB` entry point classifies the actual `pj::Error::status`
+and checks Account/Endpoint retention on `PJ_EBUSY`. It then performs normal
+hangup and production `stop()`, and tests same-object restart to check that
+shutdown state did not remain retained. The lab neither changes `stop()`
+ordering nor bypasses callback activity gates in regular builds. A single
+operator-approved run on 2026-10-12 observed `PJ_EBUSY`, retained owners,
+cleanup and normal `stop()` returning, successful same-object restart, second
+registration, final `stop()` and clean destructor/process exit. This is
+**OBSERVED/EVIDENCED only for that outgoing-client lab sequence**; it does not
+prove universal callback-source quiescence or every shutdown failure path.
+See `evidence/phase8/p8-r2b-live-pj-ebusy-20261012.txt`.
 
 ## Design rationale
 
@@ -150,9 +166,10 @@ Phase 8 establishes:
 - repeatable MPMC stress and TSan evidence;
 - explicit Qt owner-thread handoff;
 - stronger PJSUA2 shutdown/source contracts;
-- one controlled live `PJ_EBUSY` recovery observation.
+- one controlled live vendor-level `PJ_EBUSY` recovery observation;
+- one bounded P8-R2B real busy/recovery observation on a production-owned outgoing Account.
 
-It does **not** establish live external callback quiescence, production-client real `PJ_EBUSY` recovery, universal race freedom, or production PJSUA2 integration readiness.
+It does **not** establish live external callback quiescence, busy recovery for all production-client paths, universal race freedom, or production PJSUA2 integration readiness.
 
 ## References
 

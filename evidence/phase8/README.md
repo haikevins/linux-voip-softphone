@@ -4,7 +4,10 @@
 
 **PENDING** — Phase 8 automated evidence passes within its stated scope, but final maintainer acceptance has not been recorded.
 
-Controlled PJSUA2 `PJ_EBUSY` recovery is recorded as observed/evidenced. Live external callback quiescence and production-client real `PJ_EBUSY` recovery remain **UNPROVEN**; PJSUA2 integration readiness remains **BLOCKED**.
+Controlled PJSUA2 `PJ_EBUSY` recovery and one bounded P8-R2B early-shutdown
+recovery on a production-owned outgoing Account are **OBSERVED/EVIDENCED**.
+Other production-client paths and external callback quiescence remain
+**UNPROVEN**; PJSUA2 integration readiness remains **BLOCKED**.
 
 ## Verification scope
 
@@ -23,6 +26,13 @@ The record includes one rejected-call FAIL and two subsequent stop/reuse PASS
 runs. The PASS runs support only the production outgoing-client lifecycle
 after a pending call attempt, **not** successful target delivery, real
 `PJ_EBUSY` recovery, or universal callback quiescence.
+
+P8-R2B adds a guarded opt-in lab for observing early, real `PJ_EBUSY` on the
+production-owned outgoing Account. The maintainer-supplied 2026-10-12 live
+result (`p8-r2b-live-pj-ebusy-20261012.txt`) is recorded as one **PASS**
+within that bounded lab sequence, subject to comparison with the operator-local
+original summary before commit. Do not infer external callback quiescence,
+normal-stop `PJ_EBUSY` behavior, or other clients' recovery from this result.
 
 ## Environment
 
@@ -68,13 +78,18 @@ The target extension was not confirmed to have received or answered the call.
 
 `pjsip-live-lifecycle.txt` records a separate controlled PJSUA2 lifecycle run. It observed `PJ_EBUSY`, successful retry after hangup/call-slot cleanup, and no late registration callback in the recorded observation window.
 
-Neither result proves universal external callback quiescence.
+The P8-R2B outgoing production-owned Account lab observed early non-forced
+`PJ_EBUSY`, retained owner pointers/validity, disconnect, stop/restart, a second
+registration, final stop/destructor and process exit `0`. The subsequent
+production `stop()` did not separately record its own vendor shutdown code.
+None of these observations proves universal external callback quiescence.
 
 ## Artifacts
 
 - `manual-verification.txt` — historical GUI usability/window-close observation.
 - `pjsip-live-lifecycle.txt` — controlled live PJSUA2 lifecycle observation.
 - `p8-r2a-live-stop-reuse-20261012.txt` — bounded production-client outgoing stop/reuse observations (one FAIL, two PASS).
+- `p8-r2b-live-pj-ebusy-20261012.txt` — one real `PJ_EBUSY` and bounded outgoing-client recovery observation (one PASS).
 - `stress-test.txt` — 100,000-event MPMC stress summary.
 - `tsan-report.txt` — ThreadSanitizer summary and scope.
 
@@ -88,8 +103,9 @@ Per-commit closure/hotfix logs are intentionally left to Git history rather than
 - historical preview-mode GUI acceptance: PASS;
 - controlled live PJSUA2 `PJ_EBUSY` recovery: OBSERVED/EVIDENCED;
 - P8-R2A production outgoing stop/reuse after pending call attempt: **OBSERVED/EVIDENCED** (two PASS runs; one earlier rejected-call FAIL);
+- P8-R2B real outgoing production-owned Account `PJ_EBUSY` / early-shutdown recovery: **OBSERVED/EVIDENCED** (one bounded run);
+- other production-client recovery paths: **UNPROVEN**;
 - live external callback quiescence: **UNPROVEN**;
-- production-client real `PJ_EBUSY` recovery: **UNPROVEN**;
 - PJSUA2 integration readiness: **BLOCKED**;
 - final maintainer acceptance: **PENDING**.
 
@@ -107,6 +123,16 @@ Use `scripts/phase8/verify-threading.sh` for focused concurrency/stress/TSan rep
 
 ```bash
 PHASE8_LIVE_SIP=1 bash scripts/phase8/run-pjsip-live-lifecycle-probe.sh
+```
+
+P8-R2B runs only after the operator approves active-call shutdown with
+`1002` calling `1001`. Run it once, then inspect the allowlisted local
+summary, preserving all FAIL and INCONCLUSIVE outcomes rather than retrying
+to obtain a PASS:
+
+```bash
+PHASE8_LIVE_SIP=1 PHASE8_R2B_CONFIRM=1002-to-1001-active-shutdown \
+    bash scripts/phase8/run-production-busy-recovery-lab.sh
 ```
 
 For P8-R2A, after explicitly approving a lab call to extension `1001`, run:
