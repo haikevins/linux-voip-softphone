@@ -1,7 +1,11 @@
 # Phase 8 — Multithreading
 
-Phase 8 is a **closure candidate, not yet merged or released**. The branch is
-`phase/8-multithreading`. The latest production-affecting hotfix is
+Phase 8 was merged to `main` by PR #9 at
+`4a6a66bd9645b2f0d891fb6000217746f90162de`. The merged Phase 8 branch tip is
+`34931aa8445f89adb6b4a370e1a519363873419f`. The post-merge layout correction
+changes repository organization and verification paths only; it does not change
+production source or the Phase 8 safety boundary. The latest
+production-affecting hotfix remains
 `b6c84ac48f9dbb9d442a446dc05bdd47ec1f08ca`; documentation/evidence Commit 34
 is `ba050bb9bcdd01391e2860b16e2f273c824b3ddc`.
 
@@ -203,7 +207,7 @@ consolidation alone is not new runtime evidence.
 ## Evidence
 
 Chronological Phase 8 evidence is retained under `evidence/phase8/`. Roadmap
-closure artifacts remain under `evidence/07-threading/`. Historical evidence is
+closure artifacts remain under `evidence/phase8/`. Historical evidence is
 not rewritten merely because current documentation and scripts were
 consolidated.
 

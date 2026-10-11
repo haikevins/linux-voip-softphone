@@ -13,9 +13,6 @@ esac
 
 command -v git >/dev/null
 command -v python3 >/dev/null
-[[ "$(git branch --show-current)" == 'phase/8-multithreading' ]] || {
-    echo 'ABORT: wrong git branch' >&2; exit 1;
-}
 git merge-base --is-ancestor "$EXPECTED_ANCESTOR" HEAD || {
     echo 'ABORT: phase8 closure baseline missing from current HEAD ancestry' >&2; exit 1;
 }
@@ -26,7 +23,7 @@ GUI="$BUILD/src/voip-qt-gui"
 [[ -f scripts/phase8/verify-threading.sh ]]
 [[ -f scripts/phase8/verify-pjsip.sh ]]
 [[ -f scripts/phase8/gui-runtime-probe.py ]]
-[[ -f tests/phase8/test_gui_runtime_acceptance_harness.py ]]
+[[ -f tests/integration/test_gui_runtime_acceptance_harness.py ]]
 
 LOG_DIR="${PHASE8_ACCEPT_LOG_DIR:-$(mktemp -d /tmp/phase8-runtime-acceptance.XXXXXXXX)}"
 mkdir -p -- "$LOG_DIR"
@@ -120,7 +117,7 @@ grep -Fq 'PASS: Phase 8 roadmap artifact and source-contract inventory' "$LOG_DI
 echo 'PASS: roadmap artifact gate (production SIP shutdown still BLOCKED)'
 
 printf '\n===== 9. SELF-TEST RUNTIME ACCEPTANCE HARNESS =====\n'
-python3 -B -m unittest discover -s tests/phase8 \
+python3 -B -m unittest discover -s tests/integration \
     -p 'test_gui_runtime_acceptance_harness.py' -v \
     2>&1 | tee "$LOG_DIR/harness-unit.log"
 echo 'PASS: runtime probe unit/mutation tests'

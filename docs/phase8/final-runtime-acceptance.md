@@ -43,7 +43,7 @@ Baseline: branch `phase/8-multithreading`, ancestor commit `0cd1a7bdb6b0de8e9ed6
 - `src/app/qt_gui_main.cpp`: `--smoke-test` loads `qrc:/gui/Main.qml`, checks two QML objects / disabled backend, then quits after ~100ms; this is a startup/exit test, **not** a long GUI usability test.
 - `src/gui/Main.qml`: a preview keypad (0–9, *, #), destination input, Delete/Clear, Register, Call, Hang up, RTP panel. When not started using `--sip-register`, SIP controls are disabled.
 - `src/gui/QtRegistrationBackend.cpp`, `tests/qt/test_qt_registration_backend.cpp`: injected fake session exercises worker/QObject event handoff; **not** real SIP registration.
-- `tests/phase8/test_mpmc_stress.cpp`: 4 producers × 25,000 events = 100,000 events, 4 consumers.
+- `tests/integration/test_mpmc_stress.cpp`: 4 producers × 25,000 events = 100,000 events, 4 consumers.
 - `scripts/phase8/verify-threading.sh tsan`: standalone 6 C++ tests × 3 repeats using Clang18 TSan, **not** GUI/Qt/PJSUA2 runtime under TSan.
 - `scripts/phase8/verify-roadmap-exit.sh`: source/evidence inventory that must continue to report PJSUA2 shutdown integration **BLOCKED**.
 - `README_roadmap.md` section 11 and section 23: Phase 8 multithreading requirements and Code + Test + Evidence + Documentation definition of done.
@@ -115,7 +115,7 @@ Report the console transcript and the paths to `acceptance-status.txt`, `gui-smo
 ## THINKPAD VERIFIED FINAL RUNTIME ACCEPTANCE
 
 The following results were verified from actual ThinkPad logs.
-The detailed record is in `evidence/07-threading/final-runtime-acceptance.txt`.
+The detailed record is in `evidence/phase8/roadmap-final-runtime-acceptance.txt`.
 
 Automated acceptance: PASS (verified resume).
 

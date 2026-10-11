@@ -171,5 +171,10 @@ if(ENABLE_QT_GUI)
     )
 endif()
 
-# Phase 8 concurrency CTest registration
-add_subdirectory(phase8)
+# Phase 8 focused CTest registration.
+# Test sources follow the repository unit/integration taxonomy; the standalone
+# harness lives outside tests/ so phase names are not used as test categories.
+add_subdirectory(
+    "${PROJECT_SOURCE_DIR}/cmake/phase8-focused"
+    "${CMAKE_CURRENT_BINARY_DIR}/phase8-focused"
+)

@@ -134,6 +134,6 @@ released according to the repository workflow.
 - `docs/phase8/roadmap-exit-review.md`
 - `docs/phase8/final-runtime-acceptance.md`
 - `evidence/phase8/README.md`
-- `evidence/07-threading/README.md`
-- `tests/phase8/`
+- `evidence/phase8/roadmap-closure.md`
+- `tests/unit/` and `tests/integration/`; focused CMake harness: `cmake/phase8-focused/`
 - `scripts/phase8/`

@@ -52,12 +52,12 @@ closure candidate, **not** a claim that live PJSUA2 teardown is safe.
 | ThreadSafeQueue, mutex, condition_variable | `src/concurrency/ThreadSafeQueue.hpp`, unit tests | Implemented |
 | atomic | concurrency unit and stress cases | Implemented |
 | worker thread | `src/concurrency/SerialTaskWorker.hpp` and tests | Implemented, isolated |
-| 100,000 events, multi-producer/consumer | `tests/phase8/test_mpmc_stress.cpp` (4P/4C); original Commit 5 ThinkPad transcript and Commit 19 focused CTest | Observed in supplied logs; confirm canonical provenance |
+| 100,000 events, multi-producer/consumer | `tests/integration/test_mpmc_stress.cpp` (4P/4C); original Commit 5 ThinkPad transcript and Commit 19 focused CTest | Observed in supplied logs; confirm canonical provenance |
 | `-fsanitize=thread` | Clang18 standalone six C++ tests, 3 runs each, Commit 19 ThinkPad C9 | 18/18 PASS; not live Qt/PJSIP |
 | `docs/architecture/threading-model.md` | Current as-built addendum plus historical sections | Updated |
-| `evidence/07-threading/stress-test.txt` | Documented actual observation and test recipe | Added |
-| `evidence/07-threading/tsan-report.txt` | Documented actual ThinkPad C9 18/18 | Added |
-| `evidence/07-threading/threading-diagram.png` | Reproducible Graphviz `.dot` source | Added; code-level only |
+| `evidence/phase8/roadmap-stress-test.txt` | Documented actual observation and test recipe | Added |
+| `evidence/phase8/roadmap-tsan-report.txt` | Documented actual ThinkPad C9 18/18 | Added |
+| `evidence/phase8/threading-diagram.png` | Reproducible Graphviz `.dot` source | Added; code-level only |
 | SIP worker -> core -> Qt handoff | `QtRegistrationBackend` + Qt queued delivery + `CallManager` owner-thread contract | Source/test-supported; **not** generic queue integration or live callback proof |
 
 ## Critical distinctions

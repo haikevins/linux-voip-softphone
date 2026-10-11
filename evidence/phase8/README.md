@@ -36,9 +36,9 @@ quiescence and production-client race coverage are not established. A later
 controlled PJSUA2 2.17 lab run records a real `PJ_EBUSY` recovery sequence
 without upgrading that broader integration boundary.
 
-The roadmap-required closure artifacts are retained separately in
-`evidence/07-threading/`; this directory preserves the chronological Phase 8
-verification record.
+The roadmap-required closure artifacts are retained in this Phase 8
+namespace with `roadmap-` names where collisions exist, keeping them distinct
+from the chronological Phase 8 verification record.
 
 ## Verification scope
 
@@ -102,8 +102,9 @@ The chronological automated evidence files are:
 - `pjsip-live-lifecycle.txt` — sanitized controlled PJSUA2 2.17 live lifecycle
   observation, including real `PJ_EBUSY` and successful retry after hangup.
 
-Roadmap closure and final offline runtime evidence are indexed from
-`evidence/07-threading/`. The final post-hardening rerun is also preserved as
+Roadmap closure and final offline runtime evidence are preserved as
+`roadmap-closure.md` and `roadmap-final-runtime-acceptance.txt`. The final
+post-hardening rerun is also preserved as
 `final-runtime-acceptance-8c78677.txt` so the exact committed HEAD and observed
 manual metrics remain explicit without rewriting earlier chronological files.
 
@@ -116,7 +117,7 @@ so live call testing was not recorded as if it had occurred.
 The later final offline GUI acceptance is recorded in:
 
 ```text
-evidence/07-threading/final-runtime-acceptance.txt
+evidence/phase8/roadmap-final-runtime-acceptance.txt
 ```
 
 That record includes human preview-mode GUI interaction and normal window
@@ -137,12 +138,12 @@ sanitized final rerun summary is `final-runtime-acceptance-8c78677.txt`.
 Roadmap-required final artifacts are:
 
 ```text
-evidence/07-threading/
-├── README.md
-├── stress-test.txt
-├── tsan-report.txt
+evidence/phase8/
+├── roadmap-closure.md
+├── roadmap-stress-test.txt
+├── roadmap-tsan-report.txt
 ├── threading-diagram.png
-└── final-runtime-acceptance.txt
+└── roadmap-final-runtime-acceptance.txt
 ```
 
 The diagram is descriptive code-level architecture derived from
@@ -226,8 +227,8 @@ make historical runs appear current.
 - `docs/phase8/final-runtime-acceptance.md`
 - `docs/interview/phase8-questions.md`
 - `README_roadmap.md`, Phase 8 — Multithreading
-- `evidence/07-threading/README.md`
-- `tests/phase8/`
+- `evidence/phase8/roadmap-closure.md`
+- `tests/unit/` and `tests/integration/`, with the focused CMake harness in `cmake/phase8-focused/`
 - `scripts/phase8/`
 
 

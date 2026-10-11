@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
-SOURCE_DIR="$ROOT/tests/phase8"
+SOURCE_DIR="$ROOT/cmake/phase8-focused"
 MODE="${1:-all}"
 
 case "$MODE" in
@@ -22,11 +22,11 @@ verify_queue() {
     test -f "$SOURCE_DIR/CMakeLists.txt"
     test -f "$ROOT/src/concurrency/ThreadSafeQueue.hpp"
     test -f "$ROOT/src/concurrency/SerialTaskWorker.hpp"
-    test -f "$SOURCE_DIR/test_thread_ownership.cpp"
-    test -f "$SOURCE_DIR/test_mpmc_stress.cpp"
-    test -f "$SOURCE_DIR/test_pjsip_call_slot_cleanup.cpp"
-    test -f "$SOURCE_DIR/test_pjsip_callback_activity.cpp"
-    test -f "$SOURCE_DIR/test_pjsip_production_lifetime_audit.py"
+    test -f "$ROOT/tests/unit/test_thread_ownership.cpp"
+    test -f "$ROOT/tests/integration/test_mpmc_stress.cpp"
+    test -f "$ROOT/tests/unit/test_pjsip_call_slot_cleanup.cpp"
+    test -f "$ROOT/tests/unit/test_pjsip_callback_activity.cpp"
+    test -f "$ROOT/tests/integration/test_pjsip_production_lifetime_audit.py"
 
     printf 'Phase 8 queue, worker, ownership MPMC stress and PJSIP slot/callback activity and production source-audit verification\nSource: %s\nBuild:  %s\n' \
         "$SOURCE_DIR" "$build_dir"
@@ -41,7 +41,7 @@ verify_stress() {
 
     command -v cmake >/dev/null || { echo 'ERROR: cmake is required' >&2; exit 1; }
     command -v ctest >/dev/null || { echo 'ERROR: ctest is required' >&2; exit 1; }
-    test -f "$SOURCE_DIR/test_mpmc_stress.cpp"
+    test -f "$ROOT/tests/integration/test_mpmc_stress.cpp"
 
     case "$repeats" in
         ''|*[!0-9]*)
@@ -95,7 +95,7 @@ verify_tsan() {
     esac
 
     test -f "$SOURCE_DIR/CMakeLists.txt"
-    test -f "$SOURCE_DIR/test_mpmc_stress.cpp"
+    test -f "$ROOT/tests/integration/test_mpmc_stress.cpp"
     test -f "$ROOT/src/concurrency/ThreadSafeQueue.hpp"
     test -f "$ROOT/src/concurrency/SerialTaskWorker.hpp"
 
