@@ -2,7 +2,9 @@
 
 ## Status
 
-Phase 6 is accepted for the documented local Asterisk lab. The published milestone is the annotated tag `v0.7-rtp-audio`.
+**Completed** — milestone tag `v0.7-rtp-audio`
+
+Accepted for the documented local Asterisk lab.
 
 Accepted evidence includes automated verification, outgoing and incoming calls with operator-confirmed two-way audio, RTP/RTCP diagnostics, and one controlled Wireshark RTP study. These observations apply to the recorded workstation, devices, network, and revisions; they are not a guarantee for other environments.
 

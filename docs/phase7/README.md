@@ -2,7 +2,9 @@
 
 ## Status
 
-Phase 7 is accepted for the documented local Asterisk lab, merged to `main`, and published as the annotated milestone `v0.8-qt-gui`.
+**Completed** — milestone tag `v0.8-qt-gui`
+
+Accepted for the documented local Asterisk lab and merged to `main`.
 
 The accepted scope includes registration, one active call, incoming/outgoing call handling, explicit Answer/Decline behavior, connected-call duration, two-way audio, and live RTP/audio diagnostics.
 
