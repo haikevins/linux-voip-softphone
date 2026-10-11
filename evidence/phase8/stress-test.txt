@@ -1,0 +1,78 @@
+Phase 8 Commit 5 — stress test evidence (isolated Linux build)
+Date: 2026-10-09
+Scope: concurrency test components only. No Qt/PJSIP runtime integration.
+Compiler: Debian GCC 14.2.0 (C++20)
+CMake: 3.31.6
+
+COMMAND:
+  cmake -S tests/phase8 -B <isolated-build> -DCMAKE_BUILD_TYPE=Debug
+  cmake --build <isolated-build> --parallel 4
+  ctest --test-dir <isolated-build> --output-on-failure
+OBSERVED:
+  Phase8ThreadSafeQueueTest: PASS
+  Phase8SerialTaskWorkerTest: PASS
+  Phase8ThreadOwnershipTest: PASS
+  Phase8MpmcStressTest: PASS
+  100% tests passed, 0 tests failed out of 4.
+RESULT: PASS (isolated)
+
+COMMAND:
+  <isolated-build>/phase8_mpmc_stress_tests
+OBSERVED (one run; accepted/rejected counts in contention are variable):
+  PASS: 100000 events; producers=4 consumers=4;
+        missing=0 duplicates=0 malformed=0 rejected=0
+  PASS: 20000 events; concurrent producers; per-producer FIFO
+  PASS: contended close; accepted=4058 drained=4058
+        rejected=75942 duplicates=0
+  PASS: 10000 worker tasks; injected failures=104; completed=10000
+  PASS: 4 Phase 8 MPMC stress scenarios
+RESULT: PASS (isolated)
+
+COMMAND:
+  ctest --test-dir <isolated-build> \
+    -R '^Phase8MpmcStressTest$' --repeat until-fail:100 --output-on-failure
+OBSERVED:
+  100 successful runs of the stress executable; 0 failed.
+RESULT: PASS (isolated)
+
+COMMAND:
+  ctest --test-dir <isolated-build> \
+    --repeat until-fail:25 --output-on-failure
+OBSERVED:
+  25 complete-suite cycles (4 CTest entries each), 100 tests passed.
+RESULT: PASS (isolated)
+
+COMMAND:
+  PHASE8_STRESS_REPEATS=10 bash scripts/phase8/verify-stress.sh
+OBSERVED:
+  Script built the stress executable and passed 10 repeated CTest executions.
+RESULT: PASS (isolated)
+
+IMPORTANT LIMITATIONS:
+  - The 100,000-event run is deterministic in event IDs/count, not in
+    scheduling/interleaving. A single clean run cannot prove absence of races.
+  - In the concurrent close case, accepted and rejected counts vary; the
+    stable invariant is accepted == drained and no duplicate IDs.
+  - This evidence was collected outside the canonical ThinkPad repository.
+  - ThreadSanitizer was NOT RUN.
+  - Canonical ThinkPad CTest 139/139 is NOT YET OBSERVED.
+  - No manual SIP/GUI or PJSIP callback-affinity test was run.
+
+---
+Canonical ThinkPad stress verification
+Phase 8 Commit 5
+
+COMMAND:
+  bash scripts/phase8/verify-stress.sh
+OBSERVED:
+  10 repeated MPMC stress executions passed.
+RESULT: PASS
+
+COMMAND:
+  PHASE8_STRESS_REPEATS=100 \
+    bash scripts/phase8/verify-stress.sh
+OBSERVED:
+  100 repeated MPMC stress executions passed.
+RESULT: PASS
+
+ThreadSanitizer: NOT RUN.

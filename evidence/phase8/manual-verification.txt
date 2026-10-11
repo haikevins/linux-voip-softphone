@@ -1,0 +1,42 @@
+Phase 8 Commit 1 — manual verification
+
+Status: NOT RUN (not required for this isolated, no-runtime-integration slice).
+
+Reason: Commit 1 adds a generic C++ queue and isolated unit-test runner.
+It does not change Qt UI, CallManager, PJSIP, SIP, or RTP behavior.
+
+Before any future runtime integration, perform the manual matrix described
+in docs/phase8/README.md and record observed outcomes here.
+
+
+PHASE8_MANUAL_ACCEPTANCE_BA050BB
+
+Phase 8 final graphical GUI acceptance
+
+Parent runtime HEAD:
+  ba050bb9bcdd01391e2860b16e2f273c824b3ddc
+
+Observed result:
+  manual GUI acceptance: PASS
+  accepted=true
+  observation_seconds=113.5
+  samples=226
+  exit_code=0
+
+Observed resource values:
+  RSS first/last/peak KiB: 193344/196148/196148
+  FD min/max: 30/31
+  threads min/max: 23/24
+
+The operator verified the preview-mode UI interaction matrix and closed the
+application using the normal window X path.
+
+Scope boundary:
+  LIVE_SIP: NOT TESTED
+  PJSUA2_SHUTDOWN_SAFETY: BLOCKED/UNPROVEN
+  final maintainer Phase 8 sign-off: PENDING
+
+Detailed record:
+  evidence/phase8/final-runtime-acceptance-ba050bb.txt
+
+FINAL MANUAL GUI RESULT: PASS

@@ -1,0 +1,136 @@
+Phase 8 — Commit 17 shutdown ownership policy and stale-result regression
+==========================================================================
+Feature branch: phase/8-multithreading
+Required baseline HEAD: f56ba42 (Commit 16)
+Expected commit subject: test(phase8): model shutdown ownership retries and stale callbacks
+
+SCOPE:
+  One modified tests/phase8/CMakeLists.txt.
+  Four added files: C++ policy test; executable verification script; docs;
+  this evidence file. No production source changes.
+
+TEST-ONLY CONTRACT:
+  Attempt generations prevent merging stale callback, call-slot or account
+  results into a later retry. Failure retains modeled owners; four independent
+  confirmations of one generation enable ordered, single-use model release.
+  A test-supplied external callback proof is NOT a PJSUA2 guarantee.
+
+PREPARATION IN ASSISTANT ENVIRONMENT (not ThinkPad):
+  Exact source baseline from Commit 1-16 overlay reconstruction: PASS
+  New C++ test strict GCC (-Wall -Wextra -Wpedantic -Werror): PASS
+  Focused standalone CMake configure/build + CTest: PASS (10/10)
+  New synthetic target focused CTest: PASS
+  Synthetic ownership-policy target repeated 250 times: PASS
+  ZIP manifest/integrity and staged-content comparison: PASS (5/5)
+  Script syntax/executable bit: PASS (100755)
+  git diff --cached --check fixture: PASS
+  TSan standalone configure + CTest inventory: PASS (six tests; not executed)
+  Full clang-format 18 or clang-tidy 18 on ThinkPad: NOT RUN
+
+THINKPAD ACCEPTANCE (must update using actual test logs):
+  Baseline/branch/origin parity and clean working tree: PASS (pre-overlay)
+  Overlay SHA256/integrity/exact manifest: PASS (v3)
+  Full CI clang-format gate: PASS (18.1.3)
+  Full CI clang-tidy preset build: PASS (18.1.3)
+  Focused+canonical Commit 17 policy target: PASS (1/1 each)
+  Commit 15 failure-path model gate: PASS
+  Commit 16 callback-ingress model gate: PASS
+  Focused standalone Phase 8 CTest: PASS (10/10)
+  Clang18 isolated TSan six tests x three runs: PASS (18/18)
+  Qt owner-thread regression: PASS
+  PJSIP regression: PASS (45/45)
+  Full canonical configure/build and CTest: PASS (145/145)
+  Git commit/push/origin parity and clean tree: PENDING
+  GitHub Actions on new commit: PENDING
+
+LIMITS:
+  No live PJSUA2 callbacks, network SIP traffic, libDestroy failure, or
+  actual PJ_EBUSY recovery are exercised. No production lifetime hazard fixed.
+
+V1 THINKPAD OBSERVATION (before v2 replacement):
+  Baseline f56ba42 / feature branch / origin parity: PASS
+  Original ZIP SHA256/integrity/exact 5-file overlay: PASS
+  Full clang-format 18.1.3: FAIL (two array initializer wraps; four diagnostics)
+  Full clang-tidy and subsequent gates: NOT RUN (stopped at C1)
+
+V2 CORRECTION (in replacement ZIP):
+  C++ policy test: formatting-only edits to two std::array initializers
+  tests/phase8/CMakeLists.txt and verification script: unchanged from v1
+  Documentation and evidence: updated for observed v1 C1 failure
+  ThinkPad full clang-format 18.1.3: PASS (observed)
+  ThinkPad full clang-tidy 18.1.3: FAIL (38 warnings-as-errors)
+  ThinkPad focused / TSan / Qt / PJSIP / canonical: NOT RUN (stopped at C2)
+  GitHub Actions: PENDING
+
+SAFETY LIMITS (UNCHANGED):
+  This commit tests only a synthetic ownership policy model; it does not
+  establish production PJSUA2 callback quiescence or PJ_EBUSY recovery.
+
+
+V2 THINKPAD STATIC ANALYSIS (before v3):
+  Commit 17 v2 overlay SHA256/integrity/exact file matching: PASS
+  Full clang-format 18.1.3: PASS
+  Full clang-tidy 18.1.3: FAIL (38 warnings-as-errors)
+  performance-enum-size: 3 enum backing types
+  bugprone-unchecked-optional-access: 35 dereferences of optional attempt ids
+  C3-C10 gates: NOT RUN after static-analysis failure
+  Accidental later v2 ZIP missing in Downloads: observed; already-applied
+  v2 source was not reset or overwritten by that failed SHA check.
+
+V3 CORRECTION (in replacement ZIP):
+  All three enum types explicitly backed by std::uint8_t.
+  Optional generation IDs checked via value_or(0) with a nonzero assertion,
+  and subsequent test reports use validated integer Generation values.
+  Source/CMake/script semantics: same test-only ownership-policy contract.
+  ThinkPad full clang-format 18.1.3: PASS
+  ThinkPad full clang-tidy 18.1.3: PASS
+  ThinkPad policy regression / focused 10/10 / TSan 18/18: PASS
+  ThinkPad Qt / PJSIP 45/45 / canonical 145/145: PASS
+  GitHub Actions: PENDING
+  Production PJSUA2 lifetime issues: STILL OPEN.
+
+
+---
+
+THINKPAD VERIFIED COMMIT 17 V3
+Recorded: 2026-10-10T07:48:27+07:00
+Branch: phase/8-multithreading
+Baseline HEAD: f56ba42
+
+THINKPAD VERIFIED RESULTS:
+  Full clang-format 18.1.3: PASS
+  Full clang-tidy 18.1.3: PASS
+  Ownership policy model: PASS
+  Shutdown failure-path model: PASS
+  Callback ingress model: PASS
+  Focused CTest: 10/10 PASS
+  TSan: 18/18 PASS
+  Qt ownership regression: PASS
+  PJSIP CTest: 45/45 PASS
+  Canonical configure/build: PASS
+  Canonical CTest: 145/145 PASS
+  Exact source manifest: PASS (1 modified + 4 new)
+
+THINKPAD LOG FILES:
+  /tmp/phase8-commit17-v3-format.log
+  /tmp/phase8-commit17-v3-tidy.log
+  /tmp/phase8-commit17-v3-policy.log
+  /tmp/phase8-commit17-v3-failure-paths.log
+  /tmp/phase8-commit17-v3-ingress.log
+  /tmp/phase8-commit17-v3-focused.log
+  /tmp/phase8-commit17-v3-tsan.log
+  /tmp/phase8-commit17-v3-qt.log
+  /tmp/phase8-commit17-v3-pjsip.log
+  /tmp/phase8-commit17-v3-configure.log
+  /tmp/phase8-commit17-v3-build.log
+  /tmp/phase8-commit17-v3-canonical.log
+
+PENDING AT EVIDENCE CAPTURE:
+  Git commit and push synchronization.
+  GitHub Actions verification.
+
+LIMITATIONS:
+  Policy test uses synthetic models.
+  Live PJSUA2 callback quiescence: NOT TESTED.
+  Actual PJ_EBUSY recovery: NOT TESTED.
+  Production lifetime risks: STILL OPEN.

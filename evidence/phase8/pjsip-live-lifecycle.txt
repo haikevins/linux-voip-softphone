@@ -1,0 +1,52 @@
+Phase 8 controlled live PJSUA2 lifecycle evidence
+Recorded: 2026-10-11 (ThinkPad local lab)
+
+BASELINE_BRANCH=phase/8-multithreading
+BASELINE_HEAD=4ace2be
+PJSIP_VERSION=2.17
+LIVE_TRANSPORT=udp
+LIVE_ACCOUNT_EXTENSION=1002
+LIVE_TARGET_EXTENSION=1001
+
+The production registration executable was first exercised against the local
+Asterisk lab and returned SIP 200 / active=yes. The separate lifecycle probe
+then exercised a real PJSUA2 account and call using the same PJSIP 2.17
+installation and Digest-authenticated lab account. The password was read from
+an environment variable inside a subshell and was not retained in evidence.
+
+Observed lifecycle summary:
+REGISTERED=yes status=200
+ACTIVE_CALL_SLOTS=1
+FIRST_SHUTDOWN=PJ_EBUSY
+CALL_SLOTS_AFTER_HANGUP=0
+SECOND_SHUTDOWN=SUCCESS
+ACCOUNT_CALLBACKS_ACTIVE_AT_RETURN=0
+ACCOUNT_CALLBACKS_DURING_GRACE=0
+POST_SHUTDOWN_CALLBACKS=0
+LIB_DESTROY=SUCCESS
+POST_LIBDESTROY_CALLBACKS=0
+PROBE_RESULT=PASS
+
+Original temporary sanitized log:
+ORIGINAL_TEMP_LOG_SHA256=77c62f614fef037c81aa254ebab2352a557197d2c278a6927a90084d93d481f5
+The temporary log itself is not committed. Before this summary was recorded,
+the maintainer verified the expected lifecycle markers and scanned the log for
+Digest Authorization, nonce/cnonce/response, and SRTP inline-key markers.
+
+Interpretation:
+CONTROLLED_PJSUA2_PJ_EBUSY_RECOVERY=LIVE_OBSERVED_EVIDENCED
+LATE_REGISTRATION_CALLBACKS_IN_RECORDED_RUN=NONE_OBSERVED
+LIVE_EXTERNAL_CALLBACK_QUIESCENCE=UNPROVEN
+PRODUCTION_INTEGRATION_READINESS=BLOCKED
+FULL_LIVE_SIP_MEDIA_ACCEPTANCE=NOT_PROVEN
+
+The observed sequence is real runtime evidence that PJSUA2 2.17 returned
+PJ_EBUSY for shutdown2(force=false) while a call slot was active, and that a
+retry succeeded after hangup, DISCONNECTED callback completion, and zero call
+slots. It is not a universal callback-quiescence proof and it did not inject
+PJ_EBUSY through the production SipIncomingCallClient/SipOutgoingCallClient
+stop() methods. The probe counters cover `ProbeAccount::onRegState` registration callbacks.
+No late registration callback was observed at shutdown return, during the
+1.5-second grace interval, or through libDestroy() in this recorded run. That
+absence is an observation, not a vendor-wide lifetime guarantee and not proof
+that every possible PJSUA2 account callback source was quiescent.

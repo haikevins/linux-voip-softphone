@@ -1,0 +1,87 @@
+Phase 8 Commit 9 — PJSUA2 Call shutdown ordering
+Prepared: 2026-10-09
+Baseline: phase/8-multithreading @ 1404826
+
+CHANGED:
+- src/pjsip/SipOutgoingCallClient.cpp (bounded call-slot wait before Call reset)
+- src/pjsip/SipIncomingCallClient.cpp (same ordering)
+
+VERIFICATION (assistant isolated environment):
+- Python static source-contract regressions: 6/6 PASS on isolated Linux (2026-10-09).
+- PJSUA2 compilation: NOT RUN (PJSIP development dependencies unavailable).
+- PJSIP-labeled canonical CTest: NOT RUN on assistant environment.
+- Full canonical CTest: NOT RUN after this overlay.
+- Real SIP registration/call callback lifetime: NOT RUN.
+
+CANONICAL THINKPAD VERIFICATION: PENDING.
+
+Required before commit:
+- bash scripts/phase8/verify-pjsip-shutdown-order.sh
+- bash scripts/phase8/verify-qt-ownership.sh
+- ctest --test-dir build/qt-pjsip-gui-debug --output-on-failure (139/139)
+- diff, exact staged-file manifest, clean push/HEAD equality
+
+Residual timeout hazard (2s call-slot wait) is explicitly NOT resolved.
+Do not interpret the gate as proof of no UAF/data races.
+
+---
+Canonical ThinkPad Commit 9 verification
+Recorded: 2026-10-09T22:29:22+07:00
+BASELINE:
+  Branch: phase/8-multithreading
+  HEAD before Commit 9: 1404826
+
+ENVIRONMENT:
+  Ubuntu 24.04
+  PJSIP: libpjproject 2.17
+  Canonical build: build/qt-pjsip-gui-debug
+
+COMMAND:
+  bash scripts/phase8/verify-pjsip-shutdown-order.sh
+
+OBSERVED:
+  Static shutdown-order contract tests: 6/6 PASS.
+  SipOutgoingCallClient.cpp compilation: PASS.
+  SipIncomingCallClient.cpp compilation: PASS.
+  PJSIP static library linkage: PASS.
+  PJSIP CTest: 45/45 PASS.
+
+RESULT: PASS
+
+COMMAND:
+  bash scripts/phase8/verify-qt-ownership.sh
+
+OBSERVED:
+  QtRegistrationBackendTest: PASS.
+  Owner-thread and shutdown regression gate: PASS.
+
+RESULT: PASS
+
+COMMAND:
+  cmake -S . -B build/qt-pjsip-gui-debug
+  cmake --build build/qt-pjsip-gui-debug -j$(nproc)
+  ctest --test-dir build/qt-pjsip-gui-debug --output-on-failure
+
+OBSERVED:
+  Canonical CMake configuration: PASS.
+  Canonical build: PASS.
+  Canonical CTest: 139/139 PASS.
+
+RESULT: PASS
+
+PRODUCTION CHANGE:
+  SipOutgoingCallClient::stop() and
+  SipIncomingCallClient::stop() now perform the bounded
+  call-slot cleanup wait before call_.reset().
+
+LIMITATIONS:
+  Static source-contract tests are not runtime lifetime tests.
+  No live SIP call was exercised by this verification.
+  No live incoming INVITE or active-media callback was tested.
+  The two-second call-slot timeout fallback remains unverified.
+  No application-wide race freedom or absence of UAF is claimed.
+
+FOLLOW-UP:
+  Validate pending INVITE, early hangup, incoming ringing,
+  active media and shutdown with in-flight callbacks using
+  an isolated SIP test account and controlled test environment.

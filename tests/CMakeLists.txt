@@ -170,3 +170,6 @@ if(ENABLE_QT_GUI)
         TIMEOUT 15
     )
 endif()
+
+# Phase 8 concurrency CTest registration
+add_subdirectory(phase8)

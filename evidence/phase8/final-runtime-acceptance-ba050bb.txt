@@ -1,0 +1,73 @@
+Phase 8 final manual runtime acceptance — parent HEAD ba050bb
+
+Marker: PHASE8_MANUAL_ACCEPTANCE_BA050BB
+
+Repository baseline:
+  branch: phase/8-multithreading
+  HEAD: ba050bb9bcdd01391e2860b16e2f273c824b3ddc
+  origin/phase/8-multithreading: same commit
+  working tree before acceptance: clean
+
+Automated acceptance from the same retained acceptance directory:
+  AUTOMATED: PASS
+
+Manual graphical GUI acceptance:
+  accepted: true
+  observation_seconds: 113.5
+  samples: 226
+  normal window close exit_code: 0
+
+Observed resources:
+  RSS first KiB: 193344
+  RSS last KiB: 196148
+  RSS peak KiB: 196148
+  FD min/max: 30/31
+  thread min/max: 23/24
+
+Human-observed preview-mode checks:
+  PASS: window painted and remained responsive
+  PASS: keypad 0-9, *, # interacted correctly
+  PASS: Delete/Clear and destination editing worked
+  PASS: scroll/resize interaction completed
+  PASS: Register/Call/Hang up remained disabled in preview/no-SIP mode
+  PASS: no sustained freeze, lag, or crash was observed
+  PASS: application closed through the normal window X path
+
+Retained /tmp artifact SHA256:
+  acceptance-status.txt:
+    4784fcf6b8f238ab3d617f94f2dfd3c1294e675b24acc792b6198f7a8b4a47c8
+
+  gui-manual-results.json:
+    a0925cc10f6207308d56596e206ff5dc6ac1711a8b8178e0eac35e893aa602fc
+
+  gui-manual-samples.jsonl:
+    b8d0859c3f13ea339676278f4ae7cffdac92d0fb153eda0529ef14ff1d2b459a
+
+  manual.log:
+    954e1da8704b45c562aa801fc4ca6cc62ef2cec331f7e043a8d8220431c7a6ea
+
+Security review of retained acceptance directory:
+  PASS: no obvious SIP Digest Authorization header
+  PASS: no Proxy-Authorization Digest header
+  PASS: no SRTP a=crypto inline key material
+  PASS: no simple password assignment pattern matched
+
+Important acceptance boundary:
+  LIVE SIP: NOT TESTED by this acceptance run.
+  PJSUA2 shutdown safety: BLOCKED/UNPROVEN.
+  Live external callback quiescence: UNPROVEN.
+  Production-client real PJ_EBUSY recovery: UNPROVEN.
+  Memory leak freedom: NOT PROVEN.
+  Sustained GUI FPS/render performance: NOT MEASURED.
+
+Historical controlled PJSUA2 evidence remains separate from this offline
+acceptance and must not be promoted into a universal production teardown
+guarantee.
+
+Result:
+  MANUAL GUI OFFLINE ACCEPTANCE: PASS
+  FINAL PHASE 8 MAINTAINER SIGN-OFF: PENDING
+
+This evidence is intentionally recorded in a documentation/evidence-only
+commit after ba050bb. No production source or runtime behavior is changed
+by this evidence record.

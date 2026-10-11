@@ -1,0 +1,23 @@
+Phase 8 Commit 7 — Qt/PJSIP source-level ownership review
+Prepared: 2026-10-09
+Baseline: phase/8-multithreading @ ae870ff (maintainer log)
+
+STATUS: INCONCLUSIVE — canonical application source not available in the
+preparation environment. No actual Qt/PJSIP callback ownership or lifetime
+finding has been confirmed, and no app-level thread-affinity test was run.
+
+Prepared artifacts:
+  scripts/phase8/audit-qt-pjsip-ownership.py
+  scripts/phase8/verify-ownership-audit.sh
+  tests/phase8/test_ownership_audit.py
+  docs/phase8/commit7-ownership-audit.md
+
+Evidence to append ONLY after actually performing checks on ThinkPad:
+  - Fixture scanner tests and inventory result (counts, not source content).
+  - Manual review of selected hotspots and callback/owner/lifetime contracts.
+  - Canonical CTest results (target remains 139/139).
+  - Any identified risks, mitigation commits, outstanding uncertainties.
+
+NOT RUN: Qt/PJSIP callback owner audit; SIP/GUI runtime shutdown tests.
+PASS in previous Commit 6: maintainer reported Clang 18 standalone TSan 4x3
+and canonical 139/139; that does NOT instrument Qt/PJSIP production paths.

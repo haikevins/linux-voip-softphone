@@ -1,9 +1,13 @@
 #include "pjsip/SipOutgoingCallClient.hpp"
 
+#include "pjsip/CallbackActivityGate.hpp"
+#include "pjsip/PjsipCallSlotCleanup.hpp"
 #include "pjsip/Pjsua2AudioDeviceManager.hpp"
 #include "pjsip/Pjsua2CallAudioBridge.hpp"
 
+#include <atomic>
 #include <cstdio>
+#include <exception>
 #include <pjsua-lib/pjsua.h>
 #include <stdexcept>
 #include <thread>
@@ -11,86 +15,155 @@
 
 namespace voip::pjsip {
 
+struct SipOutgoingCallClient::CallbackContext final
+{
+    explicit CallbackContext(SipOutgoingCallClient &owner) noexcept : owner_(&owner) {}
+
+    [[nodiscard]] SipOutgoingCallClient *owner() const noexcept
+    {
+        return owner_.load(std::memory_order_acquire);
+    }
+
+    void detach_owner() noexcept
+    {
+        owner_.store(nullptr, std::memory_order_release);
+    }
+
+    detail::CallbackActivityGate account_activity;
+    detail::CallbackActivityGate call_activity;
+
+  private:
+    std::atomic<SipOutgoingCallClient *> owner_;
+};
+
 class SipOutgoingCallClient::CallAccount final : public pj::Account
 {
   public:
-    explicit CallAccount(SipOutgoingCallClient &owner) : owner_(owner) {}
+    explicit CallAccount(std::shared_ptr<CallbackContext> context) : context_(std::move(context)) {}
 
     void onRegState(pj::OnRegStateParam &parameter) override
     {
+        auto callback_entry = context_->account_activity.enter();
+        if (!callback_entry.admitted()) {
+            return;
+        }
+
+        auto *owner = context_->owner();
+        if (owner == nullptr) {
+            return;
+        }
+
         try {
-            owner_.on_registration_state(parameter, getInfo());
+            owner->on_registration_state(parameter, getInfo());
         } catch (const pj::Error &error) {
-            owner_.on_registration_callback_error(error.info());
+            owner->on_registration_callback_error(error.info());
         } catch (const std::exception &error) {
-            owner_.on_registration_callback_error(error.what());
+            owner->on_registration_callback_error(error.what());
         } catch (...) {
-            owner_.on_registration_callback_error("unknown registration callback failure");
+            owner->on_registration_callback_error("unknown registration callback failure");
         }
     }
 
     void onIncomingCall(pj::OnIncomingCallParam &parameter) override
     {
-        const std::lock_guard callback_lock{owner_.incoming_callback_mutex_};
+        auto callback_entry = context_->account_activity.enter();
+        if (!callback_entry.admitted()) {
+            try {
+                pj::Call rejected_call{*this, parameter.callId};
+                pj::CallOpParam busy_parameter;
+                busy_parameter.statusCode = PJSIP_SC_BUSY_HERE;
+                rejected_call.answer(busy_parameter);
+            } catch (...) {
+                std::fputs("PJSIP incoming call rejection failed during shutdown\n", stderr);
+            }
+            return;
+        }
+
+        auto *owner = context_->owner();
+        if (owner == nullptr) {
+            return;
+        }
+
+        const std::lock_guard callback_lock{owner->incoming_callback_mutex_};
 
         try {
-            owner_.on_incoming_call(*this, parameter.callId);
+            owner->on_incoming_call(*this, parameter.callId);
         } catch (const pj::Error &error) {
-            owner_.on_incoming_callback_error(error.info());
+            owner->on_incoming_callback_error(error.info());
         } catch (const std::exception &error) {
-            owner_.on_incoming_callback_error(error.what());
+            owner->on_incoming_callback_error(error.what());
         } catch (...) {
-            owner_.on_incoming_callback_error("unknown incoming call callback failure");
+            owner->on_incoming_callback_error("unknown incoming call callback failure");
         }
     }
 
   private:
-    SipOutgoingCallClient &owner_;
+    std::shared_ptr<CallbackContext> context_;
 };
 
 class SipOutgoingCallClient::TrackedCall final : public pj::Call
 {
   public:
-    TrackedCall(pj::Account &account, SipOutgoingCallClient &owner)
-        : pj::Call(account), owner_(owner)
+    TrackedCall(pj::Account &account, std::shared_ptr<CallbackContext> context)
+        : pj::Call(account), context_(std::move(context))
     {}
 
-    TrackedCall(pj::Account &account, SipOutgoingCallClient &owner, const int call_id)
-        : pj::Call(account, call_id), owner_(owner)
+    TrackedCall(pj::Account &account, std::shared_ptr<CallbackContext> context, const int call_id)
+        : pj::Call(account, call_id), context_(std::move(context))
     {}
 
     void onCallState(pj::OnCallStateParam & /*parameter*/) override
     {
-        const std::lock_guard callback_lock{owner_.call_callback_mutex_};
+        auto callback_entry = context_->call_activity.enter();
+        if (!callback_entry.admitted()) {
+            return;
+        }
+
+        auto *owner = context_->owner();
+        if (owner == nullptr) {
+            return;
+        }
+
+        const std::lock_guard callback_lock{owner->call_callback_mutex_};
 
         try {
-            owner_.on_call_state(getInfo());
+            owner->on_call_state(getInfo());
         } catch (const pj::Error &error) {
-            owner_.on_call_callback_error(error.info());
+            owner->on_call_callback_error(error.info());
         } catch (const std::exception &error) {
-            owner_.on_call_callback_error(error.what());
+            owner->on_call_callback_error(error.what());
         } catch (...) {
-            owner_.on_call_callback_error("unknown call callback failure");
+            owner->on_call_callback_error("unknown call callback failure");
         }
     }
 
     void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override
     {
-        const std::lock_guard callback_lock{owner_.call_callback_mutex_};
+        auto callback_entry = context_->call_activity.enter();
+        if (!callback_entry.admitted()) {
+            return;
+        }
+
+        auto *owner = context_->owner();
+        if (owner == nullptr) {
+            return;
+        }
+
+        const std::lock_guard callback_lock{owner->call_callback_mutex_};
 
         try {
-            owner_.on_call_media_state(*this);
+            owner->on_call_media_state(*this);
         } catch (const pj::Error &error) {
-            owner_.on_call_media_callback_error(error.info());
+            owner->on_call_media_callback_error(error.info());
         } catch (const std::exception &error) {
-            owner_.on_call_media_callback_error(error.what());
+            owner->on_call_media_callback_error(error.what());
         } catch (...) {
-            owner_.on_call_media_callback_error("unknown call media callback failure");
+            owner->on_call_media_callback_error("unknown call media callback failure");
         }
     }
 
   private:
-    SipOutgoingCallClient &owner_;
+    std::shared_ptr<CallbackContext> context_;
 };
 
 SipOutgoingCallClient::SipOutgoingCallClient(SipEndpointConfig endpoint_config,
@@ -102,12 +175,18 @@ SipOutgoingCallClient::SipOutgoingCallClient(SipEndpointConfig endpoint_config,
                                              SipAccountConfig account_config,
                                              SipCallAudioConfig audio_config)
     : endpoint_config_(endpoint_config), account_config_(std::move(account_config)),
-      audio_config_(std::move(audio_config))
+      audio_config_(std::move(audio_config)),
+      callback_context_(std::make_shared<CallbackContext>(*this))
 {}
 
 SipOutgoingCallClient::~SipOutgoingCallClient()
 {
     stop();
+    if (library_created_ || endpoint_ != nullptr || account_ != nullptr || call_ != nullptr) {
+        std::fputs("PJSIP outgoing client teardown could not prove safe destruction\n", stderr);
+        std::terminate();
+    }
+    callback_context_->detach_owner();
 }
 
 void SipOutgoingCallClient::reset_call_state()
@@ -124,6 +203,13 @@ void SipOutgoingCallClient::start()
 {
     if (started_) {
         throw std::logic_error("SIP outgoing call client is already started");
+    }
+    if (library_created_ || endpoint_ != nullptr || account_ != nullptr || call_ != nullptr) {
+        throw std::logic_error("SIP outgoing call client retains teardown state");
+    }
+    if (!callback_context_->account_activity.reset_if_empty() ||
+        !callback_context_->call_activity.reset_if_empty()) {
+        throw std::logic_error("SIP outgoing callback activity did not drain before restart");
     }
     if (!account_config_.register_on_add) {
         throw std::invalid_argument("SIP outgoing call client requires register_on_add=true");
@@ -163,7 +249,7 @@ void SipOutgoingCallClient::start()
         auto pjsua2_account_config = account_config_.to_pjsua2_account_config();
         pjsua2_account_config.sipConfig.transportId = transport_id;
 
-        account_ = std::make_unique<CallAccount>(*this);
+        account_ = std::make_unique<CallAccount>(callback_context_);
         account_->create(pjsua2_account_config);
         started_ = true;
     } catch (...) {
@@ -174,10 +260,64 @@ void SipOutgoingCallClient::start()
 
 void SipOutgoingCallClient::stop() noexcept
 {
-    if (endpoint_ == nullptr && !library_created_) {
+    if (!library_created_) {
+        if (account_ != nullptr || call_ != nullptr) {
+            std::fputs("PJSIP outgoing shutdown found callback objects without a library\n",
+                       stderr);
+            return;
+        }
+        endpoint_.reset();
+        started_ = false;
+        reset_call_state();
         return;
     }
-    hangup();
+    if (endpoint_ == nullptr) {
+        std::fputs("PJSIP outgoing shutdown lost the endpoint owner\n", stderr);
+        return;
+    }
+
+    // Stop owner-visible account work first. enter() still counts callbacks
+    // rejected after close(), so the derived Account remains alive while
+    // already-entered and shutdown-racing account callbacks return.
+    callback_context_->account_activity.close();
+    if (!callback_context_->account_activity.wait_for_empty_for(std::chrono::seconds{2})) {
+        std::fputs("PJSIP account callbacks did not drain before call shutdown\n", stderr);
+        return;
+    }
+
+    bool call_present{false};
+    {
+        const std::lock_guard call_object_lock{call_object_mutex_};
+        call_present = call_ != nullptr;
+    }
+
+    if (call_present) {
+        hangup();
+        try {
+            if (!wait_for_disconnection(std::chrono::seconds{2})) {
+                std::fputs("PJSIP call did not reach DISCONNECTED during shutdown\n", stderr);
+                return;
+            }
+        } catch (...) {
+            std::fputs("PJSIP call disconnection wait failed during shutdown\n", stderr);
+            return;
+        }
+    }
+
+    // The DISCONNECTED callback may signal call_changed_ before its C++
+    // override returns. Close and drain the local gate before releasing the
+    // derived Call target. This is not a standalone external-source proof.
+    callback_context_->call_activity.close();
+    if (!callback_context_->call_activity.wait_for_empty_for(std::chrono::seconds{2})) {
+        std::fputs("PJSIP call callbacks did not drain during shutdown\n", stderr);
+        return;
+    }
+
+    // PJSIP may keep a call slot busy while protocol cleanup completes. The
+    // bounded result is a release precondition rather than an advisory probe.
+    if (!wait_for_call_cleanup(std::chrono::seconds{2})) {
+        return;
+    }
 
     {
         const std::lock_guard incoming_callback_lock{incoming_callback_mutex_};
@@ -186,18 +326,33 @@ void SipOutgoingCallClient::stop() noexcept
         call_.reset();
     }
 
-    static_cast<void>(wait_for_call_cleanup(std::chrono::seconds{2}));
-    static_cast<void>(shutdown_account_safely());
-    account_.reset();
-
-    if (endpoint_ != nullptr && library_created_) {
-        try {
-            endpoint_->libDestroy();
-        } catch (...) {
-            std::fputs("PJSIP cleanup failed during call-session shutdown\n", stderr);
-        }
+    // shutdown2(force=false) rejects an account that PJSIP still considers
+    // busy. Do not destroy the derived Account on this explicit-stop failure;
+    // a later stop() may retry. Destructor failure policy remains a separate
+    // Phase 8 closure item.
+    if (!shutdown_account_safely()) {
+        return;
     }
 
+    // shutdown2() removes the account callback source. Count callbacks that
+    // raced the earlier close() and wait for their methods to return before
+    // releasing the derived Account object.
+    if (!callback_context_->account_activity.wait_for_empty_for(std::chrono::seconds{2})) {
+        std::fputs("PJSIP account callbacks did not drain after account shutdown\n", stderr);
+        return;
+    }
+    // Keep the derived Account callback target alive through libDestroy().
+    // PJProject 2.17 joins UA/media workers and destroys the SIP endpoint
+    // inside this boundary. This implementation-reviewed ordering is not a
+    // universal proof of external callback quiescence.
+    try {
+        endpoint_->libDestroy();
+    } catch (...) {
+        std::fputs("PJSIP cleanup failed during call-session shutdown\n", stderr);
+        return;
+    }
+
+    account_.reset();
     endpoint_.reset();
     library_created_ = false;
     started_ = false;
@@ -250,7 +405,7 @@ void SipOutgoingCallClient::make_call(const std::string &destination_uri)
     }
 
     reset_call_state();
-    call_ = std::make_unique<TrackedCall>(*account_, *this);
+    call_ = std::make_unique<TrackedCall>(*account_, callback_context_);
     try {
         const pj::CallOpParam parameter{true};
         call_->makeCall(destination_uri, parameter);
@@ -434,17 +589,14 @@ bool SipOutgoingCallClient::release_disconnected_call()
 
 bool SipOutgoingCallClient::wait_for_call_cleanup(const std::chrono::milliseconds timeout) noexcept
 {
-    const auto deadline = std::chrono::steady_clock::now() + timeout;
-    while (pjsua_call_get_count() != 0U) {
-        if (std::chrono::steady_clock::now() >= deadline) {
-            std::fputs("PJSIP call slot remained busy during call-session cleanup\n", stderr);
-            return false;
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds{10});
+    const bool slots_drained = detail::wait_for_zero_call_slots(
+        timeout, [] { return pjsua_call_get_count(); },
+        [] { return std::chrono::steady_clock::now(); },
+        [](const std::chrono::milliseconds delay) { std::this_thread::sleep_for(delay); });
+    if (!slots_drained) {
+        std::fputs("PJSIP call slot remained busy during call-session cleanup\n", stderr);
     }
-
-    return true;
+    return slots_drained;
 }
 
 bool SipOutgoingCallClient::shutdown_account_safely() noexcept
@@ -522,7 +674,7 @@ void SipOutgoingCallClient::on_incoming_call(pj::Account &account, const int cal
         }
 
         reset_call_state();
-        call_ = std::make_unique<TrackedCall>(account, *this, call_id);
+        call_ = std::make_unique<TrackedCall>(account, callback_context_, call_id);
         const auto info = call_->getInfo();
         remote_uri = info.remoteUri;
         state = info.stateText;

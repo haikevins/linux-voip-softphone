@@ -1,0 +1,36 @@
+Phase 8 roadmap evidence — MPMC stress test
+Source: real maintainer ThinkPad terminal log for Phase 8 Commit 5 (2026-10-09)
+Current code review baseline: Phase 8 Commit 19, e98bc3418f76b15b4b568d603f5e4002cbd3a544
+Status: OBSERVED IN SUPPLIED THINKPAD LOG; canonical HEAD confirmation pending.
+
+IMPLEMENTATION:
+  tests/phase8/test_mpmc_stress.cpp
+  test_100000_event_mpmc_integrity(): 4 producers x 25,000 events each
+    and 4 consumers, synchronized start with std::latch.
+  Asserts: 100,000 accepted and delivered; zero duplicate, malformed,
+    rejected or missing IDs; queue closed/drained.
+
+ORIGINAL THINKPAD RUN (Commit 5 transcript, 2026-10-09):
+  COMMAND:
+    PHASE8_STRESS_REPEATS=100 bash scripts/phase8/verify-stress.sh
+  OBSERVED IN USER-POSTED TERMINAL LOG:
+    "Phase 8 reproducible MPMC stress gate"
+    "Runs: 100"
+    Phase8MpmcStressTest passed, repeated.
+  Separate single-run focused CTest in Commit 19's ThinkPad terminal log:
+    Phase8MpmcStressTest PASSED, focused suite 12/12 PASS.
+  RESULT: Historical ThinkPad stress PASS reported; full repeat-count
+    validation is checked against the original log or rerun on ThinkPad.
+
+OPTIONAL REPRODUCIBLE COMMAND (new run, not executed by this ZIP):
+  PHASE8_STRESS_REPEATS=100 bash scripts/phase8/verify-stress.sh
+
+LIMITATIONS:
+  Does not test production SIP callback lifetime, actual Qt UI state,
+  or integration of ThreadSafeQueue with PJSUA2. No deterministic thread
+  interleaving guarantee. This file summarizes uploaded maintainer logs
+  and is not a freshly captured raw ThinkPad log.
+
+RELATED HISTORICAL FILES:
+  evidence/phase8/stress-test.txt
+  evidence/phase8/automated-verification.txt

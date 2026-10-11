@@ -1,0 +1,77 @@
+Phase 8 — Commit 15 PJSIP shutdown failure-path regression model
+=================================================================
+Baseline expected: phase/8-multithreading HEAD a9ba51f (Commit 14)
+Scope: one C++ model regression, one CMake registration, one verification script,
+       one documentation file, this evidence file; no production changes.
+
+INITIAL OBSERVATIONS (sandbox reconstructed source fixture; NOT ThinkPad):
+  Focused standalone CMake configure/build: PASS
+  Focused standalone CTest: PASS (8/8)
+  New synthetic failure model: PASS (9 scenarios)
+  Production live SIP callback quiescence: NOT TESTED
+  Actual ThinkPad baseline SHA and origin sync: PASS
+
+THINKPAD ACCEPTANCE (update only after inspecting real outputs):
+  Exact ZIP manifest, SHA256, and source baseline hashes: PASS
+  Production source OPEN-risk inventory: PASS (risks remain OPEN)
+  Targeted focused + canonical failure-path model gate: PASS
+  Full CI-equivalent clang-format: PASS
+  Full CI-equivalent clang-tidy preset build: PASS
+  Focused standalone CTest: PASS (8/8)
+  Qt owner-thread regression: PASS
+  PJSIP shutdown-order CTest: PASS (45/45)
+  Clang18 TSan six tests x three runs: PASS (18/18)
+  Full canonical configure/build + CTest: PASS (143/143)
+  Git commit/push + origin sync + clean tree: PENDING
+  GitHub Actions for Commit 15: PENDING
+
+OPEN PRODUCTION RISKS (not fixed by this commit):
+  Call-slot timeout result is discarded in both real stop() paths.
+  Account shutdown failure / PJ_EBUSY result is discarded.
+  Account may be reset after unsuccessful shutdown2(force=false).
+  Registration callbacks have no external teardown gate.
+  No CallbackActivityGate is wired around real PJSUA2 callback admission.
+  Callback owners hold borrowed references across potential late entries.
+
+LIMITATION: model tests synthetic preconditions, including external callback
+quiescence. A passing test must never be presented as proof of real PJSUA2
+callback lifetime safety or PJ_EBUSY recovery.
+
+
+---
+
+THINKPAD VERIFIED PHASE 8 COMMIT 15
+Recorded: 2026-10-10T00:24:34+07:00
+Branch: phase/8-multithreading
+Baseline HEAD: a9ba51f
+
+THINKPAD VERIFIED RESULTS:
+  Full clang-format 18.1.3: PASS
+  Full clang-tidy 18.1.3: PASS
+  Production risk inventory: PASS (risks remain OPEN)
+  Focused + canonical model targets: PASS
+  Focused Phase 8 CTest: PASS (8/8)
+  Clang 18 TSan: PASS (18/18)
+  Qt ownership regression: PASS
+  PJSIP regression: PASS (45/45)
+  Canonical build: PASS
+  Canonical CTest: PASS (143/143)
+
+LOG FILES:
+  /tmp/phase8-commit15-format.log
+  /tmp/phase8-commit15-tidy.log
+  /tmp/phase8-commit15-failure-paths.log
+  /tmp/phase8-commit15-focused.log
+  /tmp/phase8-commit15-tsan.log
+  /tmp/phase8-commit15-qt.log
+  /tmp/phase8-commit15-pjsip.log
+  /tmp/phase8-commit15-build.log
+  /tmp/phase8-commit15-canonical.log
+
+PENDING:
+  Git commit and origin synchronization.
+  GitHub Actions verification.
+
+LIMITATION:
+  Synthetic failure-path tests do not prove live
+  PJSUA2 callback quiescence or PJ_EBUSY recovery.
