@@ -109,6 +109,15 @@ if(ENABLE_PJSIP)
 
     project_set_warnings(voip_sip_listen)
     project_enable_sanitizers(voip_sip_listen)
+
+    if(ENABLE_PHASE8_R2A_LAB)
+        add_executable(phase8_r2a_production_stop_reuse
+            "${PROJECT_SOURCE_DIR}/labs/pjsip/production-stop-reuse/phase8_r2a_production_stop_reuse.cpp"
+        )
+        target_link_libraries(phase8_r2a_production_stop_reuse PRIVATE voip::pjsip)
+        project_set_warnings(phase8_r2a_production_stop_reuse)
+        project_enable_sanitizers(phase8_r2a_production_stop_reuse)
+    endif()
 endif()
 
 # Phase 7 Commit 3: Qt bridge is testable without an actual SIP server.

@@ -46,6 +46,7 @@ Deliberately excluded:
 | Account shutdown invocation | Share fail-closed error handling; exercise a fake `PJ_EBUSY`-like error without a SIP server | `src/pjsip/PjsipAccountShutdownAttempt.hpp`, `tests/unit/test_pjsip_account_shutdown_attempt.cpp` |
 | Offline verification | Run concurrency, 100,000-event stress, and TSan checks | `scripts/phase8/verify.sh`, `scripts/phase8/verify-threading.sh` |
 | Live probe | Record bounded PJSUA2 lifecycle observations through explicit opt-in | `scripts/phase8/run-pjsip-live-lifecycle-probe.sh` |
+| Production live stop/reuse lab (P8-R2A) | Build an opt-in outgoing-client harness; record only allowlisted outcome markers | `labs/pjsip/production-stop-reuse/`, `scripts/phase8/run-production-stop-reuse-lab.sh` |
 | Architecture | Document Qt/PJSUA2 ownership and unproven shutdown boundaries | `docs/architecture/threading-model.md` |
 | Evidence | Preserve sanitized stress, TSan, GUI, and controlled live observations | `evidence/phase8/README.md` |
 
@@ -94,6 +95,21 @@ THREADING_TSAN_REPEATS=3 \
 bash scripts/phase8/verify-threading.sh tsan
 ```
 
+The production-client stop/reuse experiment also requires explicit operator
+opt-in, Asterisk `192.168.1.23` with extensions `1002` and `1001`, and
+PJPROJECT 2.17. It may ring `1001` and does not run under CI:
+
+```bash
+PHASE8_LIVE_SIP=1 PHASE8_R2A_CONFIRM=1002-to-1001 \
+    bash scripts/phase8/run-production-stop-reuse-lab.sh
+```
+
+The script requests the SIP password without printing it and retains an
+allowlisted summary only. Build output stays outside the Git archive under
+`build/phase8-r2a-live/`. The bounded P8-R2A observations from 2026-10-12 are recorded in
+`evidence/phase8/README.md`; their outcomes are not a general SIP call
+delivery or PJSUA2 teardown guarantee.
+
 The live lifecycle probe is explicit opt-in only:
 
 ```bash
@@ -118,6 +134,13 @@ PJSUA2 client recovery or establish external callback quiescence**. This new
 test is additive to the previously recorded 147-test baseline.
 
 Offline PASS does not upgrade the unresolved live production shutdown boundary.
+The 2026-10-12 P8-R2A live observation recorded two **PASS** stop/reuse
+cycles following an outgoing call attempt with response `PENDING`, and one
+earlier **FAIL** after a rejected call response. The two PASS runs observed
+explicit disconnect, same-object restart, renewed registration, second stop,
+and normal destruction. They do not establish that extension `1001` received
+or answered the call. Real production-client `PJ_EBUSY` recovery and external
+callback quiescence remain **UNPROVEN**.
 
 ## Evidence
 

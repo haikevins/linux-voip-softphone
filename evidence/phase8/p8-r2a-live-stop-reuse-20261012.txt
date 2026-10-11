@@ -1,0 +1,96 @@
+# Phase 8 P8-R2A — Bounded Live Production Outgoing Stop/Reuse Observations
+
+Source: maintainer-supplied terminal transcript of the opt-in lab runs on
+2026-10-12. These are allowlisted result markers, not raw SIP traces. Before
+committing, the maintainer should compare them against the three original
+operator-local `~/Downloads/phase8-r2a-*.txt` summaries.
+
+Baseline: `b5bd59f` (`DIRTY_PRECOMMIT` reflects the uncommitted R2A harness).
+Environment: PJPROJECT 2.17; Asterisk `192.168.1.23`, account `1002`,
+target `1001`, transport UDP. No SIP credentials, Digest material, or raw
+PJSIP logs are retained here.
+
+## Run 1 — 20261012-051307 — FAIL
+
+```text
+P8R2A_SOURCE_HEAD=b5bd59f
+P8R2A_SOURCE_TREE=DIRTY_PRECOMMIT
+P8R2A_PJPROJECT=2.17
+P8R2A_ENVIRONMENT=ASTERISK_192.168.1.23_1002_TO_1001_UDP
+P8R2A_FIRST_REGISTRATION=PASS
+P8R2A_CALL_ATTEMPT=STARTED
+P8R2A_CALL_RESPONSE=REJECTED
+P8R2A_RESULT=FAIL
+P8R2A_PROCESS_EXIT=1
+P8R2A_SCOPE=PRODUCTION_OUTGOING_STOP_REUSE_ONLY
+P8R2A_REAL_PJ_EBUSY_RECOVERY=UNPROVEN
+P8R2A_EXTERNAL_CALLBACK_QUIESCENCE=UNPROVEN
+```
+
+The lab did not reach the stop/reuse success markers. The SIP numeric
+status code was not recorded; do not assign a specific rejection cause.
+
+## Run 2 — 20261012-051609 — PASS
+
+```text
+P8R2A_SOURCE_HEAD=b5bd59f
+P8R2A_SOURCE_TREE=DIRTY_PRECOMMIT
+P8R2A_PJPROJECT=2.17
+P8R2A_ENVIRONMENT=ASTERISK_192.168.1.23_1002_TO_1001_UDP
+P8R2A_FIRST_REGISTRATION=PASS
+P8R2A_CALL_ATTEMPT=STARTED
+P8R2A_CALL_RESPONSE=PENDING
+P8R2A_CALL_DISCONNECTED=PASS
+P8R2A_FIRST_STOP=RETURNED
+P8R2A_SAME_OBJECT_RESTART=PASS
+P8R2A_SECOND_REGISTRATION=PASS
+P8R2A_SECOND_STOP=RETURNED
+P8R2A_DESTRUCTOR=RETURNED
+P8R2A_PJ_EBUSY=NOT_EXERCISED
+P8R2A_RESULT=PASS
+P8R2A_PROCESS_EXIT=0
+P8R2A_SCOPE=PRODUCTION_OUTGOING_STOP_REUSE_ONLY
+P8R2A_REAL_PJ_EBUSY_RECOVERY=UNPROVEN
+P8R2A_EXTERNAL_CALLBACK_QUIESCENCE=UNPROVEN
+```
+
+## Run 3 — 20261012-051629 — PASS
+
+```text
+P8R2A_SOURCE_HEAD=b5bd59f
+P8R2A_SOURCE_TREE=DIRTY_PRECOMMIT
+P8R2A_PJPROJECT=2.17
+P8R2A_ENVIRONMENT=ASTERISK_192.168.1.23_1002_TO_1001_UDP
+P8R2A_FIRST_REGISTRATION=PASS
+P8R2A_CALL_ATTEMPT=STARTED
+P8R2A_CALL_RESPONSE=PENDING
+P8R2A_CALL_DISCONNECTED=PASS
+P8R2A_FIRST_STOP=RETURNED
+P8R2A_SAME_OBJECT_RESTART=PASS
+P8R2A_SECOND_REGISTRATION=PASS
+P8R2A_SECOND_STOP=RETURNED
+P8R2A_DESTRUCTOR=RETURNED
+P8R2A_PJ_EBUSY=NOT_EXERCISED
+P8R2A_RESULT=PASS
+P8R2A_PROCESS_EXIT=0
+P8R2A_SCOPE=PRODUCTION_OUTGOING_STOP_REUSE_ONLY
+P8R2A_REAL_PJ_EBUSY_RECOVERY=UNPROVEN
+P8R2A_EXTERNAL_CALLBACK_QUIESCENCE=UNPROVEN
+```
+
+## Interpretation and boundaries
+
+- In both PASS runs, `wait_for_call(3s)` remained pending, followed by an
+  explicit hangup and a successful disconnection wait. These observations do
+  not demonstrate that target `1001` rang, received, or answered the call.
+- The first `stop()` returned, the same `SipOutgoingCallClient` object was
+  started again, registration succeeded again, the second `stop()` returned,
+  and its destructor returned normally.
+- A separate `asterisk -rx` query, run from the maintainer's terminal, listed
+  no PJSIP contacts and showed endpoints `1001` and `1002` as `Unavailable` at
+  query time. This describes the Asterisk instance that command reached; the
+  transcript does not prove that it was the remote target `192.168.1.23`.
+- `P8R2A_PJ_EBUSY=NOT_EXERCISED`. Production-client actual `PJ_EBUSY`
+  recovery and external callback quiescence remain **UNPROVEN**.
+- PJSUA2 integration readiness remains **BLOCKED** and Phase 8 maintainer
+  acceptance remains **PENDING**.

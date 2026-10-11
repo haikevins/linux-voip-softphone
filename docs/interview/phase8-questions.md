@@ -86,6 +86,15 @@ modeled ownership/retry decision. It does not execute the real PJSUA2
 an active call. A production live observation and a defensible external callback
 lifetime proof are still separate requirements.
 
+#### What does an observed production-client stop/reuse cycle establish?
+
+With a real Asterisk registration and outgoing call attempt, P8-R2A can show
+that one `SipOutgoingCallClient` stopped, restarted on the **same object**, and
+registered again without failing its retained-resource startup guard. It does
+not deliberately reach an active-call `shutdown2(false)` `PJ_EBUSY` condition;
+that remains the separate P8-R2B objective. A completed stop/reuse observation
+also cannot prove quiescence for all possible external callbacks.
+
 ## Phase boundary
 
 Phase 8 remains pending final maintainer acceptance. Live external callback quiescence and production-client real `PJ_EBUSY` recovery are **UNPROVEN**, and PJSUA2 integration readiness is **BLOCKED**.
