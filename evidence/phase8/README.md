@@ -224,3 +224,24 @@ make historical runs appear current.
 - `evidence/07-threading/README.md`
 - `tests/phase8/`
 - `scripts/phase8/`
+
+
+<!-- PHASE8_MANUAL_ACCEPTANCE_BA050BB -->
+
+### Final manual GUI acceptance on `ba050bb`
+
+The final graphical preview-mode acceptance was run on
+`ba050bb9bcdd01391e2860b16e2f273c824b3ddc`.
+
+Observed result: **PASS**.
+
+The GUI was human-operated for 113.5 seconds, produced 226 resource samples,
+remained responsive, and exited normally with status 0 through the window
+close path.
+
+Detailed evidence:
+
+`final-runtime-acceptance-ba050bb.txt`
+
+This does not change the existing Phase 8 safety boundary: live SIP was not
+tested by this run, and PJSUA2 shutdown safety remains **BLOCKED/UNPROVEN**.

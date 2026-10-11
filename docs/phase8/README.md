@@ -377,3 +377,25 @@ The roadmap next phase is Phase 9 — debugging, memory, and core dump. The open
 production PJSUA2 shutdown risks from Phase 8 must remain visible as carried
 technical debt unless they are resolved with real evidence before Phase 8
 closure.
+
+
+<!-- PHASE8_MANUAL_ACCEPTANCE_BA050BB -->
+
+### Final manual runtime acceptance refresh
+
+A final graphical GUI acceptance run was completed on parent runtime HEAD
+`ba050bb9bcdd01391e2860b16e2f273c824b3ddc`.
+
+Result: **PASS**.
+
+The preview/no-SIP UI remained responsive through the required interaction
+and idle-soak checks and exited normally through the window close path.
+
+The complete observed record is:
+
+`evidence/phase8/final-runtime-acceptance-ba050bb.txt`
+
+This refresh is offline GUI evidence only. It does not establish live SIP
+acceptance, external callback quiescence, or universal PJSUA2 shutdown safety.
+Those boundaries remain explicitly **BLOCKED/UNPROVEN** where already
+documented.
