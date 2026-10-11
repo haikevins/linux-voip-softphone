@@ -60,8 +60,7 @@ bool stop_model(FakeAccount &account, FakeEndpoint &endpoint, bool local_callbac
         return false;
     }
     const bool stopped = attempt_account_shutdown<SimulatedPjError>(
-        [&] { account.shutdown2(false); },
-        [&](const SimulatedPjError &) { ++api_failures; },
+        [&] { account.shutdown2(false); }, [&](const SimulatedPjError &) { ++api_failures; },
         [&] { ++other_failures; });
     if (!stopped) {
         return false;
@@ -123,8 +122,7 @@ void unknown_failure_is_fail_closed()
             "unknown failure must veto model release");
     require(account.owned && endpoint.owned && endpoint.destructions == 0,
             "exception must retain modeled owners");
-    require(api_failures == 0 && other_failures == 1,
-            "unknown failure must use fallback handler");
+    require(api_failures == 0 && other_failures == 1, "unknown failure must use fallback handler");
 }
 
 void logging_failures_cannot_escape_or_authorize_release()

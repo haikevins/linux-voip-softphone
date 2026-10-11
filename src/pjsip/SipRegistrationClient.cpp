@@ -199,9 +199,7 @@ bool SipRegistrationClient::shutdown_account_safely() noexcept
             std::fprintf(stderr, "PJSIP registration account shutdown failed: %s\n",
                          error.info().c_str());
         },
-        [&] {
-            std::fputs("PJSIP registration account shutdown failed during cleanup\n", stderr);
-        });
+        [&] { std::fputs("PJSIP registration account shutdown failed during cleanup\n", stderr); });
     if (!shutdown_ok) {
         return false;
     }

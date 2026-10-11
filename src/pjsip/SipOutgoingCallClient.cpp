@@ -614,9 +614,7 @@ bool SipOutgoingCallClient::shutdown_account_safely() noexcept
         [&](const pj::Error &error) {
             std::fprintf(stderr, "PJSIP account shutdown failed: %s\n", error.info().c_str());
         },
-        [&] {
-            std::fputs("PJSIP account shutdown failed during call-session cleanup\n", stderr);
-        });
+        [&] { std::fputs("PJSIP account shutdown failed during call-session cleanup\n", stderr); });
     if (!shutdown_ok) {
         return false;
     }
