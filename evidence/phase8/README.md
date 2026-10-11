@@ -34,6 +34,15 @@ within that bounded lab sequence, subject to comparison with the operator-local
 original summary before commit. Do not infer external callback quiescence,
 normal-stop `PJ_EBUSY` behavior, or other clients' recovery from this result.
 
+P8-R3A introduces reproducible, offline-only source-contract and concurrent
+local ingress regression tests. The canonical CTest entry
+`Phase8R3CallbackTargetContractTest` fails when a production callback
+method is added or its gate/owner lifetime ordering is changed without
+review. `PjsipCallbackActivityTest` now includes an after-close rejected
+entry running on a separate thread. These are **not new live evidence**, do
+not attest to callbacks that have not yet entered the C++ override, and do
+not authorize a change to `UNPROVEN` or `BLOCKED`.
+
 ## Environment
 
 Recorded runs used the maintainer Linux/ThinkPad environment, Qt 6, PJPROJECT/PJSIP 2.17 where applicable, and Clang 18 for the successful TSan run.

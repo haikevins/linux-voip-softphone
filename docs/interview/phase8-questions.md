@@ -124,6 +124,26 @@ production-client sequence only. It does not establish that every possible
 late external PJSUA2 callback has ceased before object destruction. That
 claim remains **UNPROVEN** independently of the lab outcome.
 
+### Callback ingress and external source quiescence
+
+#### Does a drained `CallbackActivityGate` prove PJSUA2 has stopped its callbacks?
+
+No. `enter()` tracks a callback only **after** PJSUA2 has entered the C++
+virtual method. After `close()`, a callback already inside `enter()` is
+counted through method return, even when owner work is rejected. A later
+external callback can still attempt entry after a zero-count observation.
+Therefore, the target must remain alive until the PJSUA2 callback source
+itself can no longer invoke the callback. The P8-R3A source and thread tests
+check local ingress invariants, not that external vendor guarantee.
+
+#### Why must newly added `on*` callback overrides trigger explicit review?
+
+An added PJSUA2 virtual override could bypass the activity gate and load an
+owner during teardown. The P8-R3A contract audits the complete currently
+known override set across registration, outgoing, and incoming clients,
+including their shared callback-context ownership and fail-closed destructor
+order. A changed set fails the audit until the new entry path is reviewed.
+
 ## Phase boundary
 
 Phase 8 remains pending final maintainer acceptance. One production-owned

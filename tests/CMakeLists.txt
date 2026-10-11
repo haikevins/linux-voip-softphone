@@ -261,6 +261,18 @@ add_plain_cpp_test(
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
+# P8-R3A checks every known production PJSUA2 callback override. It fails
+# closed on new callback methods and does not claim vendor-source quiescence.
+add_test(
+    NAME Phase8R3CallbackTargetContractTest
+    COMMAND "${Python3_EXECUTABLE}" -B
+        "${CMAKE_CURRENT_SOURCE_DIR}/integration/test_phase8_r3_callback_target_contract.py"
+)
+set_tests_properties(Phase8R3CallbackTargetContractTest PROPERTIES
+    LABELS "threading;pjsip;integration;audit"
+    TIMEOUT 30
+)
+
 add_test(
     NAME Phase8R2BLabSafetyTest
     COMMAND "${Python3_EXECUTABLE}" -B

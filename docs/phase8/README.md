@@ -48,6 +48,7 @@ Deliberately excluded:
 | Live probe | Record bounded PJSUA2 lifecycle observations through explicit opt-in | `scripts/phase8/run-pjsip-live-lifecycle-probe.sh` |
 | Production live stop/reuse lab (P8-R2A) | Build an opt-in outgoing-client harness; record only allowlisted outcome markers | `labs/pjsip/production-stop-reuse/`, `scripts/phase8/run-production-stop-reuse-lab.sh` |
 | Real production Account busy/recovery lab (P8-R2B) | Opt-in active-call `shutdown2(false)` on production-owned Account; guarded real-status and same-object restart observation | `labs/pjsip/production-busy-recovery/`, `scripts/phase8/run-production-busy-recovery-lab.sh` |
+| P8-R3A offline callback ingress audit | Fail on unreviewed callback overrides; exercise rejected in-flight local entries | `tests/integration/test_phase8_r3_callback_target_contract.py`, `tests/unit/test_pjsip_callback_activity.cpp` |
 | Architecture | Document Qt/PJSUA2 ownership and unproven shutdown boundaries | `docs/architecture/threading-model.md` |
 | Evidence | Preserve sanitized stress, TSan, GUI, and controlled live observations | `evidence/phase8/README.md` |
 
@@ -173,6 +174,18 @@ Retained artifacts cover manual GUI acceptance, controlled live PJSUA2 lifecycle
 
 Never commit SIP passwords, Digest response/nonce/cnonce material, SRTP inline keys, raw sensitive SIP traces, or protected packet captures.
 
+### P8-R3A: offline callback ingress contract
+
+A dedicated canonical CTest audit enumerates the nine known callback
+overrides across `SipRegistrationClient`, `SipOutgoingCallClient`, and
+`SipIncomingCallClient`. It checks gate-before-owner access, rejected-entry
+return paths, shared `CallbackContext` ownership, destructor fail-closed
+ordering, and Account retention through `libDestroy()`. A concurrent unit
+regression confirms that a callback rejected after gate close remains counted
+until its method returns. The audit intentionally fails if new callbacks are
+added without review. **Neither test is a live PJSUA2 callback-source
+quiescence proof.** Live vendor worker/ingress review remains for P8-R3B/C.
+
 ## Interview focus
 
 Be able to explain:
@@ -195,6 +208,7 @@ See `docs/interview/phase8-questions.md`.
 | Clang 18 TSan | PASS evidence |
 | Qt owner-thread handoff regression | PASS |
 | Controlled PJSUA2 `PJ_EBUSY` recovery | OBSERVED/EVIDENCED |
+| P8-R3A callback-target ingress source contract | OFFLINE TEST ONLY; external source still UNPROVEN |
 | Live external callback quiescence | UNPROVEN |
 | Production outgoing Account real `PJ_EBUSY` / lab-only early-shutdown recovery | OBSERVED/EVIDENCED (one bounded run; not normal `stop()` busy injection) |
 | Other production-client `PJ_EBUSY` paths and external callback-source safety | UNPROVEN |
