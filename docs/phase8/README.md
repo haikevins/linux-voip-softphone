@@ -43,6 +43,7 @@ Deliberately excluded:
 | Generic queue | Own MPMC FIFO, close, cancellation, and drain semantics | `src/concurrency/ThreadSafeQueue.hpp` |
 | Serial worker | Own one worker thread and accepted-work drain | `src/concurrency/SerialTaskWorker.hpp` |
 | Unit/integration tests | Exercise deterministic behavior within canonical CTest registration | `tests/unit/`, `tests/integration/` |
+| Account shutdown invocation | Share fail-closed error handling; exercise a fake `PJ_EBUSY`-like error without a SIP server | `src/pjsip/PjsipAccountShutdownAttempt.hpp`, `tests/unit/test_pjsip_account_shutdown_attempt.cpp` |
 | Offline verification | Run concurrency, 100,000-event stress, and TSan checks | `scripts/phase8/verify.sh`, `scripts/phase8/verify-threading.sh` |
 | Live probe | Record bounded PJSUA2 lifecycle observations through explicit opt-in | `scripts/phase8/run-pjsip-live-lifecycle-probe.sh` |
 | Architecture | Document Qt/PJSUA2 ownership and unproven shutdown boundaries | `docs/architecture/threading-model.md` |
@@ -109,6 +110,12 @@ Recorded Phase 8 results include:
 - Qt/PJSIP ownership and shutdown source regressions: **PASS** within their offline scope;
 - historical preview-mode manual GUI acceptance: **PASS**;
 - controlled live PJSUA2 `PJ_EBUSY` recovery: **OBSERVED/EVIDENCED**.
+
+The P8-R1 shutdown-attempt regression injects synthetic shutdown failures through
+one helper now invoked by all three production clients. It verifies fail-closed
+result translation and a modeled explicit retry; **it does not exercise real
+PJSUA2 client recovery or establish external callback quiescence**. This new
+test is additive to the previously recorded 147-test baseline.
 
 Offline PASS does not upgrade the unresolved live production shutdown boundary.
 

@@ -75,6 +75,17 @@ They answer different questions. Offline tests verify the queue/worker and revie
 
 The project has a tested C++20 concurrency foundation, repeated MPMC stress, standalone TSan coverage, explicit Qt owner-thread handoff, and fail-closed PJSUA2 lifetime/shutdown models. It is not defensible to claim universal live PJSUA2 teardown safety, external callback quiescence, or that the generic queue is the deployed Qt/PJSUA2 event transport.
 
+### Production shutdown retry verification
+
+#### Does an injected `PJ_EBUSY`-like failure prove that a production client can recover?
+
+No. The injection passes through the shared account-shutdown invocation helper
+used by the production clients and verifies error-to-result handling and a
+modeled ownership/retry decision. It does not execute the real PJSUA2
+`SipOutgoingCallClient::stop()` or `SipIncomingCallClient::stop()` path against
+an active call. A production live observation and a defensible external callback
+lifetime proof are still separate requirements.
+
 ## Phase boundary
 
 Phase 8 remains pending final maintainer acceptance. Live external callback quiescence and production-client real `PJ_EBUSY` recovery are **UNPROVEN**, and PJSUA2 integration readiness is **BLOCKED**.

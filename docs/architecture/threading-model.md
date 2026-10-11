@@ -88,6 +88,14 @@ Phase 8 hardens explicit stop ordering, call-slot cleanup, callback admission/dr
 
 Production clients retain callback targets through the reviewed `libDestroy()` ordering and fail closed when explicit stop cannot establish the modeled release conditions.
 
+`src/pjsip/PjsipAccountShutdownAttempt.hpp` is the shared exception-to-result
+boundary now used by registration, outgoing, and incoming production clients.
+Each real client still supplies `shutdown2(force=false)`, preserves its
+client-specific logging, and keeps the stop-level failure veto over Account and
+Endpoint release. A deterministic fake-operation test covers dispatch,
+synthetic busy/exception results, explicit retry, and retained *modeled* owners;
+it does not instantiate PJPROJECT or establish production retry success.
+
 A controlled vendor-level live probe observed:
 
 - first `shutdown2(force=false)` -> `PJ_EBUSY` with one active call slot;
@@ -106,6 +114,7 @@ Concurrency stress uses four producers and four consumers with 100,000 distinct 
 ThreadSanitizer uses the root CMake project with `ENABLE_TSAN=ON` in a separate build. The recorded Clang 18 gate passed six selected C++ tests three times each (18/18). Vendor PJSUA2 and the complete Qt runtime were not thereby proven race-free.
 
 Source-contract tests inspect production PJSUA2 shutdown structure and intentionally remain fail-closed: an offline audit may PASS while integration readiness remains BLOCKED.
+The shutdown-attempt injection test additionally exercises the helper invoked by all three clients, without attributing fake errors to a live SIP session.
 
 ## Design rationale
 
