@@ -2,106 +2,153 @@
 
 ## Status
 
-Phase 7 acceptance is complete for the documented local Asterisk lab. Commits 1–7 delivered the optional Qt/QML shell, Qt-free application layer, live SIP registration, outgoing and incoming calls, explicit Answer/Decline behavior, connected-call duration, and live RTP/audio diagnostics. The final implementation checkpoint before this closure documentation is Commit 7 (`abb0b27`). Phase 7 release identifier: `v0.8-qt-gui`; the annotated tag is published and Phase 7 was merged to `main` by PR #8 at `2bd8740373a02bc38009df9a031b8863b7e0d824`.
+Phase 7 is accepted for the documented local Asterisk lab, merged to `main`, and published as the annotated milestone `v0.8-qt-gui`.
+
+The accepted scope includes registration, one active call, incoming/outgoing call handling, explicit Answer/Decline behavior, connected-call duration, two-way audio, and live RTP/audio diagnostics.
 
 ## Objective
 
-Provide a usable Qt/QML desktop presentation layer on top of the already validated PJSUA2 signaling and audio runtime while preserving clear ownership boundaries. QML must remain presentation-only: call state belongs to the application layer, and all PJSUA2 endpoint/account/call/media/statistics work remains outside the Qt UI thread.
+Provide a Qt/QML desktop presentation layer over the validated PJSUA2 signaling and audio runtime while preserving clear ownership boundaries.
+
+QML remains presentation-only. Application call state is Qt-free, and PJSUA2 endpoint/account/call/media/statistics work stays outside the Qt UI thread.
 
 ## Scope
 
-The combined `qt-pjsip-gui-debug` application can register a SIP account, place and receive one active call, answer or decline incoming calls, hang up locally, recover from remote hangup/cancel, reuse the same registration for later calls, display connected-call duration, and show a read-only live RTP/audio snapshot. Qt-only/preview builds remain network-free.
+Phase 7 supports:
 
-The accepted Phase 7 scope is intentionally single-account/single-call. It does not include call waiting, multiple accounts, hold, mute, audio-device selection UI, persistent call history, continuous registration-health events, or a general-purpose cross-thread queue. Those are future design work rather than closure blockers.
+- Qt-only preview mode with no network activity;
+- SIP registration in the Qt+PJSIP build;
+- one active incoming or outgoing call;
+- Answer, Decline, local hangup, remote hangup, and remote cancel;
+- registration reuse across sequential calls;
+- connected-call duration;
+- read-only codec/RTP/loss/jitter/RTT diagnostics.
+
+Out of scope are multiple accounts, call waiting, hold, mute, audio-device selection UI, persistent call history, and generalized concurrency infrastructure.
 
 ## Deliverables
 
 - Optional Qt/QML build path and dialer shell.
-- Qt-free `CallManager` application layer that owns user-visible call state transitions.
-- `GuiViewModel` Qt presentation adapter with bounded/sanitized properties.
-- Retained `QtRegistrationBackend` worker/session boundary for live PJSUA2 work.
-- Secure runtime SIP registration using the existing hidden stdin password flow.
-- Outgoing SIP calls with connected audio and recovery after rejection/disconnect.
-- Incoming SIP calls with sanitized caller display, Answer, Decline, remote cancel, and local/remote hangup.
-- Explicit `603 Decline` from the softphone on the callee-side SIP leg.
-- Connected-call duration that starts only after connection and resets on teardown.
-- Read-only live RTP/audio diagnostics: codec, RX/TX packet counters, packet loss, jitter, and RTCP RTT.
-- Qt fake-session tests that keep Qt-only verification network-free while exercising worker-to-UI handoff.
-- Curated Phase 7 evidence under `evidence/phase7/`.
+- Qt-free `CallManager` application state.
+- `GuiViewModel` presentation adapter.
+- Retained `QtRegistrationBackend` worker/session boundary for PJSUA2 work.
+- Hidden-stdin SIP password flow.
+- Incoming and outgoing call handling on one registered account.
+- Explicit SIP `603 Decline` on the softphone callee-side leg.
+- Connected-call duration.
+- Read-only RTP/audio diagnostics.
+- Qt fake-session tests and curated Phase 7 evidence.
 
 ## Architecture and design
 
 ```text
 QML
-  -> GuiViewModel                     (Qt UI thread)
-  -> CallManager                      (Qt-free call/application state)
+  -> GuiViewModel                  Qt UI thread
+  -> CallManager                   Qt-free application state
   -> CallBackend
-  -> QtRegistrationBackend            (UI facade + retained std::jthread)
+  -> QtRegistrationBackend         retained std::jthread
   -> RegistrationSession
   -> PjsipRegistrationSession
   -> SipOutgoingCallClient
        -> PJSUA2 endpoint/account/call
-       -> Phase 6 audio bridge and RTP diagnostics
+       -> Phase 6 audio + RTP diagnostics
 ```
 
-The historical class name `SipOutgoingCallClient` remains even though the retained client now owns both incoming and outgoing calls for the single account. Phase 7 deliberately avoids introducing a second endpoint/account/media owner.
+The retained PJSUA2 session owns network, call, media, and statistics lifetime. Worker results are delivered back to the Qt owner thread rather than mutating UI state directly from the SIP worker.
 
-Incoming caller text and codec text are sanitized before they become QML properties. Raw SIP URIs, SIP headers, backend exception strings, credentials, and PJSUA2 objects do not cross the UI boundary. Diagnostics are observational only and cannot drive call-state transitions.
+Caller/codec presentation data is sanitized before reaching QML. Raw SIP headers, credentials, backend exception details, and PJSUA2 objects do not cross the UI boundary.
+
+See `docs/architecture/qt-qml.md` for the full design.
 
 ## Build and run
 
-Build Qt-only and Qt+PJSIP separately:
+Qt-only:
 
 ```bash
 cmake --preset qt-gui-debug
 cmake --build --preset qt-gui-debug --clean-first -j2
+```
 
+Qt + PJSIP:
+
+```bash
 export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 cmake --preset qt-pjsip-gui-debug
 cmake --build --preset qt-pjsip-gui-debug --clean-first -j2
 ```
 
-Run the production GUI with `--sip-register USER SERVER [PORT]`. Supply the SIP password through the existing hidden stdin path. Do not place credentials in argv, shell history, screenshots, evidence, or committed logs.
+Run the combined GUI with:
+
+```text
+--sip-register USER SERVER [PORT]
+```
+
+Supply the SIP password only through the existing hidden stdin path. Do not place credentials in argv, shell history, screenshots, evidence, or committed logs.
 
 ## Verification
 
-The final Commit 7 automated gate passed on the tested workstation:
+Automated acceptance covered both Qt build modes and inherited Phase 5/6 regressions. The recorded final Phase 7 gate passed:
 
-```text
-Documentation structure: PASS
-Qt-only selected tests: 18/18 PASS
-Qt+PJSIP selected tests: 18/18 PASS
-Phase 6 regression groups: 45/45, 133/133, 133/133, 88/88 PASS
-Phase 5 automated verification: PASS
-Focused inherited suites: 4/4 and 3/3 PASS
-Phase 6 automated verification: PASS
-git diff --check: PASS
-```
+- selected Qt tests in Qt-only mode;
+- selected Qt tests in Qt+PJSIP mode;
+- inherited Phase 5/6 automated verification;
+- documentation and diff-quality checks.
 
-The live manual gate passed registration, incoming Answer, two-way audio, connected duration, local/remote hangup reset, remote cancel before answer, outgoing call without re-registering, and live RTP diagnostics across sequential calls. The final RTP diagnostic run showed PCMU at 8 kHz, increasing RX/TX counters, zero reported packet loss in the observed snapshots, finite jitter/RTT values, panel clearing after hangup, and fresh diagnostics on the next call.
+Manual live verification covered:
 
-For Decline semantics, the softphone returned `603 Decline` to Asterisk. Asterisk then generated `403 Forbidden` toward the Redmi caller (`Q.850` cause 21); this is a B2BUA/dialplan call-leg mapping rather than the Qt client sending 403.
+- registration;
+- outgoing and incoming calls;
+- Answer and explicit Decline;
+- two-way audio;
+- connected duration;
+- local and remote hangup;
+- remote cancel before answer;
+- outgoing call reuse without re-registering;
+- live RTP/audio diagnostics across sequential calls.
+
+For Decline, the softphone sent SIP `603 Decline` to Asterisk. Asterisk, acting as a B2BUA, produced `403 Forbidden` toward the other call leg; these are different SIP dialogs.
 
 ## Evidence
 
-Curated, sanitized Phase 7 evidence is indexed by `evidence/phase7/README.md`:
+Curated Phase 7 evidence is indexed at `evidence/phase7/README.md` and includes:
 
-- `automated-verification.txt` records the observed final test counts.
-- `manual-verification.txt` records the accepted GUI/call lifecycle checks.
-- `sip-decline.txt` records the sanitized two-leg `603` to `403` mapping observed at Asterisk.
-- `rtp-diagnostics.txt` records representative sanitized PCMU/RTP diagnostic snapshots from the final manual run.
+- automated verification;
+- manual GUI/call lifecycle verification;
+- sanitized SIP Decline mapping;
+- representative RTP/audio diagnostics.
 
 Do not commit SIP passwords, Digest authorization material, complete raw SIP/PJSIP transcripts, raw audio, unrelated peer identifiers, or packet captures containing voice payloads.
 
 ## Interview focus
 
-Be able to explain why QML does not call PJSUA2 directly; why `CallManager` is Qt-free; why one retained worker/session owns PJSUA2; how incoming/outgoing calls share the same registered account; how the remote-hangup race was handled; why Decline needs an explicit SIP response; why duration is tied to Connected rather than Ringing; why RTP diagnostics are non-fatal observational data; and why UI-thread delivery uses queued handoff instead of direct cross-thread mutation. See `docs/interview/phase7-questions.md`.
+Be able to explain:
+
+- why QML does not call PJSUA2 directly;
+- why `CallManager` remains Qt-free;
+- why one retained worker/session owns live PJSUA2 work;
+- how incoming/outgoing calls reuse the same registered account;
+- how remote-disconnect races are handled;
+- why Decline differs from Hang up;
+- why duration starts at Connected;
+- why diagnostics are observational rather than call-state inputs;
+- why worker results return through queued Qt handoff.
+
+See `docs/interview/phase7-questions.md`.
 
 ## Exit criteria
 
-Acceptance is complete for the documented local lab: both Qt build modes compile; selected Qt tests pass in both modes; the full inherited Phase 5/6 regression gate passes; real registration succeeds; outgoing and incoming calls provide two-way audio; Answer/Decline/local/remote/cancel paths recover to a reusable registered state; call duration behaves deterministically; and live RTP diagnostics appear, update, clear, and repopulate on a later call. The evidence applies to the tested revision and environment and is not a guarantee for other SIP servers, devices, or networks.
+Phase 7 is accepted when:
 
-The annotated `v0.8-qt-gui` tag and the Phase 7 merge are now present in Git refs. Branch deletion remains a separate repository-maintenance operation and should not be inferred from this document.
+- both Qt build modes compile;
+- selected Qt tests and inherited Phase 5/6 gates pass;
+- real registration succeeds;
+- outgoing/incoming calls provide two-way audio;
+- Answer/Decline/local/remote/cancel paths recover to a reusable registered state;
+- connected duration behaves deterministically;
+- live RTP diagnostics appear, update, clear after hangup, and repopulate for a later call;
+- sanitized evidence and documentation are complete.
+
+The annotated `v0.8-qt-gui` tag is the Phase 7 release milestone.
 
 ## References
 
@@ -119,4 +166,4 @@ The annotated `v0.8-qt-gui` tag and the Phase 7 merge are now present in Git ref
 
 ## Next phase
 
-Phase 8 focuses on the broader multithreading model: explicit event handoff/queueing, stress and lifetime tests, and ThreadSanitizer-oriented evidence. That work should preserve the accepted Phase 7 QML/application/PJSUA2 ownership boundaries instead of retroactively expanding the GUI milestone.
+Phase 8 makes the broader concurrency model explicit through queue/worker primitives, stress testing, ThreadSanitizer evidence, and deeper Qt/PJSUA2 ownership/lifetime review while preserving the accepted Phase 7 UI boundary.
