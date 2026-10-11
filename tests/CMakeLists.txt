@@ -262,6 +262,16 @@ add_plain_cpp_test(
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 add_test(
+    NAME Phase8R2BLabSafetyTest
+    COMMAND "${Python3_EXECUTABLE}" -B
+        "${CMAKE_CURRENT_SOURCE_DIR}/integration/test_phase8_r2b_lab_safety.py"
+)
+set_tests_properties(Phase8R2BLabSafetyTest PROPERTIES
+    LABELS "pjsip;integration;audit"
+    TIMEOUT 30
+)
+
+add_test(
     NAME PjsipProductionLifetimeAuditTest
     COMMAND "${Python3_EXECUTABLE}" -B
         "${CMAKE_CURRENT_SOURCE_DIR}/integration/test_pjsip_production_lifetime_audit.py"

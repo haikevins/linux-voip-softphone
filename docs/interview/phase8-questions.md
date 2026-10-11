@@ -95,9 +95,41 @@ not deliberately reach an active-call `shutdown2(false)` `PJ_EBUSY` condition;
 that remains the separate P8-R2B objective. A completed stop/reuse observation
 also cannot prove quiescence for all possible external callbacks.
 
+#### How can the real production-owned account `PJ_EBUSY` case be observed?
+
+An opt-in P8-R2B build can attempt the non-forced account shutdown on the
+actual `SipOutgoingCallClient` Account immediately after it starts an outgoing
+call, before the ordinary `stop()` call-slot cleanup. The returned PJSUA2
+`pj::Error::status` must be precisely `PJ_EBUSY`; a generic caught exception,
+a mock or a separate `ProbeAccount` is insufficient. The lab checks that its
+Account and Endpoint remain owned, hangs up, runs the normal stop path, and
+requires a successful same-object restart and second registration. This is a
+bounded experiment, not a change to the normal production teardown order.
+
+#### What did the P8-R2B live run actually establish?
+
+The 2026-10-12 lab run observed a real PJSUA2 `PJ_EBUSY` from non-forced
+shutdown on the production-owned outgoing Account, retained owners immediately
+after the error, then disconnect, normal production `stop()` returning and
+restart of the same object with a second successful registration. The lab
+reported process exit `0`. It did not independently record the vendor status
+of the later `stop()` shutdown call; a returned stop and successful restart
+support recovery in this tested sequence. Other clients and ordinary-stop
+busy paths were not exercised.
+
+#### Why would a P8-R2B live PASS not close external callback quiescence?
+
+Seeing a real busy error and successful recovery tests one controlled
+production-client sequence only. It does not establish that every possible
+late external PJSUA2 callback has ceased before object destruction. That
+claim remains **UNPROVEN** independently of the lab outcome.
+
 ## Phase boundary
 
-Phase 8 remains pending final maintainer acceptance. Live external callback quiescence and production-client real `PJ_EBUSY` recovery are **UNPROVEN**, and PJSUA2 integration readiness is **BLOCKED**.
+Phase 8 remains pending final maintainer acceptance. One production-owned
+outgoing Account lab-only real `PJ_EBUSY` recovery sequence was observed.
+Recovery for other production-client paths and live external callback
+quiescence remain **UNPROVEN**, and PJSUA2 integration readiness is **BLOCKED**.
 
 Phase 9 must not be treated as started until Phase 8 is explicitly accepted.
 

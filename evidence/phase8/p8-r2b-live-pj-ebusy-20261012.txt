@@ -1,0 +1,58 @@
+# Phase 8 P8-R2B — Bounded Real PJ_EBUSY / Production Outgoing Account Lab
+
+Source: maintainer-supplied terminal transcript for a single opt-in lab run on
+2026-10-12 at 05:44:23 (operator-local summary filename). This record retains
+only the allowlisted terminal markers; it is **not** a raw SIP/PJSUA2 trace.
+Before committing, compare with the original
+`~/Downloads/phase8-r2b-20261012-054423.txt` on the maintainer machine.
+
+Baseline: `d584e90`; `DIRTY_PRECOMMIT` means the R2B patch was not committed
+when the lab ran. Environment: PJPROJECT 2.17; Asterisk `192.168.1.23`,
+account `1002`, target `1001`, UDP. No passwords, Digest material, raw SIP
+messages, or other private vendor logs are retained.
+
+## Operator-reported markers — 20261012-054423 — PASS
+
+```text
+P8R2B_SOURCE_HEAD=d584e90
+P8R2B_SOURCE_TREE=DIRTY_PRECOMMIT
+P8R2B_PJPROJECT=2.17
+P8R2B_ENVIRONMENT=ASTERISK_192.168.1.23_1002_TO_1001_UDP
+P8R2B_FIRST_REGISTRATION=PASS
+P8R2B_CALL_ATTEMPT=STARTED
+P8R2B_FIRST_SHUTDOWN=PJ_EBUSY
+P8R2B_OWNERS_RETAINED=PASS
+P8R2B_CALL_DISCONNECTED=PASS
+P8R2B_STOP_RETRY=RETURNED
+P8R2B_SAME_OBJECT_RESTART=PASS
+P8R2B_SECOND_REGISTRATION=PASS
+P8R2B_FINAL_STOP=RETURNED
+P8R2B_DESTRUCTOR=RETURNED
+P8R2B_RESULT=PASS
+P8R2B_PROCESS_EXIT=0
+P8R2B_SCOPE=PRODUCTION_OUTGOING_LAB_EARLY_SHUTDOWN_ONLY
+P8R2B_EXTERNAL_CALLBACK_QUIESCENCE=UNPROVEN
+P8R2B_INTEGRATION_READINESS=BLOCKED
+```
+
+## Interpretation and boundaries
+
+- The `VOIP_PHASE8_R2B_LAB`-guarded entry point invokes the existing
+  production `SipOutgoingCallClient::shutdown_account_safely()` on its actual
+  owned `Account`, while `TrackedCall` and a PJSUA2 call slot are present.
+  `PJ_EBUSY` is checked against the real `pj::Error::status`; it is not injected.
+- `OWNERS_RETAINED=PASS` checks Account/Endpoint pointer identity, Account
+  validity, and presence of `TrackedCall` immediately after the early failure.
+  It is not a proof that all vendor callbacks have become quiescent.
+- `STOP_RETRY=RETURNED` records the normal production `stop()` returning
+  following hangup and `DISCONNECTED`; this is not an independent measurement
+  of the vendor status code from the later `shutdown2(false)` call. Successful
+  same-object restart and registration additionally support completed cleanup
+  within the tested sequence.
+- The lab does not establish that the target answered, that normal `stop()`
+  encountered `PJ_EBUSY`, that `SipIncomingCallClient` or
+  `SipRegistrationClient` recovered, or that every potential shutdown race is
+  safe. There was only one live run; no automatic retries were performed.
+- External callback quiescence remains **UNPROVEN**, PJSUA2 integration
+  readiness remains **BLOCKED**, and final Phase 8 maintainer acceptance
+  remains **PENDING**.
