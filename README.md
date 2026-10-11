@@ -6,7 +6,7 @@ The repository is intentionally phase-driven: each milestone adds production cod
 
 ## Current status
 
-Completed through **Phase 7 — Qt/QML GUI** for the documented local lab. The current published milestone tag remains `v0.7-rtp-audio`; Phase 7 release identifier `v0.8-qt-gui` is reserved for an annotated tag after the Phase 7 closure commit is verified, pushed, and merged according to the repository release workflow.
+Phase 7 — Qt/QML GUI is accepted for the documented local lab and published as annotated tag `v0.8-qt-gui`. Phase 8 — Multithreading has been merged to `main` and post-merge automated verification passes; final maintainer Phase 8 acceptance remains pending, with the documented PJSUA2 shutdown boundaries still **BLOCKED/UNPROVEN**.
 
 Implemented so far:
 
@@ -26,8 +26,11 @@ Implemented so far:
 - Read-only live RTP/audio diagnostics in QML: codec, RX/TX packets, loss, jitter, and RTCP RTT.
 - Registration reuse across sequential incoming/outgoing calls without re-registering.
 - Regression verification that keeps the Phase 5/6 signaling and media behavior green.
+- Phase 8 `ThreadSafeQueue<T>` and owned `SerialTaskWorker` concurrency primitives with focused unit/integration coverage.
+- Repeated 100,000-event MPMC stress verification and standalone Clang 18 ThreadSanitizer coverage.
+- Hardened Qt/PJSUA2 ownership, callback-lifetime, and shutdown-order contracts with explicit fail-closed behavior where safe teardown cannot be proven.
 
-Phase 7 intentionally does not add multiple accounts, call waiting, mute/hold, audio-device selection UI, persistent call history, or a general-purpose cross-thread event queue. Those remain future work rather than being mixed into the GUI milestone.
+Phase 7 intentionally excluded multiple accounts, call waiting, mute/hold, audio-device selection UI, persistent call history, and a general-purpose cross-thread event queue from its GUI acceptance scope. Phase 8 subsequently added the reusable queue/worker and stronger lifetime/shutdown contracts without retroactively expanding the Phase 7 milestone. Multiple accounts, call waiting, mute/hold, audio-device selection UI, and persistent call history remain future work.
 
 ## Repository layout
 
@@ -159,7 +162,7 @@ v0.7-rtp-audio         Phase 6 — RTP + Audio
 v0.8-qt-gui            Phase 7 — Qt/QML GUI (release identifier)
 ```
 
-Phase 7 acceptance is complete for the recorded local lab. Publishing `v0.8-qt-gui` and merging the Phase 7 branch are separate Git/release operations after the closure commit is verified. Next planned phase: **Phase 8 — Multithreading**.
+Phase 7 acceptance is complete and `v0.8-qt-gui` is published. Phase 8 — Multithreading is merged to `main` and post-merge automated verification passes; final maintainer acceptance is still pending. After that explicit acceptance, the next planned phase is **Phase 9 — Debugging, memory and core dump**.
 
 ## Documentation
 
