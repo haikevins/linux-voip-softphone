@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 3 is complete and published as the `v0.4-networking` milestone.
+**Completed** — Phase 3 milestone tag `v0.4-networking`.
 
 ## Verification scope
 
@@ -28,18 +28,18 @@ No external SIP endpoint is required. TCP/UDP behavior is reproduced by the auto
 
 ## Artifacts
 
-- `toolchain.txt`
-- `build.log`
-- `network-tests.log`
-- `full-tests.log`
-- `sanitizers.log`
-- `format-check.log`
-- `clang-tidy.log`
-- `phase3-summary.txt`
+- `toolchain.txt` — original compiler/toolchain information.
+- `build.log` — build outcome.
+- `network-tests.log` — focused networking gate.
+- `full-tests.log` — full regression gate.
+- `sanitizers.log` — sanitizer outcomes.
+- `format-check.log` — formatting check.
+- `clang-tidy.log` — static-analysis check.
+- `phase3-summary.txt` — milestone verification summary.
 
 ## Results
 
-Phase 3 verification passed and the networking layer became the base for the SIP/Asterisk lab.
+Within the recorded verification scope, phase 3 verification passed and the networking layer became the base for the SIP/Asterisk lab.
 
 ## Security and redaction
 

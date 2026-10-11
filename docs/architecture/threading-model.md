@@ -2,7 +2,7 @@
 
 ## Status
 
-The concurrency foundation and offline ownership/shutdown contracts are implemented and tested. Final Phase 8 maintainer acceptance remains **PENDING**.
+**PENDING** — Phase 8 is merged to `main`, and its concurrency foundation and offline ownership/shutdown contracts are implemented and tested. Final maintainer acceptance has not been recorded.
 
 Controlled live PJSUA2 `PJ_EBUSY` recovery was observed, but live external callback quiescence and production-client real `PJ_EBUSY` recovery remain **UNPROVEN**; PJSUA2 integration readiness remains **BLOCKED**.
 

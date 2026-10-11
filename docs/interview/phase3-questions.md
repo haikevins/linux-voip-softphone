@@ -4,6 +4,8 @@ Use the repository implementation, documentation, tests, and evidence as the bas
 
 ## Review scope
 
+Base each answer on the implementation, tests, and retained evidence. Distinguish design intent, observed behavior, and unverified boundaries.
+
 - IPv4 representation and byte order
 - TCP connection and stream semantics
 - UDP datagram semantics

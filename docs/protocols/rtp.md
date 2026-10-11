@@ -1,9 +1,8 @@
 # RTP Protocol — Controlled 75-second PCMU Study
 
-
 ## Status
 
-Phase 6 wire-level RTP study from **one controlled approximately 75-second outgoing lab call**, captured and analyzed locally with Wireshark on 2026-09-30. The operator confirmed intelligible audio in both directions and reported an intentional silence interval of approximately 15 seconds near the end of the call. The sanitized per-direction record is `evidence/phase6/rtp-wireshark.txt`; the original capture is private and must not be committed.
+**Observed in accepted Phase 6** (milestone `v0.7-rtp-audio`) during **one controlled approximately 75-second outgoing lab call**, captured and analyzed locally with Wireshark on 2026-09-30. The operator confirmed intelligible audio in both directions and reported an intentional silence interval of approximately 15 seconds near the end of the call. The sanitized per-direction record is `evidence/phase6/rtp-wireshark.txt`; the original capture is private and must not be committed.
 
 ## Purpose
 
@@ -110,7 +109,7 @@ These are packet-level observations consistent with silence-related packet suppr
 
 ## Phase boundary
 
-The lab demonstrates the observed RTP header, timing, packet sequence, and opposite-direction stream statistics for one controlled study alongside the project's existing PJSUA2 diagnostics and audio acceptance tests. Broader network-impairment studies and release tagging are separate from this protocol-evidence commit.
+The lab demonstrates the observed RTP header, timing, packet sequence, and opposite-direction stream statistics for one controlled study alongside the project's existing PJSUA2 diagnostics and audio acceptance tests. The accepted Phase 6 milestone does not establish performance under broader network impairment or certify other codecs, devices, and Asterisk media legs; those require independent tests and evidence.
 
 ## References
 

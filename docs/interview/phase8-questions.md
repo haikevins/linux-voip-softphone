@@ -1,8 +1,8 @@
 # Phase 8 Interview Review — Multithreading
 
-Use the repository implementation, documentation, tests, and evidence as the basis for the answers. Explain the engineering decision and the observed behavior; do not memorize isolated one-line definitions.
-
 ## Review scope
+
+Base each answer on the implementation, tests, and retained evidence. Distinguish design intent, observed behavior, and unverified boundaries.
 
 - `ThreadSafeQueue<T>` semantics and ownership
 - `SerialTaskWorker` lifecycle
@@ -11,7 +11,7 @@ Use the repository implementation, documentation, tests, and evidence as the bas
 - Qt owner-thread handoff
 - PJSUA2 callback/lifetime boundaries
 - fail-closed shutdown authorization
-- accepted and unresolved Phase 8 claims
+- verified and unresolved Phase 8 claims
 
 ## Questions and answers
 

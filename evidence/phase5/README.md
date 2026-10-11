@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 5 is complete and published as the `v0.6-pjsip-cli` milestone.
+**Completed** — Phase 5 milestone tag `v0.6-pjsip-cli`.
 
 ## Verification scope
 
@@ -36,7 +36,7 @@ Live Asterisk registration plus outgoing and incoming call-flow checks passed. P
 
 ## Results
 
-Automated verification and live registration/outgoing/incoming interoperability passed. RTP/audio implementation remains the Phase 6 boundary.
+Within the recorded verification scope, automated verification and live registration/outgoing/incoming interoperability passed. RTP/audio implementation remains the Phase 6 boundary.
 
 ## Security and redaction
 

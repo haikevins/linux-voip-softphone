@@ -2,7 +2,7 @@
 
 ## Status
 
-Completed — milestone `v0.6-pjsip-cli`.
+**Completed** — Phase 5 milestone tag `v0.6-pjsip-cli`.
 
 ## Purpose
 

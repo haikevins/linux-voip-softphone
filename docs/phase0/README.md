@@ -137,9 +137,9 @@ Phase 0 is complete when all of the following statements are true:
 
 ## References
 
-- Root project overview: `README.md`
-- Project roadmap: `README_roadmap.md`
-- Evidence: `evidence/phase0/`
+- `README.md` — Root project overview
+- `ROADMAP.md` — Project roadmap
+- `evidence/phase0/` — Evidence
 
 ## Next phase
 

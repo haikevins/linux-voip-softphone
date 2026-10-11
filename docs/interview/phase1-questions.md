@@ -4,6 +4,8 @@ Use the repository implementation, documentation, tests, and evidence as the bas
 
 ## Review scope
 
+Base each answer on the implementation, tests, and retained evidence. Distinguish design intent, observed behavior, and unverified boundaries.
+
 - RAII and deterministic resource cleanup
 - exclusive versus shared ownership
 - copy/move semantics
@@ -15,66 +17,51 @@ Use the repository implementation, documentation, tests, and evidence as the bas
 
 ### Ownership and resource management
 
-#### `unique_ptr` vs `shared_ptr`
+#### When should the project use `unique_ptr` instead of `shared_ptr`?
 
-Explain ownership first. Use `unique_ptr` when one owner controls a resource. Use `shared_ptr`
-when ownership genuinely needs to be shared. Explain why `weak_ptr` can observe an object without
-extending its lifetime and how it can help avoid ownership cycles.
+`std::unique_ptr` models exclusive resource ownership; use it when one owner controls the lifetime. `std::shared_ptr` makes ownership shared through reference counting and should be used only when several owners must prolong that lifetime. `std::weak_ptr` observes a shared object without extending its lifetime and helps break shared-ownership cycles.
 
 Repository reference: `labs/cpp/smart-pointers/main.cpp`.
 
 #### What problem does RAII solve?
 
-Explain how resource acquisition is coupled to object lifetime and how deterministic destructors
-make cleanup happen on normal returns and exception paths. Point to the `FileDescriptor` wrapper
-and explain why copying is disabled.
+RAII couples resource acquisition and release to object lifetime. Deterministic destructors release owned resources on ordinary returns and on exception unwinding. The file-descriptor wrapper in the lab disables copying so two wrappers cannot independently close the same descriptor.
 
 Repository reference: `labs/cpp/raii/FileDescriptor.hpp`.
 
-#### Copy vs move
+#### How do copy and move semantics differ for owning types?
 
-Explain that copying creates an independent logical value/resource while moving transfers state
-from an object that remains valid but has an unspecified or explicitly defined moved-from state.
-Explain why owning resource wrappers often delete copy operations and implement move operations.
+Copying creates another logically independent value, while moving transfers state from an existing object. A moved-from object remains valid but its state follows the type's specific contract, or is otherwise valid but unspecified. A unique owning wrapper usually disables copying and implements moving to prevent double release.
 
 Repository reference: `labs/cpp/move-semantics/main.cpp`.
 
 ### Containers and type-safe modeling
 
-#### `vector` vs `list`
+#### Why does this phase prefer `vector` over `list` for state history?
 
-Discuss contiguous storage, cache locality, random access, iterator invalidation, insertion/erase
-costs, and why `vector` is usually the default sequence container unless requirements indicate
-otherwise. In this project, state history is stored in a vector because appending and sequential
-iteration are the main operations.
+`std::vector` stores elements contiguously, which supports efficient iteration, cache locality, and random access. `std::list` supports stable iterators and constant-time insertion/erase at a known position but pays for allocation and pointer traversal. State history mainly appends and iterates, so `vector` matches this project's access pattern; its reallocation can invalidate iterators and references.
 
-#### `map` vs `unordered_map`
+#### How should the project choose between `map` and `unordered_map`?
 
-Discuss ordered tree semantics and logarithmic lookup for `map` versus hash-based average constant
-time lookup and no ordering guarantee for `unordered_map`. Do not claim one is always faster.
+`std::map` keeps keys ordered and typically offers logarithmic lookup using a tree. `std::unordered_map` uses hashing, has average constant-time lookup, and does not promise key order. The choice depends on ordering, hash quality, memory use, and access patterns; neither is always faster.
 
 #### Why `enum class`?
 
-Explain scoped enumerator names, no implicit integer conversion, and stronger type safety.
-Repository reference: `src/core/CallState.hpp`.
+`enum class` scopes enumerator names and does not implicitly convert values to integers, preventing unrelated state values from mixing accidentally. The call states are declared in `src/core/CallState.hpp`.
 
 #### Why `std::optional`?
 
-Explain how it models presence/absence explicitly instead of sentinel values. Repository reference:
-`CallStateMachine::peer()` and `CallStateMachine::last_error()`.
+`std::optional` represents the presence or absence of a value without an invented sentinel. `CallStateMachine::peer()` and `CallStateMachine::last_error()` return optional data because the corresponding information does not exist in every state.
 
 #### Why `std::variant`?
 
-Explain how it models one value from a closed set of alternatives with compile-time type safety.
-Repository reference: `src/core/Event.hpp` and the `std::visit` call in the state machine.
+`std::variant` holds one value from a closed set of compile-time alternatives. Events are declared in `src/core/Event.hpp`; `std::visit` dispatches their handling in the call state machine without an untyped event payload.
 
 ### Design and testability
 
 #### What is dependency injection here?
 
-Explain that `CallStateMachine` receives the `StateChangeSink` dependency from outside through its
-constructor. The core does not construct a console/UI implementation itself. Tests inject a fake
-sink, which improves testability and reduces coupling.
+`CallStateMachine` receives its `StateChangeSink` through constructor dependency injection rather than constructing a console or UI observer. Tests can provide a fake sink to assert notifications independently of presentation code; this reduces coupling and makes state transitions easy to verify.
 
 ## Phase boundary
 

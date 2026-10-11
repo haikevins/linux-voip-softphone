@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 0 is complete and published as the `v0.1-project-skeleton` milestone.
+**Completed** — Phase 0 milestone tag `v0.1-project-skeleton`.
 
 ## Verification scope
 
@@ -30,7 +30,7 @@ No live SIP, media, or external telephony verification applies to Phase 0.
 
 ## Results
 
-The project skeleton configured, built, and established the baseline used by Phase 1.
+Within the recorded verification scope, the project skeleton configured, built, and established the baseline used by Phase 1.
 
 ## Security and redaction
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 4 is complete and published as the `v0.5-sip-asterisk` milestone.
+**Completed** — Phase 4 milestone tag `v0.5-sip-asterisk`.
 
 ## Verification scope
 
@@ -24,26 +24,26 @@ The retained scenario evidence records successful endpoint registration and succ
 
 Registration scenario:
 
-- `registration/README.md`
-- `registration/asterisk-version.txt`
-- `registration/endpoints.txt`
-- `registration/aors.txt`
-- `registration/contacts.txt`
-- `registration/registration-summary.txt`
+- `registration/README.md` — registration scenario procedure and observed result.
+- `registration/asterisk-version.txt` — Asterisk runtime version.
+- `registration/endpoints.txt` — sanitized PJSIP endpoint state.
+- `registration/aors.txt` — observed address-of-record state.
+- `registration/contacts.txt` — registered contact state.
+- `registration/registration-summary.txt` — registration outcome summary.
 
 Call-flow scenario:
 
-- `call-flow/README.md`
-- `call-flow/call-summary.txt`
-- `call-flow/channels-verbose.txt`
-- `call-flow/contacts.txt`
-- `call-flow/pjsip-channels.txt`
+- `call-flow/README.md` — call-flow scenario procedure and observed result.
+- `call-flow/call-summary.txt` — established-call and teardown summary.
+- `call-flow/channels-verbose.txt` — sanitized active-channel details.
+- `call-flow/contacts.txt` — contacts relevant to the call scenario.
+- `call-flow/pjsip-channels.txt` — PJSIP channel state during the call.
 
 The two scenario READMEs use the scenario-evidence schema defined in `evidence/README.md`.
 
 ## Results
 
-Phase 4 registration and call-flow verification passed. Observed media negotiation belongs to this SIP lab; application-controlled audible media is a later-phase concern.
+Within the recorded verification scope, phase 4 registration and call-flow verification passed. Observed media negotiation belongs to this SIP lab; application-controlled audible media is a later-phase concern.
 
 ## Security and redaction
 

@@ -22,7 +22,7 @@ Call-flow verification: PASS.
 
 ## Artifacts
 
-Retain only sanitized call summaries and observations needed to support the result. Historical protocol/final snapshots from the previous evidence layout are preserved under `evidence/phase4/artifacts/`.
+Retain only sanitized call summaries and observations needed to support the result. The retained call-flow files are indexed in `evidence/phase4/README.md` and stored in this scenario directory; obsolete historical evidence paths are not used.
 
 ## Security and redaction
 

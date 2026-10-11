@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 6 is accepted for the documented local lab and published as the `v0.7-rtp-audio` milestone.
+**Completed** — Phase 6 milestone tag `v0.7-rtp-audio`. Accepted for the documented local lab.
 
 ## Verification scope
 

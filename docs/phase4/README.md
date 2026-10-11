@@ -166,13 +166,13 @@ Phase 4 is complete when all of the following statements are true:
 
 ## References
 
-- Architecture: `docs/architecture/sip-asterisk.md`
-- Registration experiment: `docs/phase4/registration.md`
-- Call-flow experiment: `docs/phase4/call-flow.md`
-- SIP protocol reference: `docs/protocols/sip.md`
-- Documentation taxonomy: `docs/README.md`
-- Interview review: `docs/interview/phase4-questions.md`
-- Evidence: `evidence/phase4/`
+- `docs/architecture/sip-asterisk.md` — Architecture
+- `docs/phase4/registration.md` — Registration experiment
+- `docs/phase4/call-flow.md` — Call-flow experiment
+- `docs/protocols/sip.md` — SIP protocol reference
+- `docs/README.md` — Documentation taxonomy
+- `docs/interview/phase4-questions.md` — Interview review
+- `evidence/phase4/` — Evidence
 
 ## Next phase
 

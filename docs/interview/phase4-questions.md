@@ -4,6 +4,8 @@ Use the repository implementation, documentation, tests, and evidence as the bas
 
 ## Review scope
 
+Base each answer on the implementation, tests, and retained evidence. Distinguish design intent, observed behavior, and unverified boundaries.
+
 - known-good SIP lab design
 - Asterisk PJSIP object model
 - Digest registration challenge flow

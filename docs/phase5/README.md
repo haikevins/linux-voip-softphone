@@ -179,10 +179,10 @@ Phase 5 is complete when all of the following statements are true:
 
 ## References
 
-- Architecture: `docs/architecture/pjsip-cli.md`
-- Dependency provisioning: `docs/phase5/dependencies.md`
-- Interview review: `docs/interview/phase5-questions.md`
-- Evidence: `evidence/phase5/`
+- `docs/architecture/pjsip-cli.md` — Architecture
+- `docs/phase5/dependencies.md` — Dependency provisioning
+- `docs/interview/phase5-questions.md` — Interview review
+- `evidence/phase5/` — Evidence
 
 ## Next phase
 

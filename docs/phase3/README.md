@@ -137,9 +137,9 @@ Phase 3 is complete when all of the following statements are true:
 
 ## References
 
-- Architecture: `docs/architecture/networking.md`
-- Interview review: `docs/interview/phase3-questions.md`
-- Evidence: `evidence/phase3/`
+- `docs/architecture/networking.md` — Architecture
+- `docs/interview/phase3-questions.md` — Interview review
+- `evidence/phase3/` — Evidence
 
 ## Next phase
 

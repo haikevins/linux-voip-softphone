@@ -4,6 +4,8 @@ Use the committed implementation and the local test observations as the basis fo
 
 ## Review scope
 
+Base each answer on the implementation, tests, and retained evidence. Distinguish design intent, observed behavior, and unverified boundaries.
+
 - the distinction between SIP/SDP and the RTP/audio application path
 - runtime audio-device selection and capability preflight
 - bidirectional PJSUA2 conference-bridge wiring
@@ -65,11 +67,11 @@ Make and answer calls in both directions between the local account and the phone
 
 #### What evidence is safe to commit for this milestone?
 
-Only reviewed summaries: revision, test gate results, call direction/state, codec and selected counters, human confirmation of bidirectional audio, and clean teardown. Never commit SIP credentials, Digest headers, raw SIP/PJSIP traces, keying material, or `.pcap`/`.pcapng` captures. Evidence/milestone closure is a separate step from implementing the code and writing these documents.
+Only reviewed summaries: revision, test gate results, call direction/state, codec and selected counters, human confirmation of bidirectional audio, and clean teardown. Never commit SIP credentials, Digest headers, raw SIP/PJSIP traces, keying material, or `.pcap`/`.pcapng` captures. The Phase 6 milestone was subsequently accepted; see `evidence/phase6/README.md` for the retained sanitized observations.
 
 ## Phase boundary
 
-Phase 6 extends the existing one-shot CLI from SIP signaling to validated physical audio routing and diagnostic visibility. It does not yet design a long-running multi-call controller, production security policy, or Qt/QML UI; the interface is planned after the media path and evidence are closed.
+Phase 6 extends the existing one-shot CLI from SIP signaling to validated physical audio routing and diagnostic visibility. It did not establish a long-running multi-call controller or production security policy. Qt/QML UI work was addressed separately by the accepted Phase 7 milestone.
 
 ## References
 
