@@ -122,6 +122,40 @@ void tracked_entry_after_close_is_counted_until_return()
             "tracked rejected entry must drain after callback method returns");
 }
 
+// R3A: unlike try_enter(), a real production callback uses enter() even
+// after the gate is closed. A rejected in-flight method must still block
+// local drain while it is executing. This is *not* proof that the external
+// library has stopped delivering future callback entries.
+void rejected_callback_running_on_another_thread_blocks_local_drain()
+{
+    CallbackActivityGate gate;
+    gate.close();
+    std::latch arrived{1};
+    std::latch finish{1};
+    std::atomic<bool> was_admitted{true};
+    std::jthread callback{[&] {
+        auto entry = gate.enter();
+        was_admitted.store(entry.admitted(), std::memory_order_relaxed);
+        arrived.count_down();
+        finish.wait();
+    }};
+    arrived.wait();
+    const bool entry_was_counted = gate.admitted_callbacks() == 1;
+    const bool cannot_drain = !gate.wait_for_empty_for(0ms);
+    finish.count_down();
+    callback.join();
+    require(entry_was_counted, "closed-gate callback was not counted");
+    require(cannot_drain, "rejected callback incorrectly allowed local drain");
+    require(!was_admitted.load(std::memory_order_relaxed),
+            "closed gate unexpectedly admitted a callback");
+    require(gate.wait_for_empty_for(0ms), "local gate did not drain after callback returned");
+    auto later = gate.enter();
+    require(!later.admitted() && gate.admitted_callbacks() == 1,
+            "empty local gate was wrongly interpreted as no future ingress");
+    later.release();
+    require(gate.wait_for_empty_for(0ms), "later rejected callback did not drain");
+}
+
 void reset_requires_empty_gate_then_reopens_admission()
 {
     CallbackActivityGate gate;
@@ -174,10 +208,11 @@ int main()
         moved_permit_releases_exactly_once();
         concurrent_wait_unblocks_after_last_callback();
         tracked_entry_after_close_is_counted_until_return();
+        rejected_callback_running_on_another_thread_blocks_local_drain();
         reset_requires_empty_gate_then_reopens_admission();
         concurrent_admission_then_close_rejects_late_entries();
         std::cout
-            << "PASS: nine callback activity scenarios (admission, drain, reset, concurrency)\n";
+            << "PASS: ten callback activity scenarios (admission, drain, reset, concurrency)\n";
         return 0;
     } catch (const std::exception &error) {
         std::cerr << "FAIL: " << error.what() << '\n';

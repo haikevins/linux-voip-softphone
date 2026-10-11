@@ -140,6 +140,25 @@ registration, final `stop()` and clean destructor/process exit. This is
 prove universal callback-source quiescence or every shutdown failure path.
 See `evidence/phase8/p8-r2b-live-pj-ebusy-20261012.txt`.
 
+### P8-R3A: callback-target ingress contract (offline only)
+
+The three production clients declare nine known PJSUA2 callback overrides:
+registration uses `onRegState`; outgoing and incoming each use `onRegState`,
+`onIncomingCall`, `onCallState`, and `onCallMediaState`. Every override must
+acquire its `CallbackActivityGate::enter()` RAII entry before loading the
+`CallbackContext` owner, reject work when the gate is closed, and retain a
+`shared_ptr<CallbackContext>` in the derived callback target. An added or
+unguarded override now fails a dedicated source-contract regression test.
+
+A concurrent rejected-entry regression verifies that `enter()` still counts
+an already-running callback after the local gate closes, and that a later
+callback can enter even after a previous local drain. This is evidence of the
+**local** gate contract only. It does not show whether a PJSUA2 worker can
+enter the virtual callback method after the derived callback target is
+released. The shutdown-order review still relies on vendor lifecycle
+behavior around `shutdown2(false)` and `libDestroy()`; those source/worker
+quiescence guarantees require separate review and live observation.
+
 ## Design rationale
 
 ### Explicit ownership
