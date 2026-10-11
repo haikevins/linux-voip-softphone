@@ -2,9 +2,7 @@
 
 ## Status
 
-**Completed** — milestone tag `v0.7-rtp-audio`
-
-Accepted for the documented local Asterisk lab.
+**Completed** — milestone tag `v0.7-rtp-audio`. Accepted for the documented local Asterisk lab.
 
 Accepted evidence includes automated verification, outgoing and incoming calls with operator-confirmed two-way audio, RTP/RTCP diagnostics, and one controlled Wireshark RTP study. These observations apply to the recorded workstation, devices, network, and revisions; they are not a guarantee for other environments.
 
@@ -14,26 +12,31 @@ Extend the Phase 5 SIP call lifecycle to real Linux capture/playback, verified t
 
 ## Scope
 
-Phase 6 covers:
+Included in this phase:
 
 - audio-device capability preflight and runtime selection;
 - bidirectional PJSUA2 conference-media routing;
 - RTP/RTCP statistics presentation;
 - focused automated verification;
 - outgoing and incoming live-call validation;
-- a controlled wire-level RTP inspection.
+- controlled wire-level RTP inspection.
 
-PJSUA2/PJMEDIA owns the call RTP transport and codecs. The project's general-purpose UDP abstraction is not used as a replacement RTP stack.
+Deliberately excluded:
+
+- a project-owned RTP transport or codec stack (PJSUA2/PJMEDIA retains this ownership);
+- production-grade multi-call orchestration, encryption policy, and Qt/QML presentation (separate milestones).
 
 ## Deliverables
 
-- `scripts/phase6/verify-audio-environment.sh` — PJPROJECT/audio-device preflight.
-- `src/pjsip/Pjsua2AudioDeviceManager.*` and `SipCallAudioConfig.hpp` — capture/playback selection.
-- `src/pjsip/Pjsua2CallAudioBridge.*` — call-to-device and device-to-call routing.
-- `src/network/RtpStatistics.*` and `src/pjsip/Pjsua2RtpDiagnostics.*` — RTP/media diagnostics.
-- Updated SIP call/listen CLIs with media and diagnostics reporting.
-- Focused GoogleTests and the aggregate Phase 6 verification wrapper.
-- Sanitized evidence under `evidence/phase6/`.
+| Area | Purpose | Key files |
+|---|---|---|
+| Audio preflight | Confirm PJSUA2 and Linux capture/playback capabilities | `scripts/phase6/verify-audio-environment.sh` |
+| Device selection | Resolve capture/playback at runtime | `src/pjsip/Pjsua2AudioDeviceManager.*`, `src/pjsip/SipCallAudioConfig.hpp` |
+| Audio bridge | Connect live call audio in both directions | `src/pjsip/Pjsua2CallAudioBridge.*` |
+| RTP diagnostics | Report read-only media/RTCP statistics | `src/network/RtpStatistics.*`, `src/pjsip/Pjsua2RtpDiagnostics.*` |
+| SIP CLIs | Surface connected media and diagnostics in existing call flows | `src/pjsip/SipOutgoingCallClient.*`, `src/pjsip/SipIncomingCallClient.*` |
+| Verification | Run the inherited gate and focused audio/RTP checks | `scripts/phase6/verify.sh`, `tests/` |
+| Evidence | Index automated, live-call, and RTP-study observations | `evidence/phase6/README.md` |
 
 ## Architecture and design
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Established in Phase 4 and reused by the PJSIP client work in Phase 5. This document is the protocol-level reference for the SIP behavior observed in the lab; system architecture and phase execution procedures live elsewhere.
+**Established in Phase 4** (milestone `v0.5-sip-asterisk`) and reused by the Phase 5 PJSIP client. This document distinguishes SIP wire/session semantics from the lab observations that motivated them; architecture, execution steps, and retained results live in their respective document groups.
 
 ## Purpose
 

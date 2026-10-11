@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 8 automated evidence passes within its stated scope; final maintainer acceptance remains **PENDING**.
+**PENDING** — Phase 8 automated evidence passes within its stated scope, but final maintainer acceptance has not been recorded.
 
 Controlled PJSUA2 `PJ_EBUSY` recovery is recorded as observed/evidenced. Live external callback quiescence and production-client real `PJ_EBUSY` recovery remain **UNPROVEN**; PJSUA2 integration readiness remains **BLOCKED**.
 

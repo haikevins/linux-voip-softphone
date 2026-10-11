@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 1 is complete and published as the `v0.2-cpp-core` milestone.
+**Completed** — Phase 1 milestone tag `v0.2-cpp-core`.
 
 ## Verification scope
 
@@ -28,21 +28,21 @@ The Phase 1 labs are exercised locally by the verifier. No external SIP endpoint
 
 ## Artifacts
 
-- `toolchain.txt`
-- `build.log`
-- `unit-tests.log`
-- `sanitizers.log`
-- `format-check.log`
-- `clang-tidy.log`
-- `raii-demo.log`
-- `smart-pointers-demo.log`
-- `move-semantics-demo.log`
+- `toolchain.txt` — original compiler/toolchain information.
+- `build.log` — build outcome.
+- `unit-tests.log` — unit test outcomes.
+- `sanitizers.log` — sanitizer outcomes.
+- `format-check.log` — formatting check.
+- `clang-tidy.log` — static-analysis check.
+- `raii-demo.log` — RAII lab execution.
+- `smart-pointers-demo.log` — smart-pointer lab execution.
+- `move-semantics-demo.log` — move-semantics lab execution.
 
 These are historical captured outcomes, not normative documentation.
 
 ## Results
 
-Phase 1 verification passed and the Modern C++ core became the base for Phase 2.
+Within the recorded verification scope, phase 1 verification passed and the Modern C++ core became the base for Phase 2.
 
 ## Security and redaction
 

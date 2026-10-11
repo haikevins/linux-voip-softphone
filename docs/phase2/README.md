@@ -138,9 +138,9 @@ Phase 2 is complete when all of the following statements are true:
 
 ## References
 
-- Architecture: `docs/architecture/linux-process-ipc.md`
-- Interview review: `docs/interview/phase2-questions.md`
-- Evidence: `evidence/phase2/`
+- `docs/architecture/linux-process-ipc.md` — Architecture
+- `docs/interview/phase2-questions.md` — Interview review
+- `evidence/phase2/` — Evidence
 
 ## Next phase
 

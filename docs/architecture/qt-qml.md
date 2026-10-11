@@ -1,8 +1,8 @@
-# Phase 7 Architecture — Qt/QML UI boundary
+# Phase 7 Architecture — Qt/QML UI Boundary
 
 ## Status
 
-Phase 7 architecture is accepted for the documented single-account/single-call lab. QML remains presentation-only, `CallManager` remains Qt-free, and one retained backend worker/session owns all live PJSUA2 endpoint/account/call/media/statistics operations. The accepted implementation includes registration, outgoing/incoming calls, Answer/Decline, call duration, recovery/reuse, and read-only RTP/audio diagnostics.
+**Completed** — Phase 7 milestone tag `v0.8-qt-gui`, accepted for the documented single-account/single-call lab. QML remains presentation-only, `CallManager` remains Qt-free, and one retained backend worker/session owns all live PJSUA2 endpoint/account/call/media/statistics operations. The accepted implementation includes registration, outgoing/incoming calls, Answer/Decline, call duration, recovery/reuse, and read-only RTP/audio diagnostics.
 
 ## Purpose
 
@@ -74,7 +74,7 @@ Phase 8 may generalize cross-thread event flow, but it should preserve the core 
 
 ## References
 
-- `README_roadmap.md`
+- `ROADMAP.md`
 - `docs/phase7/README.md`
 - `docs/architecture/audio-rtp.md`
 - `docs/interview/phase7-questions.md`

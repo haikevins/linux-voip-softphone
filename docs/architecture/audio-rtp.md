@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented on `phase/6-rtp-audio` through Commit 8 (`bbaec38`). The media implementation, RTP diagnostics, and automated verification have passed the documented local checks. Phase 6 milestone closure and sanitized committed evidence remain separate work.
+**Completed** — Phase 6 milestone tag `v0.7-rtp-audio`. The media implementation, automated verification, two-way audio acceptance, and sanitized RTP study are recorded for the documented local lab. The acceptance result does not establish performance or device behavior in other environments.
 
 ## Purpose
 
@@ -39,7 +39,7 @@ SipOutgoingCallClient / SipIncomingCallClient
                               +--> network::RtpStatistics (calculation only)
 ```
 
-SIP establishes the dialog and negotiates the media parameters through SDP. PJSIP/PJMEDIA owns the call's RTP stream, codec, and conference bridge. `src/network/RtpStatistics.*` is a small arithmetic/data boundary; it does not receive packets or implement a second RTP stack. The older `src/network/UdpSocket` exercises general networking independently.
+SIP establishes the dialog and negotiates the media parameters through SDP. PJSIP/PJMEDIA owns the call's RTP stream, codec, and conference bridge. `src/network/RtpStatistics.*` is a small arithmetic/data boundary; it does not receive packets or implement a second RTP stack. The older `src/network/UdpSocket.hpp` abstraction exercises general networking independently.
 
 ### Audio-device selection
 
@@ -94,7 +94,7 @@ Automated tests validate the device mapping/selection and active-media index pol
 
 The separate live gate makes one call in each direction between the local SIP client (`1002`) and the phone (`1001`). For **each** call, confirm registration (`200 OK`), `CONFIRMED`, `connected=yes audio=yes`, audible speech both ways, nonzero received and sent packet counts, consistent `[MEDIA]`/`[RTP]` output, and clean disconnection. Packet loss and jitter are observations, not fixed acceptance thresholds for all networks.
 
-The Commit 7 lab runs established the initial reference observations (not permanent performance baselines): outgoing PCMU/8 kHz with RX 1,062 / TX 937 / loss 0%; incoming PCMU/8 kHz with RX 946 / TX 946 / loss 0%. Both calls held for approximately 20 seconds, produced live diagnostics, and were reported audibly bidirectional. The Commit 8 wrapper separately passed the local automated gate. These observations should only be added to committed evidence after sanitization and review.
+The retained Phase 6 evidence records the acceptance observations, including operator-confirmed bidirectional audio and read-only RTP diagnostics. The original development runs reported outgoing PCMU/8 kHz with RX 1,062 / TX 937 / loss 0% and incoming PCMU/8 kHz with RX 946 / TX 946 / loss 0%. Both held for approximately 20 seconds. These are historical local observations, not required thresholds or reproducible performance baselines; use `evidence/phase6/README.md` for the accepted evidence index.
 
 ## Design rationale
 
@@ -106,12 +106,13 @@ The Commit 7 lab runs established the initial reference observations (not perman
 
 ## Phase boundary
 
-Phase 5's null device was sufficient to prove SIP registration and call lifecycle. Phase 6 adds live capture/playback, bidirectional conference-bridge connections, media-connected state, read-only stream statistics, and automated/live validation. This does not yet provide production-grade long-running call orchestration, encryption policy, or a Qt/QML interface; those require separate design and verification.
+Phase 5's null device was sufficient to prove SIP registration and call lifecycle. Phase 6 adds live capture/playback, bidirectional conference-bridge connections, media-connected state, read-only stream statistics, and automated/live validation. This milestone did not include production-grade long-running call orchestration or an encryption policy. A separate Qt/QML interface was subsequently accepted in Phase 7; its design and evidence are documented under `docs/architecture/qt-qml.md` and `evidence/phase7/README.md`.
 
 ## References
 
 - `docs/phase6/README.md`
 - `docs/phase5/README.md`
+- `evidence/phase6/README.md`
 - `docs/architecture/pjsip-cli.md`
 - `docs/interview/phase6-questions.md`
 - `scripts/phase6/verify.sh`

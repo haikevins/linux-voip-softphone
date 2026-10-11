@@ -149,9 +149,9 @@ Phase 1 is complete when all of the following statements are true:
 
 ## References
 
-- Architecture: `docs/architecture/call-state-machine.md`
-- Interview review: `docs/interview/phase1-questions.md`
-- Evidence: `evidence/phase1/`
+- `docs/architecture/call-state-machine.md` — Architecture
+- `docs/interview/phase1-questions.md` — Interview review
+- `evidence/phase1/` — Evidence
 
 ## Next phase
 

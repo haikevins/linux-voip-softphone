@@ -4,6 +4,8 @@ Use the repository implementation, documentation, tests, and evidence as the bas
 
 ## Review scope
 
+Base each answer on the implementation, tests, and retained evidence. Distinguish design intent, observed behavior, and unverified boundaries.
+
 - Qt/QML presentation versus application and PJSUA2 ownership
 - retained registration/session lifetime
 - incoming and outgoing call handling

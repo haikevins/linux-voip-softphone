@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 7 is accepted for the documented local lab and published as the `v0.8-qt-gui` milestone.
+**Completed** — Phase 7 milestone tag `v0.8-qt-gui`. Accepted for the documented local lab.
 
 The final evidence includes the post-closure 2026-10-01 corrections: caller-leg Decline is preserved end-to-end as SIP `603 Decline`, and an outgoing remote rejection after Ringing returns the GUI to Ready without a false failure state.
 

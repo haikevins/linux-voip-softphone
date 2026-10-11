@@ -2,7 +2,7 @@
 
 ## Status
 
-Completed — milestone `v0.3-linux-system`.
+**Completed** — Phase 2 milestone tag `v0.3-linux-system`.
 
 ## Purpose
 
@@ -197,7 +197,6 @@ Phase 2 focuses on local Linux primitives and IPC. It intentionally stops before
 
 - `docs/phase2/README.md`
 - `docs/interview/phase2-questions.md`
-- `docs/architecture/linux-process-ipc.md`
 - `src/platform/linux/UniqueFd.hpp`
 - `src/ipc/UnixDomainSocketServer.hpp`
 - `tests/integration/test_unix_domain_socket_ipc.cpp`

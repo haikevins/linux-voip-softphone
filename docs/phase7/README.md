@@ -2,9 +2,7 @@
 
 ## Status
 
-**Completed** — milestone tag `v0.8-qt-gui`
-
-Accepted for the documented local Asterisk lab and merged to `main`.
+**Completed** — milestone tag `v0.8-qt-gui`. Accepted for the documented local Asterisk lab and merged to `main`.
 
 The accepted scope includes registration, one active call, incoming/outgoing call handling, explicit Answer/Decline behavior, connected-call duration, two-way audio, and live RTP/audio diagnostics.
 
@@ -16,7 +14,7 @@ QML remains presentation-only. Application call state is Qt-free, and PJSUA2 end
 
 ## Scope
 
-Phase 7 supports:
+Included in this phase:
 
 - Qt-only preview mode with no network activity;
 - SIP registration in the Qt+PJSIP build;
@@ -26,20 +24,24 @@ Phase 7 supports:
 - connected-call duration;
 - read-only codec/RTP/loss/jitter/RTT diagnostics.
 
-Out of scope are multiple accounts, call waiting, hold, mute, audio-device selection UI, persistent call history, and generalized concurrency infrastructure.
+Deliberately excluded:
+
+- multiple accounts, call waiting, hold, or mute;
+- audio-device selection UI and persistent call history;
+- generalized concurrency infrastructure beyond the accepted Qt worker/session boundary.
 
 ## Deliverables
 
-- Optional Qt/QML build path and dialer shell.
-- Qt-free `CallManager` application state.
-- `GuiViewModel` presentation adapter.
-- Retained `QtRegistrationBackend` worker/session boundary for PJSUA2 work.
-- Hidden-stdin SIP password flow.
-- Incoming and outgoing call handling on one registered account.
-- Explicit SIP `603 Decline` on the softphone callee-side leg.
-- Connected-call duration.
-- Read-only RTP/audio diagnostics.
-- Qt fake-session tests and curated Phase 7 evidence.
+| Area | Purpose | Key files |
+|---|---|---|
+| Optional GUI build | Provide Qt-only preview and Qt+PJSIP dialer | `CMakePresets.json`, `src/gui/Main.qml` |
+| Application state | Keep call lifecycle semantics Qt-free | `src/application/CallManager.hpp` |
+| Presentation adapter | Convert backend events into sanitized QML-visible state, duration, and diagnostics | `src/gui/GuiViewModel.hpp` |
+| Worker/session boundary | Own and serialize registered PJSUA2 activity outside the UI thread | `src/gui/QtRegistrationBackend.hpp`, `src/gui/PjsipRegistrationSession.hpp` |
+| SIP call control | Support registration reuse, incoming/outgoing calls, and explicit `603 Decline` | `src/pjsip/SipOutgoingCallClient.hpp` |
+| Credentials | Obtain passwords through the existing hidden-stdin runtime flow | `src/gui/` |
+| Verification | Exercise fake-session/Qt ownership and inherited SIP/media regressions | `tests/qt/test_qt_registration_backend.cpp` |
+| Evidence | Retain sanitized GUI, call, Decline, and RTP results | `evidence/phase7/README.md` |
 
 ## Architecture and design
 
@@ -154,7 +156,7 @@ The annotated `v0.8-qt-gui` tag is the Phase 7 release milestone.
 
 ## References
 
-- `README_roadmap.md`
+- `ROADMAP.md`
 - `docs/architecture/qt-qml.md`
 - `docs/architecture/audio-rtp.md`
 - `docs/interview/phase7-questions.md`

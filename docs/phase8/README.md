@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 8 is merged to `main`; automated verification passes, but final maintainer acceptance remains **PENDING**.
+**PENDING** — Phase 8 is merged to `main` and its automated verification passes, but final maintainer acceptance has not been recorded.
 
 The unresolved production boundary is unchanged:
 
@@ -20,7 +20,7 @@ Make concurrency ownership and shutdown behavior explicit and testable without c
 
 ## Scope
 
-Phase 8 covers:
+Included in this phase:
 
 - `ThreadSafeQueue<T>` close, cancellation, FIFO, and drain semantics;
 - owned `SerialTaskWorker` lifecycle and exception containment;
@@ -30,16 +30,23 @@ Phase 8 covers:
 - PJSUA2 call-slot/callback/shutdown lifetime contracts;
 - one controlled live PJSUA2 lifecycle observation.
 
-It does not claim that the generic queue replaced Qt queued delivery or that all PJSUA2 teardown paths are proven safe.
+Deliberately excluded:
+
+- replacing Qt queued delivery with the generic queue;
+- claiming universal PJSUA2 callback quiescence or teardown safety;
+- treating offline verification or merge to `main` as final Phase 8 acceptance.
 
 ## Deliverables
 
-- reusable C++20 queue and serial worker;
-- unit/integration tests under the normal `tests/unit` and `tests/integration` taxonomy;
-- canonical CTest registration without a phase-specific CMake subtree;
-- repeatable stress/TSan verification;
-- concise threading architecture documentation;
-- sanitized Phase 8 evidence.
+| Area | Purpose | Key files |
+|---|---|---|
+| Generic queue | Own MPMC FIFO, close, cancellation, and drain semantics | `src/concurrency/ThreadSafeQueue.hpp` |
+| Serial worker | Own one worker thread and accepted-work drain | `src/concurrency/SerialTaskWorker.hpp` |
+| Unit/integration tests | Exercise deterministic behavior within canonical CTest registration | `tests/unit/`, `tests/integration/` |
+| Offline verification | Run concurrency, 100,000-event stress, and TSan checks | `scripts/phase8/verify.sh`, `scripts/phase8/verify-threading.sh` |
+| Live probe | Record bounded PJSUA2 lifecycle observations through explicit opt-in | `scripts/phase8/run-pjsip-live-lifecycle-probe.sh` |
+| Architecture | Document Qt/PJSUA2 ownership and unproven shutdown boundaries | `docs/architecture/threading-model.md` |
+| Evidence | Preserve sanitized stress, TSan, GUI, and controlled live observations | `evidence/phase8/README.md` |
 
 ## Architecture and design
 
@@ -145,7 +152,7 @@ Final acceptance must explicitly acknowledge the unresolved PJSUA2 boundary; mer
 
 ## References
 
-- `README_roadmap.md`
+- `ROADMAP.md`
 - `docs/architecture/threading-model.md`
 - `docs/interview/phase8-questions.md`
 - `evidence/phase8/README.md`

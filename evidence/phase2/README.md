@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 2 is complete and published as the `v0.3-linux-system` milestone.
+**Completed** — Phase 2 milestone tag `v0.3-linux-system`.
 
 ## Verification scope
 
@@ -28,21 +28,21 @@ No external telephony endpoint is required. Process and IPC behavior is reproduc
 
 ## Artifacts
 
-- `toolchain.txt`
-- `build.log`
-- `unit-tests.log`
-- `integration-tests.log`
-- `all-tests.log`
-- `sanitizers.log`
-- `format-check.log`
-- `clang-tidy.log`
-- `process-lifecycle-demo.log`
-- `exec-child-demo.log`
-- `signal-handling-demo.log`
+- `toolchain.txt` — original compiler/toolchain information.
+- `build.log` — build outcome.
+- `unit-tests.log` — unit test outcomes.
+- `integration-tests.log` — IPC integration results.
+- `all-tests.log` — complete recorded test gate.
+- `sanitizers.log` — sanitizer outcomes.
+- `format-check.log` — formatting check.
+- `clang-tidy.log` — static-analysis check.
+- `process-lifecycle-demo.log` — process lab execution.
+- `exec-child-demo.log` — exec lab execution.
+- `signal-handling-demo.log` — signal lab execution.
 
 ## Results
 
-Phase 2 verification passed and the Linux systems layer became the base for Phase 3 networking.
+Within the recorded verification scope, phase 2 verification passed and the Linux systems layer became the base for Phase 3 networking.
 
 ## Security and redaction
 

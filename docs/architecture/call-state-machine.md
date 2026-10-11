@@ -2,7 +2,7 @@
 
 ## Status
 
-Completed — milestone `v0.2-cpp-core`.
+**Completed** — Phase 1 milestone tag `v0.2-cpp-core`.
 
 ## Purpose
 

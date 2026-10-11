@@ -2,7 +2,7 @@
 
 ## Status
 
-Completed — milestone `v0.5-sip-asterisk`.
+**Completed** — Phase 4 milestone tag `v0.5-sip-asterisk`.
 
 ## Purpose
 

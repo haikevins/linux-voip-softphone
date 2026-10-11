@@ -44,7 +44,7 @@ src/            production C++ code
 tests/          unit, integration, and Qt tests
 ```
 
-See [`README_roadmap.md`](README_roadmap.md) for phase planning and milestone status.
+See [`ROADMAP.md`](ROADMAP.md) for phase planning and milestone status.
 
 ## Build and test
 
@@ -117,7 +117,7 @@ Phase 9 begins only after explicit Phase 8 maintainer acceptance.
 ## Documentation
 
 - [`docs/README.md`](docs/README.md) — documentation taxonomy and schemas.
-- [`README_roadmap.md`](README_roadmap.md) — phase roadmap and current progress.
+- [`ROADMAP.md`](ROADMAP.md) — phase roadmap and current progress.
 - `docs/architecture/` — system/component design and lifecycle.
 - `docs/protocols/` — protocol behavior and observations.
 - `docs/interview/` — phase review questions.

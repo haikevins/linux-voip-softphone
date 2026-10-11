@@ -2,7 +2,7 @@
 
 ## Status
 
-Completed — milestone `v0.4-networking`.
+**Completed** — Phase 3 milestone tag `v0.4-networking`.
 
 ## Purpose
 
