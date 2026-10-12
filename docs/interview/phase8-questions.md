@@ -144,6 +144,33 @@ known override set across registration, outgoing, and incoming clients,
 including their shared callback-context ownership and fail-closed destructor
 order. A changed set fails the audit until the new entry path is reviewed.
 
+### P8-R3B: vendor dispatch lifetime modeling
+
+#### What is the dangerous interval that P8-R3B models?
+
+PJPROJECT can fetch a non-owning C++ `Call*` through `Call::lookup()` and run
+base C++ processing before entering the derived callback override. The local
+activity gate counts only entries that reach the override. A pre-gate lookup
+can therefore exist when the local gate reports empty. The deterministic test
+pauses a **synthetic** callback in that interval and checks expiration through
+a `weak_ptr` without dereferencing a retired target.
+
+#### Why is a synthetic per-call external fence useful but insufficient?
+
+It demonstrates the stronger contract that would be needed: new dispatch
+admission is stopped, and all dispatch tickets held **from lookup to return**
+are drained before retirement. Separate fences permit later calls without
+reopening an old target. PJPROJECT's actual lookup path has not been shown to
+acquire such a ticket, so model PASS is not vendor quiescence PASS.
+
+#### Which Call destruction paths require explicit review?
+
+Four existing member resets (three outgoing: stop, `make_call()` exception,
+`release_disconnected_call()`; one incoming: stop) and four temporary rejected
+`pj::Call` instances (two in each call client). A canonical source inventory
+test fails if this set drifts. The failure/temporary paths need dedicated
+vendor lifetime analysis before a production code change.
+
 ## Phase boundary
 
 Phase 8 remains pending final maintainer acceptance. One production-owned

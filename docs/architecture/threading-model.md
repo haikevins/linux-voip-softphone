@@ -159,6 +159,35 @@ released. The shutdown-order review still relies on vendor lifecycle
 behavior around `shutdown2(false)` and `libDestroy()`; those source/worker
 quiescence guarantees require separate review and live observation.
 
+### P8-R3B: vendor dispatch gap and controlled lifetime model
+
+Reviewed PJPROJECT 2.17 (tag `2.17`, commit `5a457451fa2712ba18e12b01738e8ff3af2b26fd`)
+associates C++ `Call*` through PJSUA-LIB `user_data`. The observed
+`Call::lookup()` / `processMediaUpdate()` sequence can run **before** a derived
+`TrackedCall` method enters the local `CallbackActivityGate`. The reviewed
+DISCONNECTED call-count ordering is path-specific, not an all-dispatch join.
+
+The P8-R3B controlled offline model uses a non-owning `weak_ptr` token to
+represent a vendor lookup. A latch pauses the simulated callback between
+lookup and gate entry. The test demonstrates that closing/draining the local
+gate alone can permit **simulated** retirement while a pre-gate dispatch exists,
+without dereferencing a retired object. A separate synthetic per-call ingress
+fence preserves a token from lookup through callback return, tests release
+veto until drain, and allows subsequent calls to use a separate fence.
+
+`tests/integration/test_phase8_r3b_call_release_inventory.py` fails closed if
+one of four known `call_.reset()` locations or four stack-local rejected
+`pj::Call` creations is added, removed or relocated without review. The audit
+covers outgoing `stop()`, `make_call()` exception cleanup and
+`release_disconnected_call()`, incoming `stop()`, plus rejection branches in
+both clients. It does **not** make source matching equivalent to correctness.
+
+No synthetic fence has been attached to vendor `Call::lookup()` or production
+teardown. The model neither reproduces a real use-after-free nor establishes
+external callback quiescence. A real PJPROJECT worker dispatch proof and
+instrumented lab, with no unsafe dereference, remain separate prerequisites
+for claiming the stronger property.
+
 ## Design rationale
 
 ### Explicit ownership

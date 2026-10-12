@@ -75,6 +75,17 @@ When merged and reproduced on the maintainer host, the new test result is
 reported separately from the retained historical artifacts.
 
 
+P8-R3B controlled offline lifetime model and inventory are registered in
+canonical CTest as `PjsipLookupToGateLifetimeModelTest` and
+`Phase8R3BCallReleaseInventoryTest`. The synthetic callback uses a
+non-owning `weak_ptr`, controlled latches and an independent test-only
+per-call fence. The inventory enumerates four member reset and four temporary
+rejected-Call sites. Passing these tests supports **model/inventory behavior
+only**; it does not prove that vendor `Call::lookup()` participates in the
+modeled fence, that every worker is drained, or that a real UAF occurred.
+Historical live evidence is unchanged. Maintainer-host canonical test output
+must be collected before declaring these newly added CTests PASS there.
+
 ## Manual verification
 
 `manual-verification.txt` records the historical preview-mode GUI interaction/window-close acceptance.

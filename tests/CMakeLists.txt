@@ -246,6 +246,13 @@ add_plain_cpp_test(
     PjsipCallbackIngressRacesTest
     "threading;pjsip;unit"
 )
+# P8-R3B: synthetic pre-gate lifetime window, NOT vendor PJSUA2 quiescence.
+add_plain_cpp_test(
+    pjsip_lookup_to_gate_lifetime_model_tests
+    unit/test_pjsip_lookup_to_gate_lifetime_model.cpp
+    PjsipLookupToGateLifetimeModelTest
+    "threading;pjsip;unit;tsan"
+)
 add_plain_cpp_test(
     pjsip_shutdown_ownership_policy_tests
     unit/test_pjsip_shutdown_ownership_policy.cpp
@@ -260,6 +267,17 @@ add_plain_cpp_test(
 )
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+# P8-R3B: fail closed if tracked-call or temporary Call release sites drift.
+add_test(
+    NAME Phase8R3BCallReleaseInventoryTest
+    COMMAND "${Python3_EXECUTABLE}" -B
+        "${CMAKE_CURRENT_SOURCE_DIR}/integration/test_phase8_r3b_call_release_inventory.py"
+)
+set_tests_properties(Phase8R3BCallReleaseInventoryTest PROPERTIES
+    LABELS "threading;pjsip;integration;audit"
+    TIMEOUT 30
+)
 
 # P8-R3A checks every known production PJSUA2 callback override. It fails
 # closed on new callback methods and does not claim vendor-source quiescence.
