@@ -186,6 +186,33 @@ until its method returns. The audit intentionally fails if new callbacks are
 added without review. **Neither test is a live PJSUA2 callback-source
 quiescence proof.** Live vendor worker/ingress review remains for P8-R3B/C.
 
+### P8-R3B: controlled lookup-to-gate lifetime model (offline only)
+
+A canonical CTest models the precise window between a vendor `Call::lookup()`
+and derived callback-gate entry. One deterministic schedule shows that a
+closed/empty local gate does not protect a synthetic non-owning target in
+that window; a separate schedule exercises a *test-only* per-call external
+ingress fence and stops retirement until its in-flight ticket returns. The
+model uses `weak_ptr::expired()` to avoid unsafe dereferences. It does not
+use PJPROJECT, live SIP or production `TrackedCall` objects.
+
+A second CTest audits all four known production member `call_.reset()` sites
+and four temporary rejected `pj::Call` objects. These source checks are
+fail-closed review triggers, not vendor synchronization barriers. Run:
+
+```bash
+ctest --preset qt-pjsip-gui-debug --output-on-failure \
+    -R '^(PjsipLookupToGateLifetimeModelTest|Phase8R3BCallReleaseInventoryTest)$'
+```
+
+Evidence obtained from source review of PJPROJECT tag 2.17 identifies raw
+Call pointer lookup, deferred media dispatch and vendor work before the
+application gate. No instrumented vendor dispatcher, complete callback-source
+stop/drain, or production UAF reproduction is claimed. R3B vendor-instrumented
+verification and R3C live verification remain pending; external callback
+quiescence stays **UNPROVEN**, PJSUA2 integration readiness **BLOCKED** and
+Phase 8 acceptance **PENDING**.
+
 ## Interview focus
 
 Be able to explain:
@@ -209,6 +236,7 @@ See `docs/interview/phase8-questions.md`.
 | Qt owner-thread handoff regression | PASS |
 | Controlled PJSUA2 `PJ_EBUSY` recovery | OBSERVED/EVIDENCED |
 | P8-R3A callback-target ingress source contract | OFFLINE TEST ONLY; external source still UNPROVEN |
+| P8-R3B synthetic lookup-to-gate lifetime / release inventory | OFFLINE MODEL ONLY; vendor dispatch UNPROVEN |
 | Live external callback quiescence | UNPROVEN |
 | Production outgoing Account real `PJ_EBUSY` / lab-only early-shutdown recovery | OBSERVED/EVIDENCED (one bounded run; not normal `stop()` busy injection) |
 | Other production-client `PJ_EBUSY` paths and external callback-source safety | UNPROVEN |

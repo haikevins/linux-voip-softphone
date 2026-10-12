@@ -32,6 +32,7 @@ TSAN_TARGETS=(
     mpmc_stress_tests
     pjsip_call_slot_cleanup_policy_tests
     pjsip_callback_activity_tests
+    pjsip_lookup_to_gate_lifetime_model_tests
 )
 
 verify_core() {
@@ -75,7 +76,7 @@ verify_tsan() {
     if TSAN_OPTIONS="${TSAN_OPTIONS:+$TSAN_OPTIONS:}halt_on_error=1:exitcode=66" \
         ctest --test-dir "$build_dir" --output-on-failure \
             -L '^tsan$' --repeat "until-fail:$repeats" 2>&1 | tee "$log"; then
-        echo "PASS: ThreadSanitizer gate (six tests x $repeats run(s))"
+        echo "PASS: ThreadSanitizer gate (${#TSAN_TARGETS[@]} tests x $repeats run(s))"
     else
         if grep -Eq 'unexpected memory mapping|failed to mmap' "$log"; then
             echo 'BLOCKED: TSan runtime incompatible with this execution environment.' >&2
