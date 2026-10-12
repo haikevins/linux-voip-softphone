@@ -126,6 +126,16 @@ if(ENABLE_PJSIP)
         project_enable_sanitizers(phase8_r2b_production_busy_recovery)
     endif()
 
+    if(ENABLE_PHASE8_R3C_LAB)
+        target_compile_definitions(voip_pjsip PRIVATE VOIP_PHASE8_R3C_LAB=1)
+        add_executable(phase8_r3c_vendor_dispatch
+            "${PROJECT_SOURCE_DIR}/labs/pjsip/callback-dispatch/phase8_r3c_vendor_dispatch.cpp"
+        )
+        target_link_libraries(phase8_r3c_vendor_dispatch PRIVATE voip::pjsip)
+        project_set_warnings(phase8_r3c_vendor_dispatch)
+        project_enable_sanitizers(phase8_r3c_vendor_dispatch)
+    endif()
+
     if(ENABLE_PHASE8_R2A_LAB)
         add_executable(phase8_r2a_production_stop_reuse
             "${PROJECT_SOURCE_DIR}/labs/pjsip/production-stop-reuse/phase8_r2a_production_stop_reuse.cpp"

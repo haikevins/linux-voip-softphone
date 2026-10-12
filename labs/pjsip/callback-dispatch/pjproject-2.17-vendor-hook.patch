@@ -1,0 +1,24 @@
+--- a/pjsip/src/pjsua2/endpoint.cpp
++++ b/pjsip/src/pjsua2/endpoint.cpp
+@@ -1478,0 +1479,13 @@
++// P8-R3C LAB ONLY. Emitted only by an isolated vendor build that defines
++// VOIP_PHASE8_R3C_VENDOR_LAB; never enabled in the installed PJPROJECT.
++#if defined(VOIP_PHASE8_R3C_VENDOR_LAB)
++extern "C" void voip_phase8_r3c_vendor_after_lookup(int call_id, unsigned kind) noexcept
++    __attribute__((weak));
++static void voip_phase8_r3c_after_lookup(int call_id, unsigned kind) noexcept
++{
++    if (voip_phase8_r3c_vendor_after_lookup != nullptr) {
++        voip_phase8_r3c_vendor_after_lookup(call_id, kind);
++    }
++}
++#endif
++
+@@ -1485,0 +1499,3 @@
++#if defined(VOIP_PHASE8_R3C_VENDOR_LAB)
++    voip_phase8_r3c_after_lookup(call_id, 1U);
++#endif
+@@ -1518,0 +1535,3 @@
++#if defined(VOIP_PHASE8_R3C_VENDOR_LAB)
++    voip_phase8_r3c_after_lookup(call_id, 2U);
++#endif

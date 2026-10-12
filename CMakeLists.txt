@@ -21,6 +21,7 @@ option(ENABLE_PJSIP "Enable PJSIP/PJSUA2 integration" OFF)
 option(ENABLE_QT_GUI "Build the Phase 7 Qt/QML GUI shell" OFF)
 option(ENABLE_PHASE8_R2A_LAB "Build the opt-in Phase 8 production stop/reuse lab" OFF)
 option(ENABLE_PHASE8_R2B_LAB "Build the opt-in Phase 8 production busy-recovery lab" OFF)
+option(ENABLE_PHASE8_R3C_LAB "Build the opt-in real-vendor dispatch probe" OFF)
 
 if(ENABLE_PHASE8_R2A_LAB AND NOT ENABLE_PJSIP)
     message(FATAL_ERROR "ENABLE_PHASE8_R2A_LAB requires ENABLE_PJSIP=ON")
@@ -28,6 +29,10 @@ endif()
 
 if(ENABLE_PHASE8_R2B_LAB AND NOT ENABLE_PJSIP)
     message(FATAL_ERROR "ENABLE_PHASE8_R2B_LAB requires ENABLE_PJSIP=ON")
+endif()
+
+if(ENABLE_PHASE8_R3C_LAB AND NOT ENABLE_PJSIP)
+    message(FATAL_ERROR "ENABLE_PHASE8_R3C_LAB requires ENABLE_PJSIP=ON")
 endif()
 
 if(ENABLE_TSAN AND (ENABLE_ASAN OR ENABLE_UBSAN))

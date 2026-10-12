@@ -43,6 +43,26 @@ entry running on a separate thread. These are **not new live evidence**, do
 not attest to callbacks that have not yet entered the C++ override, and do
 not authorize a change to `UNPROVEN` or `BLOCKED`.
 
+### P8-R3C: bounded real-vendor dispatch observation
+
+The implementation is delivered as one patch on baseline `40cffc5`. The
+lab-only vendor hook patch, its gated runner, a production outgoing-client
+probe, offline contract tests and strict sanitized-summary validator are
+tracked in source. Normal/default CI runs only offline checks, without
+building vendor instrumentation or generating SIP traffic.
+
+**P8-R3C live execution was NOT RUN in the patch implementation environment.**
+On the maintainer Ubuntu host, one opt-in, bounded vendor lab returned
+**PASS**. Its validator-approved allowlisted record is
+`p8-r3c-live-20261012T004815Z.txt`. It reports real vendor pre-gate pause
+and vendor-to-app ingress **OBSERVED**, with no object retirement while the
+callback was paused (**YES**). In that run, outgoing call release, stop and
+destructor returned. This observation does **not** prove external callback
+quiescence (**UNPROVEN**) or integration readiness (**BLOCKED**).
+The lab does not force unsafe retirement of a borrowed `Call*` during a
+paused dispatch; incoming and exception release paths were not exercised.
+Historical R2A/R2B observations remain unchanged.
+
 ## Environment
 
 Recorded runs used the maintainer Linux/ThinkPad environment, Qt 6, PJPROJECT/PJSIP 2.17 where applicable, and Clang 18 for the successful TSan run.
@@ -105,6 +125,15 @@ production `stop()` did not separately record its own vendor shutdown code.
 None of these observations proves universal external callback quiescence.
 
 ## Artifacts
+
+P8-R3C code review artifacts are in `labs/pjsip/callback-dispatch/`,
+`scripts/phase8/run-r3c-vendor-dispatch-lab.sh`,
+`scripts/phase8/verify-r3c-summary.py`,
+`scripts/phase8/record-r3c-evidence.py` and
+`tests/integration/test_phase8_r3c_vendor_lab_contract.py`.
+The reproducible pre-live evidence manifest
+`evidence/phase8/p8-r3c-probe-design.txt` declares **NOT_RUN**.
+
 
 - `manual-verification.txt` — historical GUI usability/window-close observation.
 - `pjsip-live-lifecycle.txt` — controlled live PJSUA2 lifecycle observation.

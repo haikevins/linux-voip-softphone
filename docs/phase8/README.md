@@ -74,6 +74,52 @@ producers -> SerialTaskWorker   -> one owned worker thread
 
 These paths are related by ownership principles, not by an assertion that the generic queue transports every production Qt/PJSUA2 callback.
 
+### P8-R3C: one-package real PJPROJECT dispatch observation
+
+One review patch adds the lab-only vendor hook diff, a real outgoing-client
+observer, a guarded one-call runner, sanitized marker validation, canonical
+offline CTest tests, and architecture/interview/evidence notes. It does **not**
+change default production shutdown or vendor libraries. Two instrumented callback
+paths are `on_call_state` and `on_call_media_state`; only the outgoing
+`release_disconnected_call()` path is exercised dynamically. The other
+previously inventoried Call release sites still require separate evidence.
+
+The runner creates an isolated instrumented source/build/install under
+`build/phase8-r3c-vendor-lab`, requiring the clean PJPROJECT tag `2.17`
+checkout and exact `endpoint.cpp` SHA256. It checks the generated static
+library symbol, isolated pkg-config libdir and lab executable before sending
+traffic. One explicit operator-approved UDP Asterisk 1002->1001 call follows.
+A real `Call::lookup()` -> callback override correlation and bounded pre-gate
+pause are required; absent/contradictory markers fail closed.
+
+The lab is **not CI** and requires explicit approval. Before using it, the
+operator must understand that extension 1001 may ring and the lab attempts
+exactly one call; it is not a teardown race injection. Run on the P8-R3C
+branch from baseline `40cffc5` with a clean vendor Git checkout:
+
+```bash
+PHASE8_LIVE_SIP=1 PHASE8_R3C_CONFIRM=1002-to-1001 \
+    bash scripts/phase8/run-r3c-vendor-dispatch-lab.sh
+```
+
+Enter the SIP password privately at the prompt (or supply
+`VOIP_SIP_PASSWORD` in the environment); never include it in logs or Git.
+The script stores a fresh allowlisted summary in `~/Downloads`, while raw
+SIP output is deleted. Isolated build logs remain only under ignored `build/`.
+A rerun refuses to reuse the build directory to avoid stale instrumented
+libraries; manually archive/relocate it after investigating results. Once
+(and only once) the sanitized `P8R3C_...` summary validates, add bounded
+live evidence to the **same PR** with
+`python3 -B scripts/phase8/record-r3c-evidence.py PATH_TO_SUMMARY`.
+This creates a new file under `evidence/phase8` but does not commit it.
+An inconclusive or failed run must not be recorded as PASS.
+
+**Before a verified live run:** `REAL_VENDOR_PRE_GATE_PAUSE=NOT_RUN`;
+external callback quiescence **UNPROVEN**, integration readiness **BLOCKED**,
+Phase 8 acceptance **PENDING**. Even a live observation `PASS` establishes
+only that bounded lookup-to-override dispatch happened, not a vendor-wide
+lifetime fence or safe destruction of all C++ Call targets.
+
 ## Build and run
 
 Aggregate offline verification:

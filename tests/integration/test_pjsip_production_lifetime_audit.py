@@ -107,30 +107,17 @@ class ProductionCallbackLifetimeAuditTest(unittest.TestCase):
             self.run_audit(incoming=no_incoming_lock)['clients']['incoming']['checks'][
                 'incoming_callback_mutex'])
 
-        media_old = (
-            '    void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override\n'
-            '    {\n'
-            '        auto callback_entry = context_->call_activity.enter();\n'
-            '        if (!callback_entry.admitted()) {\n'
-            '            return;\n'
-            '        }\n\n'
-            '        auto *owner = context_->owner();\n'
-            '        if (owner == nullptr) {\n'
-            '            return;\n'
-            '        }\n\n'
-            '        const std::lock_guard callback_lock{owner->call_callback_mutex_};')
-        media_new = (
-            '    void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override\n'
-            '    {\n'
-            '        auto callback_entry = context_->call_activity.enter();\n'
-            '        if (!callback_entry.admitted()) {\n'
-            '            return;\n'
-            '        }\n\n'
-            '        auto *owner = context_->owner();\n'
-            '        if (owner == nullptr) {\n'
-            '            return;\n'
-            '        }')
-        no_media_lock = self.replace_once(self.original_outgoing, media_old, media_new)
+        # Mutate only the media callback body. Lab-only instrumentation may be
+        # inserted before the local gate without weakening this mutex audit.
+        media_body = audit._extract(
+            self.original_outgoing,
+            r'\bvoid\s+onCallMediaState\s*\([^)]*\)\s*override')
+        media_without_lock = self.replace_once(
+            media_body,
+            '        const std::lock_guard callback_lock{owner->call_callback_mutex_};',
+            '        /* media callback lock removed */')
+        no_media_lock = self.replace_once(
+            self.original_outgoing, media_body, media_without_lock)
         self.assertFalse(
             self.run_audit(outgoing=no_media_lock)['clients']['outgoing']['checks'][
                 'media_callback_mutex'])

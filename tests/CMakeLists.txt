@@ -279,6 +279,18 @@ set_tests_properties(Phase8R3BCallReleaseInventoryTest PROPERTIES
     TIMEOUT 30
 )
 
+# P8-R3C: offline validation only. Real vendor lab is explicit opt-in and
+# never runs as part of CI or default Phase 8 verification.
+add_test(
+    NAME Phase8R3CVendorLabContractTest
+    COMMAND "${Python3_EXECUTABLE}" -B
+        "${CMAKE_CURRENT_SOURCE_DIR}/integration/test_phase8_r3c_vendor_lab_contract.py"
+)
+set_tests_properties(Phase8R3CVendorLabContractTest PROPERTIES
+    LABELS "threading;pjsip;integration;audit"
+    TIMEOUT 30
+)
+
 # P8-R3A checks every known production PJSUA2 callback override. It fails
 # closed on new callback methods and does not claim vendor-source quiescence.
 add_test(

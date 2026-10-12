@@ -171,6 +171,36 @@ Four existing member resets (three outgoing: stop, `make_call()` exception,
 test fails if this set drifts. The failure/temporary paths need dedicated
 vendor lifetime analysis before a production code change.
 
+### P8-R3C: real-vendor instrumentation versus safety proof
+
+#### What new property does an opt-in P8-R3C observation establish?
+
+If the lab is built from the verified vendor commit, linked against the
+isolated `libpjsua2` archive and produces the required sanitized marker set,
+it establishes that one real vendor callback reached a point **after**
+`Call::lookup()` and **before** the application callback gate, with a bounded
+pause and a same-call-id, same-thread callback ingress correlation.
+The outgoing disconnected-call release subsequently returned in that run.
+It still does **not** observe every dispatch path or show that the release
+had no unseen concurrent vendor callback.
+
+#### Why is destroying `TrackedCall` while the vendor hook is paused excluded?
+
+The vendor has already obtained a borrowed C++ pointer. Calling the real
+destructor from another thread while that pointer is held would risk a
+use-after-free rather than measure a safe release contract. P8-R3C observes
+the pre-gate interval without dereferencing a retired pointer and does not
+claim that production has a lookup-to-return lifetime ticket. A genuine
+teardown synchronization mechanism still requires further proof and review.
+
+#### Why must an absent live marker be INCONCLUSIVE instead of PASS?
+
+A broken vendor build, failed Asterisk response, missed callback or an
+unmatched callback thread can all prevent the intended event from being
+observed. The strict summary parser rejects missing, duplicate, modified
+or `INCONCLUSIVE` markers, and a nonzero process exit cannot be considered
+success. Passing offline contract checks alone does not run PJPROJECT.
+
 ## Phase boundary
 
 Phase 8 remains pending final maintainer acceptance. One production-owned

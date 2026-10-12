@@ -105,6 +105,27 @@ A controlled vendor-level live probe observed:
 
 That earlier vendor-level probe alone did not prove production-client recovery or universal callback quiescence. The later P8-R2B experiment adds separate, bounded outgoing production-owned Account evidence.
 
+### P8-R3C: isolated real-vendor dispatch observability
+
+The P8-R3C lab is compiled **only** with `ENABLE_PHASE8_R3C_LAB=ON`
+and a separately exported/build PJPROJECT 2.17 checkout. A scoped vendor
+patch instruments the real `Endpoint::on_call_state` and
+`Endpoint::on_call_media_state` paths **after** successful `Call::lookup()`
+but **before** further C++ dispatch. An opt-in outgoing production client
+records a paired, same-call-id/same-thread notification just before entering
+its local `CallbackActivityGate`, and a bounded 500 ms vendor pause.
+No `Call*` is passed to the hook, and the lab deliberately does not destroy
+a `TrackedCall` while the hook is paused.
+
+This observes two real vendor paths when the lab actually runs. It does not
+instrument every C++ dispatch site (transaction, SDP, transfer, media jobs,
+incoming call, failed `make_call()`), nor establish a barrier against any
+callback source. Normal production builds do not compile the hook; the
+normal installed PJPROJECT prefix is never modified. The source review's
+four member release paths and temporary rejected Call paths remain audited
+by P8-R3B. `UNPROVEN/BLOCKED` cannot be upgraded using a bounded event
+observation or exit code alone.
+
 ## Verification strategy
 
 All normal C++/Python contract tests are registered through the repository's canonical `tests/CMakeLists.txt`; there is no phase-specific CMake project.

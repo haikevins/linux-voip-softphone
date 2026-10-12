@@ -14,6 +14,11 @@
 #include <thread>
 #include <utility>
 
+#if defined(VOIP_PHASE8_R3C_LAB)
+// Lab-only observation point; must be absent in default production builds.
+extern "C" void voip_phase8_r3c_app_before_gate(int call_id, unsigned kind) noexcept;
+#endif
+
 namespace voip::pjsip {
 
 struct SipOutgoingCallClient::CallbackContext final
@@ -115,6 +120,9 @@ class SipOutgoingCallClient::TrackedCall final : public pj::Call
 
     void onCallState(pj::OnCallStateParam & /*parameter*/) override
     {
+#if defined(VOIP_PHASE8_R3C_LAB)
+        voip_phase8_r3c_app_before_gate(getId(), 1U);
+#endif
         auto callback_entry = context_->call_activity.enter();
         if (!callback_entry.admitted()) {
             return;
@@ -140,6 +148,9 @@ class SipOutgoingCallClient::TrackedCall final : public pj::Call
 
     void onCallMediaState(pj::OnCallMediaStateParam & /*parameter*/) override
     {
+#if defined(VOIP_PHASE8_R3C_LAB)
+        voip_phase8_r3c_app_before_gate(getId(), 2U);
+#endif
         auto callback_entry = context_->call_activity.enter();
         if (!callback_entry.admitted()) {
             return;
