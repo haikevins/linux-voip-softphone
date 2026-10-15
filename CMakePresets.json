@@ -103,6 +103,20 @@
       "output": {
         "outputOnFailure": true
       }
+    },
+    {
+      "name": "qt-debug",
+      "configurePreset": "qt-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "qt-pjsip-debug",
+      "configurePreset": "qt-pjsip-debug",
+      "output": {
+        "outputOnFailure": true
+      }
     }
   ]
 }

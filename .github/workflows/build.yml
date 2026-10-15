@@ -18,7 +18,8 @@ jobs:
             libgtest-dev \
             qt6-base-dev \
             qt6-declarative-dev \
-            qml6-module-qtquick
+            qml6-module-qtquick \
+            qml6-module-qtqml-workerscript
 
       - name: Configure
         run: cmake --preset debug
@@ -29,5 +30,8 @@ jobs:
       - name: Configure Qt/QML GUI
         run: cmake --preset qt-debug
 
-      - name: Build Qt/QML GUI
-        run: cmake --build --preset qt-debug --target voip_gui -j 2
+      - name: Build Qt/QML GUI and Phase 7 tests
+        run: cmake --build --preset qt-debug -j 2
+
+      - name: Run Phase 7 Qt tests
+        run: ctest --test-dir build/qt-debug -L phase7 --no-tests=error --output-on-failure

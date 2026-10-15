@@ -16,6 +16,7 @@ sudo apt install -y \
     qt6-base-dev \
     qt6-declarative-dev \
     qml6-module-qtquick \
+    qml6-module-qtqml-workerscript \
     ca-certificates
 
 echo
