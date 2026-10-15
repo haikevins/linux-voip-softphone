@@ -2,11 +2,11 @@
 
 ## Status
 
-**Implementation and automated verification complete; live GUI/SIP acceptance and milestone closure are pending.**
+**Completed for the documented local lab.**
 
-Target milestone: `v0.8-qt-gui`.
+Target milestone: `v0.8-qt-gui`. The annotated tag is created only after the Phase 7 branch is reviewed, merged into `main`, and the merged milestone state is verified.
 
-Phase 7 adds a Qt 6/QML front end to the SIP/audio runtime built in Phases 5 and 6. The current branch has passed the Phase 7 automated verifier, including the Qt-only build, the Qt+PJSIP build, labeled controller/ViewModel tests, a headless GUI launch smoke test, inherited regression/quality gates, and documentation/evidence structure checks. Live registration, outgoing/incoming calls, two-way audio, and visible state transitions remain a separate manual acceptance gate before the milestone is closed.
+Phase 7 adds a Qt 6/QML front end to the SIP/audio runtime built in Phases 5 and 6. The Phase 7 automated verifier passed the Qt-only build, Qt+PJSIP build, labeled controller/ViewModel tests, headless GUI launch smoke test, inherited regression/quality gates, and documentation/evidence structure checks. Manual GUI acceptance then confirmed registration, outgoing and incoming calls, visible state changes, clear two-way audio, call duration, and diagnostics against the controlled local lab. The accepted live runtime source revision was `090c278`; the closure commit changes evidence, documentation, metadata, and structure checks rather than the GUI call path.
 
 ## Objective
 
@@ -173,7 +173,22 @@ The Phase 7 evidence namespace is:
 evidence/phase7/
 ```
 
-The milestone plan calls for reviewed GUI evidence covering registration/login, dialer, incoming call, active call, and diagnostics. Final filenames and the evidence index are closed in the evidence/closure commit after live acceptance.
+The accepted Phase 7 evidence set contains:
+
+```text
+evidence/phase7/
+├── README.md
+├── automated-verification.txt
+├── manual-verification.txt
+├── runtime-media.txt
+├── login.png
+├── dialer.png
+├── incoming-call.png
+├── active-call.png
+└── diagnostics.png
+```
+
+The five screenshots cover the masked registration screen, registered dialer, incoming-call controls, connected active call with duration, and connected-call diagnostics. The text artifacts retain concise automated, operator, and runtime-media results without committing raw SIP logs.
 
 Evidence must remain sanitized. Do not commit:
 
@@ -214,7 +229,7 @@ Phase 7 can be closed for the documented lab when:
 - sanitized GUI/evidence artifacts are recorded without credentials;
 - Phase 7 architecture/interview documentation and closure bookkeeping pass repository structure checks.
 
-The target milestone is `v0.8-qt-gui`. The tag is created only after the Phase 7 branch is reviewed, merged into `main`, and the milestone is accepted.
+The recorded automated gate, live GUI registration/call flows, clear two-way audio, sanitized evidence set, and repository structure checks satisfy these exit criteria for the documented local lab. The target milestone is `v0.8-qt-gui`; the tag is created only after the Phase 7 branch is reviewed, merged into `main`, and the merged milestone state is verified.
 
 ## References
 

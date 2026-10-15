@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation and automated verification are complete on the Phase 7 branch. Live SIP/audio GUI acceptance and milestone closure are still pending. Target milestone: `v0.8-qt-gui`.
+Implementation, automated verification, and live SIP/audio GUI acceptance are complete for the documented local lab. The accepted live runtime source revision was `090c278`; the closure commit records evidence and repository bookkeeping. Target milestone: `v0.8-qt-gui`, created only after branch review and merge into `main`.
 
 ## Purpose
 
@@ -344,7 +344,7 @@ and requires it to remain alive in the Qt event loop for the three-second smoke 
 
 ### Manual integration gate
 
-The milestone still requires a human-operated GUI against the controlled Asterisk lab to verify registration, outgoing/incoming calls, visible state changes, and two-way intelligible audio. Automated tests intentionally do not manufacture evidence for those environment-dependent outcomes.
+A human-operated GUI run against the controlled Asterisk lab verified registration, outgoing and incoming calls, visible state changes, duration/diagnostics, and clear two-way audio. Those environment-dependent outcomes are recorded under `evidence/phase7/`; automated tests intentionally do not manufacture or replace that evidence.
 
 ## Design rationale
 

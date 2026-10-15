@@ -1,0 +1,20 @@
+Phase 7 automated verification summary (sanitized)
+
+Accepted source revision for live GUI runtime: 090c278
+Closure branch: phase/7-qt-gui
+
+Command:
+  ./scripts/phase7/verify.sh
+
+Observed final result:
+- inherited Phase 6 quality/regression gate: PASS
+- PJSIP dependency and audio preflight: PASS
+- clang-format / clang-tidy / sanitizer gates: PASS
+- Qt-only configure/build and regression: PASS
+- Qt+PJSIP configure/build: PASS
+- Phase 7 labeled controller/ViewModel/GUI smoke suite: 11/11 PASS
+- documentation structure verification: PASS
+- evidence structure verification: PASS
+- overall Phase 7 automated verification: PASS
+
+The automated verifier does not by itself prove live registration, remote ringing, or audible media. Those outcomes are recorded separately in manual-verification.txt and runtime-media.txt.

@@ -1069,13 +1069,15 @@ v0.7-rtp-audio
 
 # 10. Phase 7 — Qt/QML GUI
 
+**Trạng thái:** đã nghiệm thu cho lab nội bộ. Qt/QML build, ViewModel/controller/backend boundary, registration, outgoing/incoming call, clear two-way audio, call duration, diagnostics, automated verification và evidence được ghi tại `docs/phase7/README.md`, `docs/architecture/qt-qml-gui.md` và `evidence/phase7/`. Milestone release identifier: `v0.8-qt-gui` (chỉ tạo/push annotated tag sau khi branch Phase 7 được review, merge vào `main` và trạng thái merged được xác minh).
+
 Thời gian:
 
 ```text
 5–8 ngày
 ```
 
-Bây giờ mới làm UI.
+UI đã được triển khai theo architecture `QML -> ViewModel -> CallManager -> SipEngine`. Mock dưới đây là định hướng ban đầu; bản nghiệm thu giữ registration/dialer/incoming/active-call/diagnostics và chưa đưa Mic/Mute thành control Phase 7.
 
 UI:
 
@@ -1136,6 +1138,10 @@ Không gọi PJSIP trực tiếp từ QML.
 
 ```text
 evidence/phase7/
+├── README.md
+├── automated-verification.txt
+├── manual-verification.txt
+├── runtime-media.txt
 ├── login.png
 ├── dialer.png
 ├── incoming-call.png
@@ -1902,10 +1908,10 @@ Bạn nói:
 
 ## Tiến độ hiện tại
 
-Repository đã nghiệm thu **Phase 0 đến Phase 6** cho các môi trường đã ghi lại trong evidence. Phase 6 có release identifier:
+Repository đã nghiệm thu **Phase 0 đến Phase 7** cho các môi trường đã ghi lại trong evidence. Phase 7 có release identifier:
 
 ```text
-v0.7-rtp-audio
+v0.8-qt-gui
 ```
 
 Chuỗi milestone đã nghiệm thu:
@@ -1924,8 +1930,10 @@ Phase 4 — SIP + Asterisk lab
 Phase 5 — PJSIP CLI softphone
         ↓
 Phase 6 — RTP + Audio
+        ↓
+Phase 7 — Qt/QML GUI
 ```
 
-Bước tiếp theo là **Phase 7 — Qt/QML GUI**, sử dụng signaling và media path đã kiểm thử. Việc tạo/push annotated tag `v0.7-rtp-audio` và merge branch là thao tác release riêng biệt; kiểm tra Git refs thay vì suy đoán từ roadmap.
+Bước tiếp theo là **Phase 8 — Multithreading**, giữ nguyên boundary QML/ViewModel/application/backend đã nghiệm thu ở Phase 7. Việc tạo/push annotated tag `v0.8-qt-gui` và merge branch là thao tác release riêng biệt; kiểm tra Git refs thay vì suy đoán từ roadmap.
 
 Mục tiêu không phải hoàn thành softphone càng nhanh càng tốt. Mục tiêu là đến cuối project, **mỗi dòng quan trọng trong JD đều có một artifact trong GitHub để bạn chỉ thẳng cho interviewer xem**.
