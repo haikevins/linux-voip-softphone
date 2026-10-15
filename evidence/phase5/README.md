@@ -2,7 +2,7 @@
 
 ## Status
 
-Complete. Phase 5 established the PJSUA2/PJSIP CLI softphone and the `v0.6-pjsip-cli` milestone.
+Completed. Phase 5 established the PJSUA2/PJSIP CLI softphone and the `v0.6-pjsip-cli` milestone.
 
 ## Verification scope
 

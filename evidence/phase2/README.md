@@ -2,7 +2,7 @@
 
 ## Status
 
-Complete. Phase 2 established Linux process, signal, file-descriptor, and Unix-domain-socket foundations and the `v0.3-linux-system` milestone.
+Completed. Phase 2 established Linux process, signal, file-descriptor, and Unix-domain-socket foundations and the `v0.3-linux-system` milestone.
 
 ## Verification scope
 

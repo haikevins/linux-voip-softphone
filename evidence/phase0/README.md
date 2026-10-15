@@ -2,7 +2,7 @@
 
 ## Status
 
-Complete. Phase 0 established the repository, CMake project skeleton, baseline tests, and the `v0.1-project-skeleton` milestone.
+Completed. Phase 0 established the repository, CMake project skeleton, baseline tests, and the `v0.1-project-skeleton` milestone.
 
 ## Verification scope
 

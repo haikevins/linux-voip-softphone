@@ -2,15 +2,40 @@
 
 ## Status
 
-Implemented on `phase/6-rtp-audio` through Commit 8 (`bbaec38`). The media implementation, RTP diagnostics, and automated verification have passed the documented local checks. Phase 6 milestone closure and sanitized committed evidence remain separate work.
+Completed — milestone `v0.7-rtp-audio`.
 
 ## Purpose
 
-Extend the Phase 5 PJSUA2 call lifecycle from SIP signaling with a null audio device to real Linux capture/playback and observable RTP media, without moving SIP signaling or media transport into the project's Phase 3 socket classes.
+Extend Phase 5's PJSUA2 call clients with Linux sound devices, two-way media routing and observable RTP statistics without reimplementing RTP or weakening the established SIP lifecycle.
+
+The principal components are:
+
+```text
+src/pjsip/
+├── SipCallAudioConfig.hpp
+├── Pjsua2AudioDeviceManager.*
+├── Pjsua2CallAudioBridge.*
+├── Pjsua2RtpDiagnostics.*
+├── SipOutgoingCallClient.*
+└── SipIncomingCallClient.*
+
+src/network/
+└── RtpStatistics.*
+
+src/app/
+├── sip_call_main.cpp
+└── sip_listen_main.cpp
+```
 
 ## Scope
 
-This document describes audio-device selection, the bidirectional PJSUA2 conference-bridge wiring, media callback/lifetime handling, and read-only RTP diagnostics for the existing one-shot outgoing/incoming call CLIs. It does not specify a general audio mixer, custom RTP socket implementation, echo-cancellation policy, secure media negotiation, multi-call mixing, or a Qt user interface.
+- Select capture/playback devices through the PJSUA2 device manager.
+- Connect active call media in both directions using the PJSUA2 conference bridge.
+- Coordinate call-media callbacks with synchronous CLI execution.
+- Read RTP/RTCP stream information without interfering with RTP transport.
+- Keep device checks, automated tests and live listening as separate verification layers.
+
+Not covered: custom RTP sockets, audio mixing policy, echo cancellation tuning, SRTP policy, multi-call orchestration, or the Qt/QML interface.
 
 ## Architecture model
 
@@ -18,107 +43,132 @@ This document describes audio-device selection, the bidirectional PJSUA2 confere
 
 ```text
 sip_call_main / sip_listen_main
-  |  parse CLI options; read password from environment; print call/media results
-  v
+    |
+    v
 SipOutgoingCallClient / SipIncomingCallClient
-  |  own pj::Endpoint, pj::Account, pj::Call and callback state
-  |  select devices after Endpoint::libStart()
-  +--> Pjsua2AudioDeviceManager --> AudioDeviceSelection (name/driver/capability)
-  |                                |
-  |                                +--> pj::AudDevManager device IDs
-  |
-  +--> onCallMediaState() --> Pjsua2CallAudioBridge
-  |                            |
-  |              capture AudioMedia --startTransmit--> call AudioMedia
-  |              call AudioMedia --startTransmit--> playback AudioMedia
-  |                            |
-  |                    PJMEDIA conference bridge / RTP stream
-  |
-  +--> rtp_diagnostics() --> Pjsua2RtpDiagnostics
-                              |  pj::Call::getStreamInfo/getStreamStat
-                              +--> network::RtpStatistics (calculation only)
+    |  own endpoint, account, call and callback state
+    |
+    +--> Pjsua2AudioDeviceManager --> runtime capture / playback IDs
+    |
+    +--> onCallMediaState() --> Pjsua2CallAudioBridge
+    |                            capture --> call --> RTP transmit
+    |                            RTP receive --> call --> playback
+    |
+    +--> Pjsua2RtpDiagnostics --> pj::Call stream info/statistics
+                                   |
+                                   +--> RtpStatistics (arithmetic only)
 ```
 
-SIP establishes the dialog and negotiates the media parameters through SDP. PJSIP/PJMEDIA owns the call's RTP stream, codec, and conference bridge. `src/network/RtpStatistics.*` is a small arithmetic/data boundary; it does not receive packets or implement a second RTP stack. The older `src/network/UdpSocket` exercises general networking independently.
+SIP/SDP handles signaling and codec negotiation; PJSUA2/PJMEDIA owns the conference bridge, codec and RTP/RTCP streams. The Phase 3 `UdpSocket` is independent and is **not** used to implement another call-media transport.
 
 ### Audio-device selection
 
-`SipCallAudioConfig` supplies independent `AudioDeviceSelector` values for capture and playback. Both default to the device named `default`; the CLI can additionally provide a driver such as `ALSA`. The PJSUA2 adapter converts `AudDevManager::enumDev2()` results to core descriptors and resolves IDs by the selection policy and required direction. IDs are discovered at runtime, not stored as hard-coded device numbers. `configure_pjsua2_audio_devices()` calls `setCaptureDev()` and `setPlaybackDev()` with the resolved IDs.
+`SipCallAudioConfig` supplies separate `AudioDeviceSelector` settings for microphone capture and playback. Each defaults to the name `default`, with an optional driver qualifier such as `ALSA`.
 
-The Phase 6 preflight (`scripts/phase6/verify-audio-environment.sh`) checks for PJPROJECT >= 2.17, compiles/links a PJSUA2 smoke program, and enumerates devices to require at least one capture-capable and one playback-capable device. That capability check does **not** prove the specific headset chosen by the user, active media routing, or audible output; live calls provide those separate observations.
+The adapter enumerates `pj::AudDevManager::enumDev2()`, resolves a device with the required capture/playback capability, and applies the resulting runtime ID through `setCaptureDev()` and `setPlaybackDev()`. Keeping device IDs out of stored configuration avoids depending on enumeration order across reboots or hot-plug events.
+
+The preflight script checks the PJPROJECT dependency and requires available capture/playback capabilities. This is a **capability** check: a real call and listening test are still needed to confirm the chosen headset and the actual audio route.
 
 ### Bidirectional media connection
 
-`active_audio_media_indices()` selects entries from `pj::CallInfo::media` whose type is audio and whose status is `PJSUA_CALL_MEDIA_ACTIVE`. `connect_active_call_audio()` connects each selected media index in both directions:
+`active_audio_media_indices()` filters the call's media entries to active audio streams (`PJSUA_CALL_MEDIA_ACTIVE`). The media bridge uses `AudioMedia::startTransmit()` for both links:
 
 ```text
-microphone / capture device  -->  PJSUA2 call AudioMedia  -->  RTP send
-RTP receive                 -->  PJSUA2 call AudioMedia  -->  speaker / playback device
+microphone --> capture AudioMedia --> call AudioMedia --> RTP send
+speaker   <-- playback AudioMedia <-- call AudioMedia <-- RTP receive
 ```
 
-Each path uses PJSUA2 `AudioMedia::startTransmit()`. The directionality is important: connecting only capture-to-call or only call-to-playback produces a one-way application audio path even when the SIP dialog and RTP stream appear healthy.
+The transmit API defines source-to-destination flow. Wiring only one link can create one-way audio even when SIP signaling has succeeded.
 
 ### RTP/media diagnostics
 
-`Pjsua2RtpDiagnostics` reads every currently active audio media index with `pj::Call::getStreamInfo()` and `getStreamStat()`. It exposes the media index, codec, codec clock rate, receive/transmit payload types, transmitted packet count, receive statistics, mean receive jitter, mean RTCP round-trip time, and last transmitted RTP sequence/timestamp.
+`Pjsua2RtpDiagnostics` obtains information for active audio media through `pj::Call::getStreamInfo()` and `getStreamStat()`. `RtpStatistics` provides independent arithmetic for calculated fields; neither class reads or sends raw RTP packets.
 
-The mapping is deliberately read-only:
-
-| CLI field | Implementation source | Interpretation |
+| CLI output | Source | Meaning |
 |---|---|---|
-| `[MEDIA] codec`, `clock-rate`, `rx-pt`, `tx-pt` | `pj::StreamInfo` | Negotiated stream information at snapshot time |
-| `[RTP] received`, `lost` | `pj::StreamStat::rtcp.rxStat` | Receiver-side packet counters supplied by PJMEDIA |
-| `[RTP] sent` | `pj::StreamStat::rtcp.txStat.pkt` | Transmitter-side packet count supplied by PJMEDIA |
-| `[RTP] loss` | `RtpStatistics` | `100 * lost / (received + lost)`; zero when the denominator is zero |
-| `[RTP] jitter` | `rtcp.rxStat.jitterUsec.mean / 1000` | Mean receive jitter, in milliseconds |
-| `[RTP] rtt` | `rtcp.rttUsec.mean / 1000` | Mean RTCP round-trip time, in milliseconds |
-| `[RTP] tx-seq`, `tx-ts` | `rtcp.rtpTxLastSeq`, `rtcp.rtpTxLastTs` | Last transmit sequence and RTP timestamp reported by PJMEDIA |
+| `[MEDIA] codec`, `clock-rate`, `rx-pt`, `tx-pt` | `pj::StreamInfo` | Negotiated codec and payload types at snapshot time |
+| `[RTP] received`, `lost` | `pj::StreamStat::rtcp.rxStat` | Receiver-side statistics reported by PJMEDIA |
+| `[RTP] sent` | `pj::StreamStat::rtcp.txStat.pkt` | Transmitted packets reported by PJMEDIA |
+| `[RTP] loss` | `RtpStatistics` | `100 * lost / (received + lost)`; zero for a zero denominator |
+| `[RTP] jitter` | `rtcp.rxStat.jitterUsec.mean / 1000` | Mean receive jitter in milliseconds |
+| `[RTP] rtt` | `rtcp.rttUsec.mean / 1000` | Mean RTCP round-trip time in milliseconds |
+| `[RTP] tx-seq`, `tx-ts` | `rtcp.rtpTxLastSeq`, `rtcp.rtpTxLastTs` | Last transmitted RTP sequence/timestamp reported by PJMEDIA |
 
-Negative timing values are clamped to zero by the adapter. A zero timing/counter value can also mean that a meaningful estimate is not yet available; it must not automatically be described as proof of perfect network quality. The diagnostics snapshot is not an independent packet capture, and a successful `audio=yes` flag is not a substitute for listening in both directions.
+The adapter clamps negative timing values to zero. A displayed zero can also mean that sufficient measurements are unavailable; it is not proof of perfect network quality. Media flags and counters cannot replace audible listening tests or independent packet inspection.
 
 ## Runtime and lifecycle
 
-For both outgoing and incoming calls, the client initializes the endpoint, creates the SIP transport, starts PJSUA2, configures capture/playback devices, and then creates/registers the account. Outgoing creates a tracked call and dials; incoming constructs its tracked call from the ID supplied by `onIncomingCall()` and answers after the configured delay.
+### Starting the audio-enabled client
 
-Call-state and media-state callbacks have distinct jobs. `onCallState()` records confirmation/disconnection; `onCallMediaState()` checks for active audio, makes both conference-bridge connections, and records `media_connected=true` only after wiring succeeds. Shared results are synchronized with mutexes and condition variables. Callback error handlers record failures rather than allowing exceptions to escape PJSUA2 callback boundaries.
+```text
+Endpoint::libCreate / libInit
+           |
+           v
+create SIP transport; Endpoint::libStart
+           |
+           v
+resolve and set capture / playback devices
+           |
+           v
+create + register account
+           |
+           +--> outgoing: makeCall()
+           |
+           +--> incoming: onIncomingCall() / answer
+           v
+onCallMediaState() --> connect both audio directions
+           |
+           v
+confirmed call + media_connected
+           |
+           v
+snapshot [MEDIA] and [RTP] while call is active
+           |
+           v
+hangup --> disconnected --> ordered cleanup
+```
 
-The CLI waits until the call is confirmed **and** media is connected (or a failure/timeout occurs), optionally holds the call, and snapshots `[MEDIA]` and `[RTP]` **before** requesting hangup. An empty active-audio diagnostics result is reported as an error by the CLI. Reading the stream after the call has been destroyed would be invalid.
+`onCallState()` tracks call confirmation and disconnection. `onCallMediaState()` connects active audio and sets `media_connected` only after successful bridge configuration. Callback state is synchronized through the existing mutex/condition-variable model; callback errors are recorded instead of escaping across the PJSUA2 callback boundary.
 
-`rtp_diagnostics()` synchronizes with call callbacks using the existing call-callback mutex. Teardown preserves the Phase 5 sequencing: request hangup, wait for disconnection, serialize with callbacks before destroying the tracked call object, allow the PJSUA call slot to become free, shut down the account without forced deletion, then destroy the endpoint. The code relies on PJSUA2/PJMEDIA's media lifecycle; it does not implement a separate manual RTP transport or custom conference-bridge teardown routine.
+The CLI uses bounded waits for signaling and media readiness. A missing active audio stream at diagnostics time is an error rather than a successful empty measurement.
+
+### Shutdown and ownership
+
+Diagnostic reads synchronize with call callbacks and occur before hangup. Teardown follows Phase 5's ownership rules: request hangup, wait for disconnection, synchronize with callbacks, release the tracked call safely, allow the underlying call slot to become free, shut down the account without forced deletion, then destroy the endpoint. PJSUA2/PJMEDIA remains responsible for its own RTP and conference-bridge resources.
 
 ## Verification strategy
 
-Run `./scripts/phase6/verify.sh` with the locally installed PJPROJECT 2.17 visible through `PKG_CONFIG_PATH`. The script performs audio preflight, reuses the complete Phase 5 gate (format, dependency check, PJSIP and non-PJSIP builds/tests, sanitizers, and clang-tidy), then requires at least four `RtpStatisticsTest` cases and three `Pjsua2RtpDiagnosticsTest` cases. Discovery counts prevent a missing focused test suite from giving a vacuous pass.
+Automated verification uses:
 
-Automated tests validate the device mapping/selection and active-media index policy, pure packet-loss arithmetic, PJSUA2 stream-stat mapping, and the existing SIP CLI contracts. They do not create a substitute for the real Asterisk/handset test.
+```bash
+./scripts/phase6/verify.sh
+```
 
-The separate live gate makes one call in each direction between the local SIP client (`1002`) and the phone (`1001`). For **each** call, confirm registration (`200 OK`), `CONFIRMED`, `connected=yes audio=yes`, audible speech both ways, nonzero received and sent packet counts, consistent `[MEDIA]`/`[RTP]` output, and clean disconnection. Packet loss and jitter are observations, not fixed acceptance thresholds for all networks.
+This performs the audio preflight, reuses the Phase 5 verification gates, and exercises focused RTP arithmetic, PJSUA2 diagnostics, device-selection behavior, media-index policy and CLI contracts. The phase verifier also checks that the focused test suites are actually discovered rather than silently running no cases.
 
-The Commit 7 lab runs established the initial reference observations (not permanent performance baselines): outgoing PCMU/8 kHz with RX 1,062 / TX 937 / loss 0%; incoming PCMU/8 kHz with RX 946 / TX 946 / loss 0%. Both calls held for approximately 20 seconds, produced live diagnostics, and were reported audibly bidirectional. The Commit 8 wrapper separately passed the local automated gate. These observations should only be added to committed evidence after sanitization and review.
+Live tests require one outgoing and one incoming Asterisk call. For each direction verify registration, confirmed signaling, active negotiated audio, nonzero RX/TX packet counters, actual intelligible speech in both directions, and clean disconnection. `docs/phase6/README.md` contains the reproducible CLI commands; `evidence/phase6/` contains the observed acceptance results.
+
+The separate Wireshark study inspects selected RTP streams during one controlled outgoing call. It is useful for reasoning about sequence numbers, timestamps and observed pauses, but cannot establish universal packet-loss or silence-suppression behavior.
 
 ## Design rationale
 
-- Preserve the proven Phase 5 signaling, callback synchronization, and teardown model instead of rebuilding it for audio.
-- Select devices by stable name and optional driver; numeric device enumeration can change after reboot or hot-plugging.
-- Let PJSUA2/PJMEDIA own conference mixing, codecs, and RTP transport; only bridge the application's chosen audio devices to the active call stream.
-- Keep the arithmetic `RtpStatistics` independent of PJSUA2 to permit non-PJSIP unit tests; isolate library-specific conversion in the PJSUA2 adapter.
-- Snapshot statistics while the call is still active, and keep actual human listening as an explicit acceptance gate.
+- Reuse the Phase 5 signaling and callback lifecycle rather than introducing a parallel call controller.
+- Resolve audio devices by name/driver and capability instead of a hard-coded numeric index.
+- Use PJMEDIA's existing bridge and RTP implementation rather than a second media transport.
+- Separate pure RTP statistics calculations from PJSUA2-specific field mapping for testability.
+- Capture media diagnostics before teardown, when the call and streams still exist.
+- Treat preflight, runtime counters, packet inspection and human listening as complementary checks.
 
 ## Phase boundary
 
-Phase 5's null device was sufficient to prove SIP registration and call lifecycle. Phase 6 adds live capture/playback, bidirectional conference-bridge connections, media-connected state, read-only stream statistics, and automated/live validation. This does not yet provide production-grade long-running call orchestration, encryption policy, or a Qt/QML interface; those require separate design and verification.
+Phase 5 validated SIP registration and call state using a null audio device. Phase 6 adds real capture/playback selection, call-media routing, observable RTP/RTCP statistics and confirmed two-way audio in the local test environment. Long-running call control, security policy, audio enhancement and Qt/QML integration remain outside this architecture's scope.
 
 ## References
 
 - `docs/phase6/README.md`
 - `docs/phase5/README.md`
 - `docs/architecture/pjsip-cli.md`
+- `docs/protocols/rtp.md`
 - `docs/interview/phase6-questions.md`
 - `scripts/phase6/verify.sh`
-- `scripts/phase6/verify-audio-environment.sh`
-- `src/pjsip/Pjsua2AudioDeviceManager.*`
-- `src/pjsip/Pjsua2CallAudioBridge.*`
-- `src/pjsip/Pjsua2RtpDiagnostics.*`
-- `src/network/RtpStatistics.*`
-- `src/pjsip/SipOutgoingCallClient.*`
-- `src/pjsip/SipIncomingCallClient.*`
+- `evidence/phase6/README.md`

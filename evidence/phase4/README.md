@@ -2,7 +2,7 @@
 
 ## Status
 
-Complete. Phase 4 established the SIP/Asterisk lab and the `v0.5-sip-asterisk` milestone.
+Completed. Phase 4 established the SIP/Asterisk lab and the `v0.5-sip-asterisk` milestone.
 
 ## Verification scope
 

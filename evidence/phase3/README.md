@@ -2,7 +2,7 @@
 
 ## Status
 
-Complete. Phase 3 established TCP/UDP networking and the `v0.4-networking` milestone.
+Completed. Phase 3 established TCP/UDP networking and the `v0.4-networking` milestone.
 
 ## Verification scope
 

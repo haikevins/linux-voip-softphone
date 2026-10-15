@@ -2,7 +2,7 @@
 
 ## Status
 
-Complete. Phase 1 established the Modern C++ core and the `v0.2-cpp-core` milestone.
+Completed. Phase 1 established the Modern C++ core and the `v0.2-cpp-core` milestone.
 
 ## Verification scope
 

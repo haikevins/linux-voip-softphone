@@ -1,47 +1,55 @@
-# Phase 6 Evidence — RTP and audio
+# Phase 6 Evidence — RTP and Audio
 
 ## Status
 
-Phase 6 acceptance evidence was committed in Commit 10 (`8337297`) and the separate single-study Wireshark addition in Commit 11 (`4582baa`); both were reviewed for milestone closure. Implementation, audio/RTP diagnostics, automated checks, outgoing/incoming audible two-way calls, and the controlled approximately 75-second outgoing-call RTP study passed their stated local verification scope. The original evidence artifacts retain their revision boundaries; publishing an annotated release tag is a separate Git operation.
+Completed. Phase 6 established RTP audio streaming and the `v0.7-rtp-audio` milestone.
 
 ## Verification scope
 
-Real Linux audio capture/playback with stable ALSA device selection, PJSUA2 bidirectional call-media routing, PCMU media negotiation, live RTP/RTCP statistics, signaling and clean teardown, full regression/quality checks, and operator-confirmed two-way listening. The recorded values are observations from specific local runs, not network-quality guarantees.
+Evidence covers Linux capture/playback preflight, active two-way PJSUA2 media routing, PCMU negotiation, RTP/RTCP diagnostics, automated quality gates, outgoing/incoming Asterisk calls, audible speech in both directions, and one controlled Wireshark RTP study.
 
 ## Environment
 
-Ubuntu workstation with PJPROJECT/PJSIP 2.17, the existing local Asterisk lab, and a phone SIP client. Workstation account 1002 and phone account 1001 were the test endpoints. The workstation used the `default` capture/playback selector with the `ALSA` driver and an operator-selected headset. Credentials were supplied through a runtime environment variable; values are not retained.
+The recorded lab used Ubuntu, PJPROJECT/PJSIP 2.17, Asterisk 20, workstation SIP account `1002`, and phone SIP account `1001`. Audio capture and playback were selected by `default` with the `ALSA` driver; the operator used the selected headset. Addresses, actual device mappings and RTP measurements are local observations, not portable defaults.
 
 ## Automated verification
 
-`./scripts/phase6/verify.sh` passed on 2026-09-30. The wrapper exercised PJSUA2 audio preflight, inherited Phase 5 build/quality/regression gates, plus focused RTP and PJSUA2 diagnostics suites. The document-only Commit 9 verification also passed the documentation structure check. See `automated-verification.txt` for observed test counts and the revisions involved.
+The Phase 6 verifier is:
+
+```bash
+./scripts/phase6/verify.sh
+```
+
+The 2026-09-30 run passed audio preflight, the inherited Phase 5 checks, focused RTP/diagnostics tests, and quality gates. The recorded counts were 45/45 PJSIP-focused, 117/117 full PJSIP, 117/117 sanitizer, 72/72 non-PJSIP, 4/4 RTP statistics, and 3/3 PJSUA2 diagnostics tests, plus `clang-tidy`. These counts identify the tested revision, not a fixed future test contract. See `automated-verification.txt` for details.
 
 ## Manual verification
 
-On 2026-09-30, the operator tested outgoing 1002-to-1001 and incoming 1001-to-1002 calls against local Asterisk using the Commit 7 media implementation (`273ad69`). Both reached SIP 200/CONFIRMED with `audio=yes`, PCMU at 8 kHz, nonzero bidirectional RTP counters, and clean disconnect. The operator separately confirmed that actual audio was audible in both directions during each call. See `live-registration.txt`, `live-outgoing-call.txt`, and `live-incoming-call.txt`. A separate controlled approximately 75-second outgoing call was captured on 2026-09-30 for the wire-level RTP study. The operator confirmed intelligible speech in both directions and deliberately remained silent for approximately seconds 60–75 of the call. Wireshark analyzed two selected opposite-direction RTP streams in this single study, recorded in `rtp-wireshark.txt`. The observed pauses and RTP timestamps are documented separately from packet-loss estimates; measurements apply only to the selected streams.
+On 2026-09-30, outgoing (`1002` to `1001`) and incoming (`1001` to `1002`) calls both reached confirmed signaling, negotiated PCMU at 8 kHz, recorded nonzero RTP send/receive counts, and disconnected cleanly. The operator separately confirmed intelligible speech in both directions for each call.
+
+A distinct approximately 75-second outgoing-call Wireshark study inspected two selected opposite-direction RTP streams. The operator reported a deliberate silence interval near seconds 60–75. Selected streams showed expected 160-tick timestamp steps for 20-ms PCMU packets and no sequence errors or packet loss under the recorded Wireshark analysis. Pauses in one direction are documented as observations; their cause is not conclusively established. This study does not replace the incoming-call verification.
 
 ## Artifacts
 
-- `automated-verification.txt`: exact observed gate results and test counts.
-- `live-registration.txt`: registration observed during both live call programs.
-- `live-outgoing-call.txt`: outgoing call/media counters and listening outcome.
-- `live-incoming-call.txt`: incoming call/media counters and listening outcome.
-- `phase6-summary.txt`: concise acceptance record and revision boundaries.
-- `rtp-wireshark.txt`: selected RTP headers and opposite-direction Wireshark statistics from the single controlled approximately 75-second study, including the operator-reported 15-second silence interval.
+- `automated-verification.txt` — gates, observed test counts and revision context.
+- `live-registration.txt` — registration results observed during the live tests.
+- `live-outgoing-call.txt` — outgoing call, codec/RTP measurements and listening result.
+- `live-incoming-call.txt` — incoming call, codec/RTP measurements and listening result.
+- `rtp-wireshark.txt` — selected RTP header and stream statistics for the controlled study.
+- `phase6-summary.txt` — consolidated acceptance record and commit boundaries.
 
-Only curated summaries are retained; full terminal transcripts and captures are deliberately excluded.
+These are curated summaries rather than complete console logs or packet captures. Media implementation, verification, documentation and evidence were recorded across commits `273ad69`, `bbaec38`, `c2354b3`, `8337297` and `4582baa`; the artifacts retain their own revision context.
 
 ## Results
 
-The recorded automated and manual acceptance gates passed for the stated local configuration. RTP counters and the separate approximately 75-second Wireshark study corroborate observed packet flow in their respective tests; operator listening confirmation supports the audible-media result. Zero packet loss in the two selected Wireshark RTP streams does not establish uninterrupted media or network-wide zero loss. These findings do not cover every device, network, or future revision. The milestone closure and release-tag publication are separate from the original evidence commits.
+The recorded automated and live-call checks passed for this workstation and lab. RTP counters and Wireshark corroborate observed packet transport; the separate listening checks support the claim of audible media. Zero loss in **two selected streams** cannot establish network-wide zero loss or guarantee device behavior in other environments.
 
 ## Security and redaction
 
-No SIP credential values, Digest response headers, SDP/SRTP keys, raw SIP/PJSIP transcripts, peer contact details beyond lab extension numbers, or packet captures are retained. Runtime-only credentials are never written into evidence. The raw Wireshark capture is private and excluded from Git because PCMU payloads may reveal call audio. Review any future added logs before staging.
+Do not commit SIP passwords, Digest Authorization material, raw sensitive SIP/PJSIP logs, SDP/SRTP keys, identifiable peer details, or `.pcap`/`.pcapng` captures. PCMU RTP payloads may disclose speech. Supply credentials at runtime and sanitize new evidence before staging.
 
 ## Reproduction
 
-From the repository root, expose the existing PJPROJECT 2.17 pkg-config path and run:
+From the repository root:
 
 ```bash
 export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
@@ -50,13 +58,13 @@ export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PA
 ./scripts/quality/verify-evidence-structure.sh
 ```
 
-For the separate live gate, follow `docs/phase6/README.md`: securely supply the runtime SIP credential, select the actual capture/playback devices, make outgoing and incoming calls, verify audible speech in both directions, and inspect `[MEDIA]` and `[RTP]` before hangup. Never archive unredacted console output.
+Follow `docs/phase6/README.md` for separate outgoing/incoming live calls, device selection and human listening checks. Preserve only sanitized result summaries.
 
 ## References
 
 - `docs/phase6/README.md`
 - `docs/architecture/audio-rtp.md`
 - `docs/protocols/rtp.md`
+- `docs/interview/phase6-questions.md`
 - `scripts/phase6/verify.sh`
-- `scripts/phase6/verify-audio-environment.sh`
-- `evidence/phase5/README.md`
+- Milestone identifier `v0.7-rtp-audio`
