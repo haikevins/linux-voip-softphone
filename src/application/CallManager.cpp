@@ -33,25 +33,31 @@ CallManager::~CallManager()
     engine_.set_observer(nullptr);
 }
 
-CallState CallManager::state() const noexcept
+CallState CallManager::state() const
 {
+    const std::lock_guard lock{state_mutex_};
     return state_machine_.state();
 }
 
-const std::optional<std::string> &CallManager::peer() const noexcept
+std::optional<std::string> CallManager::peer() const
 {
+    const std::lock_guard lock{state_mutex_};
     return state_machine_.peer();
 }
 
-const std::optional<std::string> &CallManager::last_error() const noexcept
+std::optional<std::string> CallManager::last_error() const
 {
+    const std::lock_guard lock{state_mutex_};
     return state_machine_.last_error();
 }
 
 bool CallManager::register_account()
 {
-    if (!state_machine_.handle(RegisterRequested{})) {
-        return false;
+    {
+        const std::lock_guard lock{state_mutex_};
+        if (!state_machine_.handle(RegisterRequested{})) {
+            return false;
+        }
     }
 
     try {
@@ -70,8 +76,11 @@ bool CallManager::make_call(const std::string &destination)
         return false;
     }
 
-    if (!state_machine_.handle(OutgoingCallRequested{destination})) {
-        return false;
+    {
+        const std::lock_guard lock{state_mutex_};
+        if (!state_machine_.handle(OutgoingCallRequested{destination})) {
+            return false;
+        }
     }
 
     try {
@@ -86,8 +95,11 @@ bool CallManager::make_call(const std::string &destination)
 
 bool CallManager::answer_call()
 {
-    if (state_machine_.state() != CallState::Ringing) {
-        return false;
+    {
+        const std::lock_guard lock{state_mutex_};
+        if (state_machine_.state() != CallState::Ringing) {
+            return false;
+        }
     }
 
     try {
@@ -102,8 +114,11 @@ bool CallManager::answer_call()
 
 bool CallManager::hangup_call()
 {
-    if (!state_machine_.handle(HangupRequested{})) {
-        return false;
+    {
+        const std::lock_guard lock{state_mutex_};
+        if (!state_machine_.handle(HangupRequested{})) {
+            return false;
+        }
     }
 
     try {
@@ -118,36 +133,43 @@ bool CallManager::hangup_call()
 
 bool CallManager::reset()
 {
+    const std::lock_guard lock{state_mutex_};
     return state_machine_.handle(ResetRequested{});
 }
 
 void CallManager::on_registration_succeeded()
 {
+    const std::lock_guard lock{state_mutex_};
     static_cast<void>(state_machine_.handle(RegistrationSucceeded{}));
 }
 
 void CallManager::on_registration_failed(std::string reason)
 {
+    const std::lock_guard lock{state_mutex_};
     static_cast<void>(state_machine_.handle(RegistrationFailed{std::move(reason)}));
 }
 
 void CallManager::on_incoming_call(std::string peer)
 {
+    const std::lock_guard lock{state_mutex_};
     static_cast<void>(state_machine_.handle(IncomingCallReceived{std::move(peer)}));
 }
 
 void CallManager::on_remote_ringing()
 {
+    const std::lock_guard lock{state_mutex_};
     static_cast<void>(state_machine_.handle(RemoteRinging{}));
 }
 
 void CallManager::on_call_connected()
 {
+    const std::lock_guard lock{state_mutex_};
     static_cast<void>(state_machine_.handle(CallConnected{}));
 }
 
 void CallManager::on_call_ended()
 {
+    const std::lock_guard lock{state_mutex_};
     const auto state = state_machine_.state();
     if (state == CallState::Calling || state == CallState::Ringing ||
         state == CallState::Connected) {
@@ -159,17 +181,20 @@ void CallManager::on_call_ended()
 
 void CallManager::on_call_failed(std::string reason)
 {
+    const std::lock_guard lock{state_mutex_};
     static_cast<void>(state_machine_.handle(CallFailed{std::move(reason)}));
 }
 
 bool CallManager::fail_registration(std::string reason)
 {
+    const std::lock_guard lock{state_mutex_};
     static_cast<void>(state_machine_.handle(RegistrationFailed{std::move(reason)}));
     return false;
 }
 
 bool CallManager::fail_call(std::string reason)
 {
+    const std::lock_guard lock{state_mutex_};
     static_cast<void>(state_machine_.handle(CallFailed{std::move(reason)}));
     return false;
 }

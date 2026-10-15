@@ -3,6 +3,7 @@
 #include "application/SipEngine.hpp"
 #include "core/CallStateMachine.hpp"
 
+#include <mutex>
 #include <optional>
 #include <string>
 
@@ -19,9 +20,9 @@ class CallManager final : public SipEngineObserver
     CallManager(CallManager &&) = delete;
     CallManager &operator=(CallManager &&) = delete;
 
-    [[nodiscard]] CallState state() const noexcept;
-    [[nodiscard]] const std::optional<std::string> &peer() const noexcept;
-    [[nodiscard]] const std::optional<std::string> &last_error() const noexcept;
+    [[nodiscard]] CallState state() const;
+    [[nodiscard]] std::optional<std::string> peer() const;
+    [[nodiscard]] std::optional<std::string> last_error() const;
 
     [[nodiscard]] bool register_account();
     [[nodiscard]] bool make_call(const std::string &destination);
@@ -42,6 +43,7 @@ class CallManager final : public SipEngineObserver
     [[nodiscard]] bool fail_call(std::string reason);
 
     SipEngine &engine_;
+    mutable std::mutex state_mutex_;
     CallStateMachine state_machine_;
 };
 

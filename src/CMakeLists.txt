@@ -44,6 +44,7 @@ if(ENABLE_PJSIP)
         pjsip/Pjsua2AudioDeviceManager.cpp
         pjsip/Pjsua2CallAudioBridge.cpp
         pjsip/Pjsua2RtpDiagnostics.cpp
+        pjsip/Pjsua2SipEngine.cpp
         pjsip/SipIncomingCallCli.cpp
         pjsip/SipIncomingCallClient.cpp
         pjsip/SipOutgoingCallCli.cpp
