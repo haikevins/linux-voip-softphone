@@ -13,6 +13,9 @@ sudo apt install -y \
     clang-tidy \
     pkg-config \
     libgtest-dev \
+    qt6-base-dev \
+    qt6-declarative-dev \
+    qml6-module-qtquick \
     ca-certificates
 
 echo

@@ -29,6 +29,14 @@
       }
     },
     {
+      "name": "qt-debug",
+      "inherits": "debug",
+      "displayName": "Debug + Qt/QML GUI",
+      "cacheVariables": {
+        "ENABLE_QT_GUI": "ON"
+      }
+    },
+    {
       "name": "sanitizers",
       "inherits": "debug",
       "displayName": "Debug + ASan + UBSan",
@@ -54,6 +62,10 @@
     {
       "name": "pjsip-debug",
       "configurePreset": "pjsip-debug"
+    },
+    {
+      "name": "qt-debug",
+      "configurePreset": "qt-debug"
     },
     {
       "name": "sanitizers",

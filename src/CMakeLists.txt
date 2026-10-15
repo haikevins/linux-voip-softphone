@@ -109,3 +109,7 @@ if(ENABLE_PJSIP)
     project_set_warnings(voip_sip_listen)
     project_enable_sanitizers(voip_sip_listen)
 endif()
+
+if(ENABLE_QT_GUI)
+    add_subdirectory(gui)
+endif()
