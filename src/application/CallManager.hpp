@@ -23,6 +23,7 @@ class CallManager final : public SipEngineObserver
     [[nodiscard]] CallState state() const;
     [[nodiscard]] std::optional<std::string> peer() const;
     [[nodiscard]] std::optional<std::string> last_error() const;
+    [[nodiscard]] bool incoming_call() const;
 
     [[nodiscard]] bool register_account();
     [[nodiscard]] bool make_call(const std::string &destination);
@@ -45,6 +46,7 @@ class CallManager final : public SipEngineObserver
     SipEngine &engine_;
     mutable std::mutex state_mutex_;
     CallStateMachine state_machine_;
+    bool incoming_call_{false};
 };
 
 } // namespace voip::application

@@ -51,6 +51,12 @@ std::optional<std::string> CallManager::last_error() const
     return state_machine_.last_error();
 }
 
+bool CallManager::incoming_call() const
+{
+    const std::lock_guard lock{state_mutex_};
+    return incoming_call_;
+}
+
 bool CallManager::register_account()
 {
     {
@@ -81,6 +87,7 @@ bool CallManager::make_call(const std::string &destination)
         if (!state_machine_.handle(OutgoingCallRequested{destination})) {
             return false;
         }
+        incoming_call_ = false;
     }
 
     try {
@@ -134,7 +141,11 @@ bool CallManager::hangup_call()
 bool CallManager::reset()
 {
     const std::lock_guard lock{state_mutex_};
-    return state_machine_.handle(ResetRequested{});
+    if (!state_machine_.handle(ResetRequested{})) {
+        return false;
+    }
+    incoming_call_ = false;
+    return true;
 }
 
 void CallManager::on_registration_succeeded()
@@ -152,7 +163,11 @@ void CallManager::on_registration_failed(std::string reason)
 void CallManager::on_incoming_call(std::string peer)
 {
     const std::lock_guard lock{state_mutex_};
-    static_cast<void>(state_machine_.handle(IncomingCallReceived{std::move(peer)}));
+    const auto previous_direction = incoming_call_;
+    incoming_call_ = true;
+    if (!state_machine_.handle(IncomingCallReceived{std::move(peer)})) {
+        incoming_call_ = previous_direction;
+    }
 }
 
 void CallManager::on_remote_ringing()
@@ -176,13 +191,17 @@ void CallManager::on_call_ended()
         static_cast<void>(state_machine_.handle(HangupRequested{}));
     }
 
-    static_cast<void>(state_machine_.handle(CallEnded{}));
+    if (state_machine_.handle(CallEnded{})) {
+        incoming_call_ = false;
+    }
 }
 
 void CallManager::on_call_failed(std::string reason)
 {
     const std::lock_guard lock{state_mutex_};
-    static_cast<void>(state_machine_.handle(CallFailed{std::move(reason)}));
+    if (state_machine_.handle(CallFailed{std::move(reason)})) {
+        incoming_call_ = false;
+    }
 }
 
 bool CallManager::fail_registration(std::string reason)

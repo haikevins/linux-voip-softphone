@@ -37,6 +37,15 @@
       }
     },
     {
+      "name": "qt-pjsip-debug",
+      "inherits": "debug",
+      "displayName": "Debug + Qt/QML GUI + PJSIP",
+      "cacheVariables": {
+        "ENABLE_QT_GUI": "ON",
+        "ENABLE_PJSIP": "ON"
+      }
+    },
+    {
       "name": "sanitizers",
       "inherits": "debug",
       "displayName": "Debug + ASan + UBSan",
@@ -66,6 +75,10 @@
     {
       "name": "qt-debug",
       "configurePreset": "qt-debug"
+    },
+    {
+      "name": "qt-pjsip-debug",
+      "configurePreset": "qt-pjsip-debug"
     },
     {
       "name": "sanitizers",

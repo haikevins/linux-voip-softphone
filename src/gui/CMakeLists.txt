@@ -1,4 +1,5 @@
 qt_add_executable(voip_gui
+    CallViewModel.cpp
     main.cpp
 )
 
@@ -20,6 +21,11 @@ target_link_libraries(voip_gui
         Qt6::Qml
         Qt6::Quick
 )
+
+if(ENABLE_PJSIP)
+    target_link_libraries(voip_gui PRIVATE voip::pjsip)
+    target_compile_definitions(voip_gui PRIVATE VOIP_GUI_WITH_PJSIP=1)
+endif()
 
 project_set_warnings(voip_gui)
 project_enable_sanitizers(voip_gui)
