@@ -5,10 +5,11 @@ namespace {
 
 void print_usage(std::ostream &output)
 {
-    output << "Usage: rtsp-lab --help\n"
-           << "\n"
-           << "Phase 10 RTSP mini-lab scaffold.\n"
-           << "Protocol parsing and RTSP session behavior are added in later commits.\n";
+    output
+        << "Usage: rtsp-lab --help\n"
+        << "\n"
+        << "Phase 10 RTSP mini-lab.\n"
+        << "RTSP/1.0 message parsing is available; session behavior is added in later commits.\n";
 }
 
 } // namespace
