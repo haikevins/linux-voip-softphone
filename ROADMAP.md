@@ -1165,34 +1165,31 @@ Thời gian:
 5–8 ngày
 ```
 
-Thread model:
+Thread model đã triển khai:
 
 ```text
-┌──────────────┐
-│ Qt UI Thread │
-└──────┬───────┘
-       │ events
-       ▼
-┌─────────────────┐
-│ Application Core│
-└──────┬──────────┘
-       │
- ┌─────┼───────────────┐
- │     │               │
- ▼     ▼               ▼
-SIP   Metrics         Logging
-Thread Thread          Thread
+Qt UI thread
+    -> CallViewModel
+    -> CallManager
+    -> ThreadedSipEngine
+    -> WorkerExecutor
+    -> dedicated SIP worker
+    -> concrete SipEngine / Pjsua2SipEngine
 ```
 
-Bạn implement:
+Phase 8 triển khai:
 
 ```text
+WorkerExecutor
+ThreadedSipEngine
 ThreadSafeQueue
 mutex
 condition_variable
-atomic
-worker thread
+atomic stress-test accounting
+dedicated SIP worker
 ```
+
+Các metrics/logging worker riêng trong sketch ban đầu không được thêm ở Phase 8 vì chưa có yêu cầu runtime cần chúng.
 
 Ví dụ:
 
@@ -1200,13 +1197,15 @@ Ví dụ:
 template<typename T>
 class ThreadSafeQueue {
 public:
-    void push(T value);
-    T waitAndPop();
+    bool push(T value);
+    std::optional<T> wait_and_pop();
+    void close();
 
 private:
     std::queue<T> queue_;
     std::mutex mutex_;
     std::condition_variable condition_;
+    bool closed_{false};
 };
 ```
 
@@ -1233,10 +1232,11 @@ docs/architecture/threading-model.md
 và:
 
 ```text
-evidence/07-threading/
+evidence/phase8/
+├── README.md
+├── automated-verification.txt
 ├── stress-test.txt
-├── tsan-report.txt
-└── threading-diagram.png
+└── tsan-report.txt
 ```
 
 Điều nhà tuyển dụng muốn nghe không phải:
@@ -1908,10 +1908,10 @@ Bạn nói:
 
 ## Tiến độ hiện tại
 
-Repository đã nghiệm thu **Phase 0 đến Phase 7** cho các môi trường đã ghi lại trong evidence. Phase 7 có release identifier:
+Repository đã nghiệm thu **Phase 0 đến Phase 8** cho các môi trường đã ghi lại trong evidence. Phase 8 có release identifier:
 
 ```text
-v0.8-qt-gui
+v0.9-threading
 ```
 
 Chuỗi milestone đã nghiệm thu:
@@ -1932,8 +1932,10 @@ Phase 5 — PJSIP CLI softphone
 Phase 6 — RTP + Audio
         ↓
 Phase 7 — Qt/QML GUI
+        ↓
+Phase 8 — Multithreading
 ```
 
-Bước tiếp theo là **Phase 8 — Multithreading**, giữ nguyên boundary QML/ViewModel/application/backend đã nghiệm thu ở Phase 7. Việc tạo/push annotated tag `v0.8-qt-gui` và merge branch là thao tác release riêng biệt; kiểm tra Git refs thay vì suy đoán từ roadmap.
+Bước tiếp theo là **Phase 9 — Debugging, memory và core dump**, giữ nguyên worker/threading boundary đã nghiệm thu ở Phase 8. Việc tạo/push annotated tag `v0.9-threading` và merge branch là thao tác release riêng biệt; kiểm tra Git refs thay vì suy đoán từ roadmap.
 
 Mục tiêu không phải hoàn thành softphone càng nhanh càng tốt. Mục tiêu là đến cuối project, **mỗi dòng quan trọng trong JD đều có một artifact trong GitHub để bạn chỉ thẳng cho interviewer xem**.

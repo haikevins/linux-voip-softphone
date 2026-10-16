@@ -1,0 +1,20 @@
+Phase 8 queue stress-test summary
+=================================
+
+Test:
+ThreadSafeQueueStressTest.TransfersOneHundredThousandEventsExactlyOnce
+
+Configuration:
+- events: 100000
+- producers: 4
+- consumers: 4
+- shared accounting: atomic counters
+- queue shutdown: close then drain remaining values
+
+Accepted result:
+- PASS in the Phase 8 local verifier
+- included in the Phase 8 CI test set
+
+The test verifies that the configured event IDs are transferred exactly once
+under this producer/consumer workload. It is stress evidence, not a proof that
+all possible schedules are race-free.

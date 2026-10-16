@@ -38,9 +38,11 @@ scripts/
 ├── phase6/
 │   ├── verify.sh
 │   └── verify-audio-environment.sh
-└── phase7/
-    ├── verify.sh
-    └── verify-gui-smoke.sh
+├── phase7/
+│   ├── verify.sh
+│   └── verify-gui-smoke.sh
+└── phase8/
+    └── verify.sh
 ```
 
 ## Responsibilities
@@ -72,6 +74,7 @@ scripts/
 ./scripts/phase5/verify.sh
 ./scripts/phase6/verify.sh
 ./scripts/phase7/verify.sh
+./scripts/phase8/verify.sh
 ```
 
 `phase6/verify.sh` first checks the audio environment, then reuses the Phase 5
@@ -84,5 +87,11 @@ configurations, runs the Phase 7-labeled controller/ViewModel tests, executes
 the offscreen GUI launch smoke test, and validates documentation/evidence
 structure. Live SIP registration/calls and audible two-way audio remain manual
 evidence even after the automated script passes.
+
+`phase8/verify.sh` reuses the Phase 7 gate, performs a fresh non-PJSIP build,
+runs the Phase 8 worker/threaded-SIP/queue/stress tests, executes the full
+regression suite, and builds the ThreadSanitizer preset. Runtime TSan tests are
+enabled locally with `RUN_TSAN_TESTS=1` only on supported hosts; the required
+CI TSan job is authoritative when the local runtime cannot initialize.
 
 Phase-specific documentation under `docs/phaseN/` remains the authoritative source for each phase workflow and prerequisites.

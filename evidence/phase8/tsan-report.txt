@@ -1,0 +1,16 @@
+Phase 8 ThreadSanitizer summary
+===============================
+
+Local host:
+- ThreadSanitizer preset configure/build: PASS
+- instrumented test runtime: SKIPPED
+- reason: documented host limitation where TSan runtime may fail to initialize
+  because of unexpected shadow-memory mapping
+- no local runtime-PASS claim is made
+
+CI:
+- Phase 8 branch required jobs: 4/4 PASS at revision 38217be
+- the dedicated ThreadSanitizer runtime gate is part of the required CI set
+- authoritative runtime TSan result for this milestone: PASS
+
+A successful TSan build is not treated as equivalent to runtime race detection.

@@ -2,7 +2,9 @@
 
 ## Status
 
-**In progress** — target milestone `v0.9-threading`.
+**Completed** — milestone `v0.9-threading`.
+
+Phase 8 moves SIP backend construction, command execution, and destruction off the Qt UI thread through a dedicated worker while preserving the Phase 7 QML/ViewModel/application boundary. Worker lifecycle, queue behavior, the 100,000-event stress case, full regression, and the CI ThreadSanitizer gate passed the documented automated checks.
 
 ## Objective
 
@@ -136,13 +138,17 @@ The development host used for this phase can build ThreadSanitizer binaries but 
 
 ## Evidence
 
-Phase 8 evidence is finalized in the closure commit under:
+The accepted Phase 8 evidence set is:
 
 ```text
 evidence/phase8/
+├── README.md
+├── automated-verification.txt
+├── stress-test.txt
+└── tsan-report.txt
 ```
 
-It should retain concise, sanitized verification summaries rather than raw authentication-bearing SIP traces. Queue stress and ThreadSanitizer results should identify what was actually run and distinguish local build-only coverage from CI runtime coverage.
+The summaries record the complete Phase 8 verifier, the 100,000-event producer/consumer stress test, and the distinction between local TSan build coverage and CI runtime TSan coverage. They intentionally avoid raw SIP/authentication traces.
 
 ## Interview focus
 
@@ -171,7 +177,7 @@ Phase 8 is ready for milestone closure when:
 - ThreadSanitizer runtime verification passes in CI or another supported host;
 - architecture, interview review, and sanitized Phase 8 evidence are present.
 
-The target milestone identifier is `v0.9-threading`; the Git tag itself is created only after review, merge to `main`, and closure verification.
+The recorded automated verification, queue/lifecycle tests, stress test, CI ThreadSanitizer runtime gate, documentation, and sanitized evidence satisfy these exit criteria. The `v0.9-threading` tag is created only after review, merge to `main`, and verification of the merged milestone state.
 
 ## References
 
