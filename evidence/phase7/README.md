@@ -2,7 +2,7 @@
 
 ## Status
 
-Completed for the documented local lab. Phase 7 established the Qt/QML GUI milestone with release identifier `v0.8-qt-gui`; the annotated tag is created only after the Phase 7 branch is reviewed, merged into `main`, and the merged state is verified.
+Completed. Phase 7 established the Qt/QML GUI and the `v0.8-qt-gui` milestone.
 
 ## Verification scope
 
