@@ -61,6 +61,24 @@ gtest_discover_tests(worker_executor_tests
         LABELS phase8
 )
 
+add_executable(threaded_sip_engine_tests
+    unit/test_threaded_sip_engine.cpp
+)
+
+target_link_libraries(threaded_sip_engine_tests
+    PRIVATE
+        voip::core
+        GTest::gtest_main
+)
+
+project_set_warnings(threaded_sip_engine_tests)
+project_enable_sanitizers(threaded_sip_engine_tests)
+
+gtest_discover_tests(threaded_sip_engine_tests
+    PROPERTIES
+        LABELS phase8
+)
+
 add_test(
     NAME LinuxProcessLifecycleTest
     COMMAND lab_process_lifecycle --self-test

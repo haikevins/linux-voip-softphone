@@ -1,5 +1,6 @@
 add_library(voip_core
     application/CallManager.cpp
+    application/ThreadedSipEngine.cpp
     audio/AudioDeviceSelection.cpp
     core/BuildInfo.cpp
     core/CallState.cpp
