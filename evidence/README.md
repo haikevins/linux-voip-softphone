@@ -70,11 +70,15 @@ evidence/
 │   ├── automated-verification.txt
 │   ├── stress-test.txt
 │   └── tsan-report.txt
-└── phase9/
+├── phase9/
+│   ├── README.md
+│   ├── automated-verification.txt
+│   ├── gdb-core-analysis.txt
+│   └── asan-report.txt
+└── phase10/
     ├── README.md
     ├── automated-verification.txt
-    ├── gdb-core-analysis.txt
-    └── asan-report.txt
+    └── integration-verification.txt
 ```
 
 A phase may contain additional artifacts or scenario directories only when they represent real verification needs. Directory symmetry is not required.

@@ -6,7 +6,7 @@ The repository is intentionally phase-driven: each milestone adds production cod
 
 ## Current status
 
-Completed through **Phase 9 — Debugging, Memory Diagnostics, and Core Dumps** for the documented development and CI environments. Phase 9 release identifier: `v0.9-diagnostics` (reserved for an annotated tag after the Phase 9 branch is reviewed, merged into `main`, and the closure state is verified; this document does not assert that the tag is already published).
+Completed through **Phase 10 — RTSP Mini-Lab** for the documented development, loopback, and CI environments. Phase 10 release identifier: `v0.10-rtsp-lab`; Git refs are authoritative for whether the annotated tag has been published.
 
 Implemented so far:
 
@@ -35,8 +35,13 @@ Implemented so far:
 - Reproducible GDB `SIGSEGV` stop, explicit saved-core generation, and fresh-process core backtrace analysis.
 - Historical heap use-after-free reproduction followed by an explicit ownership/lifetime repair verified with ASan+UBSan.
 - Safe Phase 9 CTest regression plus a consolidated verifier and required CI coverage for the diagnostic path.
+- RTSP/1.0 request/response models with bounded parsing, `CSeq`, `Session`, and `Content-Length` handling.
+- RTSP client-session workflow over TCP for `OPTIONS`, `DESCRIBE`, `SETUP`, `PLAY`, and `TEARDOWN`.
+- SDP control-URI resolution plus RTP/AVP unicast UDP Transport parsing.
+- RTP version-2 header inspection, UDP reception, and observed sequence-gap statistics.
+- Repeated loopback end-to-end RTSP control/RTP verification integrated into the inherited regression, static-analysis, and sanitizer gates.
 
-Phase 6 established the reusable SIP/RTP/audio path, Phase 7 added the Qt/QML presentation boundary, and Phase 8 moved concrete SIP backend ownership and commands behind a dedicated worker executor with stress/ThreadSanitizer verification. Phase 9 keeps those production boundaries intact while adding a separate debugging laboratory for controlled crashes, saved-core GDB analysis, sanitizer-driven lifetime diagnosis, and repaired-path regression. Curated Phase 9 verification summaries are retained under `evidence/phase9/`.
+Phase 6 established the reusable SIP/RTP/audio path, Phase 7 added the Qt/QML presentation boundary, Phase 8 moved concrete SIP backend ownership and commands behind a dedicated worker executor, and Phase 9 added the debugging/core-dump laboratory. Phase 10 keeps the accepted production softphone path unchanged and adds a separate RTSP/SDP/RTP mini-lab that demonstrates the streaming control-to-media flow with deterministic loopback verification. Curated Phase 10 verification summaries are retained under `evidence/phase10/`.
 
 ## Repository layout
 
@@ -84,10 +89,10 @@ Verify the dependency independently:
 ./scripts/phase5/verify-pjsip-dependency.sh
 ```
 
-Run the complete Phase 9 automated verification suite (which inherits the Phase 8 gate and adds GDB/core-dump plus sanitizer-backed lifetime verification):
+Run the complete Phase 10 automated verification suite (which inherits the Phase 9 gate and adds RTSP/SDP/RTP plus repeated loopback integration verification):
 
 ```bash
-./scripts/phase9/verify.sh
+./scripts/phase10/verify.sh
 ```
 
 ## Qt/QML GUI application
@@ -152,12 +157,14 @@ v0.4-networking        Phase 3 — TCP/UDP networking
 v0.5-sip-asterisk      Phase 4 — SIP + Asterisk lab
 v0.6-pjsip-cli         Phase 5 — PJSIP CLI softphone
 v0.7-rtp-audio         Phase 6 — RTP + Audio
-v0.8-qt-gui            Phase 7 — Qt/QML GUI (release identifier)
-v0.9-threading         Phase 8 — Multithreading (release identifier)
-v0.9-diagnostics       Phase 9 — Debugging, memory diagnostics, and core dumps (release identifier)
+v0.8-qt-gui            Phase 7 — Qt/QML GUI
+v0.9-diagnostics       Phase 9 — Debugging, memory diagnostics, and core dumps
+v0.10-rtsp-lab         Phase 10 — RTSP mini-lab
 ```
 
-Phase 9 acceptance is complete for the documented development and CI environments based on the recorded saved-core GDB workflow, repaired lifetime regression, sanitizer verification, inherited regression gate, and CI checks. The annotated `v0.9-diagnostics` tag is created only after this branch is reviewed, merged into `main`, and the milestone state is verified. Next planned phase: **Phase 10 — RTSP mini-lab**.
+Phase 8 — Multithreading is an accepted internal phase between `v0.8-qt-gui` and `v0.9-diagnostics`; the current Git history does not use a standalone Phase 8 release tag.
+
+Phase 10 acceptance is complete for the documented development, loopback, and CI environments based on protocol/session/media tests, repeated end-to-end loopback verification, inherited regression gates, static analysis, sanitizers, and branch CI. The `v0.10-rtsp-lab` annotated tag is a separate release operation performed only after closure review, merge to `main`, and post-merge verification. Next planned phase: **Phase 11 — Final Engineering Release**.
 
 ## Documentation
 

@@ -25,6 +25,9 @@ jobs:
       - name: Phase 9 repaired lifetime regression (ASan/UBSan)
         run: ctest --preset sanitizers -L phase9 --no-tests=error --output-on-failure
 
+      - name: Phase 10 RTSP scaffold smoke test
+        run: ctest --preset sanitizers -L phase10 --no-tests=error --output-on-failure
+
   thread-sanitizer:
     runs-on: ubuntu-24.04
     steps:
