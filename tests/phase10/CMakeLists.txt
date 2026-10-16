@@ -41,3 +41,21 @@ gtest_discover_tests(phase10_rtsp_session_tests
     PROPERTIES
         LABELS "phase10;rtsp;session"
 )
+
+add_executable(phase10_rtsp_media_tests
+    test_rtsp_media.cpp
+)
+
+target_link_libraries(phase10_rtsp_media_tests
+    PRIVATE
+        voip::rtsp_protocol
+        GTest::gtest_main
+)
+
+project_set_warnings(phase10_rtsp_media_tests)
+project_enable_sanitizers(phase10_rtsp_media_tests)
+
+gtest_discover_tests(phase10_rtsp_media_tests
+    PROPERTIES
+        LABELS "phase10;rtsp;media"
+)

@@ -1,8 +1,12 @@
 add_library(rtsp_protocol
+    RtpPacket.cpp
+    RtpReceiver.cpp
     RtspClientSession.cpp
     RtspMessage.cpp
     RtspParser.cpp
     RtspTcpConnection.cpp
+    RtspTransport.cpp
+    SdpDescription.cpp
 )
 
 add_library(voip::rtsp_protocol ALIAS rtsp_protocol)
