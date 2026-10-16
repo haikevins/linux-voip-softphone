@@ -1,4 +1,5 @@
 add_library(voip_core
+    application/CallManager.cpp
     audio/AudioDeviceSelection.cpp
     core/BuildInfo.cpp
     core/CallState.cpp
@@ -43,6 +44,7 @@ if(ENABLE_PJSIP)
         pjsip/Pjsua2AudioDeviceManager.cpp
         pjsip/Pjsua2CallAudioBridge.cpp
         pjsip/Pjsua2RtpDiagnostics.cpp
+        pjsip/Pjsua2SipEngine.cpp
         pjsip/SipIncomingCallCli.cpp
         pjsip/SipIncomingCallClient.cpp
         pjsip/SipOutgoingCallCli.cpp
@@ -108,4 +110,8 @@ if(ENABLE_PJSIP)
 
     project_set_warnings(voip_sip_listen)
     project_enable_sanitizers(voip_sip_listen)
+endif()
+
+if(ENABLE_QT_GUI)
+    add_subdirectory(gui)
 endif()

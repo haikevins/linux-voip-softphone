@@ -25,6 +25,24 @@ project_enable_sanitizers(unit_tests)
 include(GoogleTest)
 gtest_discover_tests(unit_tests)
 
+add_executable(call_manager_tests
+    unit/test_call_manager.cpp
+)
+
+target_link_libraries(call_manager_tests
+    PRIVATE
+        voip::core
+        GTest::gtest_main
+)
+
+project_set_warnings(call_manager_tests)
+project_enable_sanitizers(call_manager_tests)
+
+gtest_discover_tests(call_manager_tests
+    PROPERTIES
+        LABELS phase7
+)
+
 add_test(
     NAME LinuxProcessLifecycleTest
     COMMAND lab_process_lifecycle --self-test
@@ -134,5 +152,38 @@ if(ENABLE_PJSIP)
     )
     set_tests_properties(PjsipCliContractIntegrationTest PROPERTIES
         LABELS "pjsip;integration;cli"
+    )
+endif()
+
+if(ENABLE_QT_GUI)
+    add_executable(gui_view_model_tests
+        unit/test_call_view_model.cpp
+        ${PROJECT_SOURCE_DIR}/src/gui/CallViewModel.cpp
+    )
+
+    target_link_libraries(gui_view_model_tests
+        PRIVATE
+            voip::core
+            Qt6::Core
+            GTest::gtest_main
+    )
+
+    project_set_warnings(gui_view_model_tests)
+    project_enable_sanitizers(gui_view_model_tests)
+
+    gtest_discover_tests(gui_view_model_tests
+        PROPERTIES
+            LABELS phase7
+    )
+
+    add_test(
+        NAME Phase7GuiLaunchSmokeTest
+        COMMAND
+            bash
+            ${PROJECT_SOURCE_DIR}/scripts/phase7/verify-gui-smoke.sh
+            $<TARGET_FILE:voip_gui>
+    )
+    set_tests_properties(Phase7GuiLaunchSmokeTest PROPERTIES
+        LABELS "gui;phase7;smoke"
     )
 endif()

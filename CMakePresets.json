@@ -29,6 +29,23 @@
       }
     },
     {
+      "name": "qt-debug",
+      "inherits": "debug",
+      "displayName": "Debug + Qt/QML GUI",
+      "cacheVariables": {
+        "ENABLE_QT_GUI": "ON"
+      }
+    },
+    {
+      "name": "qt-pjsip-debug",
+      "inherits": "debug",
+      "displayName": "Debug + Qt/QML GUI + PJSIP",
+      "cacheVariables": {
+        "ENABLE_QT_GUI": "ON",
+        "ENABLE_PJSIP": "ON"
+      }
+    },
+    {
       "name": "sanitizers",
       "inherits": "debug",
       "displayName": "Debug + ASan + UBSan",
@@ -56,6 +73,14 @@
       "configurePreset": "pjsip-debug"
     },
     {
+      "name": "qt-debug",
+      "configurePreset": "qt-debug"
+    },
+    {
+      "name": "qt-pjsip-debug",
+      "configurePreset": "qt-pjsip-debug"
+    },
+    {
       "name": "sanitizers",
       "configurePreset": "sanitizers"
     },
@@ -75,6 +100,20 @@
     {
       "name": "sanitizers",
       "configurePreset": "sanitizers",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "qt-debug",
+      "configurePreset": "qt-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "qt-pjsip-debug",
+      "configurePreset": "qt-pjsip-debug",
       "output": {
         "outputOnFailure": true
       }

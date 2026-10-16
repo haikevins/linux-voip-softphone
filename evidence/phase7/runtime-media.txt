@@ -1,0 +1,24 @@
+Phase 7 live SIP/media observations (sanitized)
+
+Accepted runtime source revision: 090c278
+
+Registration:
+- SIP registration completed successfully with status 200 OK.
+
+Call/media observations:
+- live calls reached confirmed signaling state.
+- negotiated audio codec: PCMU at 8 kHz.
+- media direction: sendrecv.
+- nonzero RTP receive packet counters were observed.
+- nonzero RTP transmit packet counters were observed.
+- sampled RX packet loss reported 0.0%.
+- sampled TX packet loss reported 0.0%.
+- jitter and RTT statistics were available from PJSUA2.
+
+Operator observation:
+- clear intelligible speech was confirmed in both directions for outgoing and incoming GUI calls.
+
+Notes:
+- transient PJSIP transport retry messages were observed during some INVITE attempts, but accepted calls subsequently reached confirmed state.
+- this file is a curated summary, not a raw PJSIP terminal transcript.
+- no password, Digest Authorization material, SRTP inline key, or packet capture is retained.

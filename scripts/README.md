@@ -35,9 +35,12 @@ scripts/
 ├── phase5/
 │   ├── verify.sh
 │   └── verify-pjsip-dependency.sh
-└── phase6/
+├── phase6/
+│   ├── verify.sh
+│   └── verify-audio-environment.sh
+└── phase7/
     ├── verify.sh
-    └── verify-audio-environment.sh
+    └── verify-gui-smoke.sh
 ```
 
 ## Responsibilities
@@ -68,11 +71,18 @@ scripts/
 ./scripts/quality/verify-evidence-structure.sh
 ./scripts/phase5/verify.sh
 ./scripts/phase6/verify.sh
+./scripts/phase7/verify.sh
 ```
 
 `phase6/verify.sh` first checks the audio environment, then reuses the Phase 5
 quality and regression gate and explicitly runs the RTP statistics and PJSUA2
 RTP diagnostics suites. It validates only automated checks; outgoing/incoming
 calls, audible two-way audio, and live RTP results remain manual gates.
+
+`phase7/verify.sh` reuses the Phase 6 gate, builds the Qt-only and Qt+PJSIP
+configurations, runs the Phase 7-labeled controller/ViewModel tests, executes
+the offscreen GUI launch smoke test, and validates documentation/evidence
+structure. Live SIP registration/calls and audible two-way audio remain manual
+evidence even after the automated script passes.
 
 Phase-specific documentation under `docs/phaseN/` remains the authoritative source for each phase workflow and prerequisites.

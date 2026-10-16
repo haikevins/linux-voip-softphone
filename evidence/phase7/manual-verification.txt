@@ -1,0 +1,24 @@
+Phase 7 manual GUI acceptance (sanitized)
+
+Accepted runtime source revision: 090c278
+GUI account: 1002
+Peer: 1001
+
+Registration: PASS
+Outgoing call: PASS
+Outgoing two-way audio: PASS - speech was clear and intelligible in both directions
+Incoming call: PASS
+Incoming two-way audio: PASS - speech was clear and intelligible in both directions
+Hangup -> Ready: PASS
+Call duration: PASS
+Diagnostics: PASS
+Visible GUI state transitions: PASS
+
+Retained screenshots:
+- login.png
+- dialer.png
+- incoming-call.png
+- active-call.png
+- diagnostics.png
+
+No SIP password, Digest Authorization header, SRTP key, or raw packet capture is retained in this evidence.

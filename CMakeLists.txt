@@ -17,6 +17,7 @@ option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
 option(ENABLE_CLANG_TIDY "Run clang-tidy during compilation" OFF)
 option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 option(ENABLE_PJSIP "Enable PJSIP/PJSUA2 integration" OFF)
+option(ENABLE_QT_GUI "Enable the Qt 6/QML desktop application" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -29,6 +30,11 @@ project_enable_clang_tidy()
 
 if(ENABLE_PJSIP)
     project_setup_pjsip_dependency()
+endif()
+
+if(ENABLE_QT_GUI)
+    project_setup_qt_dependency()
+    qt_standard_project_setup()
 endif()
 
 add_subdirectory(src)

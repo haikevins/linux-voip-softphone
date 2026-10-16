@@ -19,7 +19,7 @@ expected_scenario_h2=$'## Purpose\n## Preconditions\n## Procedure\n## Observatio
 
 [[ -f evidence/README.md ]] || error "missing evidence/README.md"
 
-for n in 0 1 2 3 4 5 6; do
+for n in 0 1 2 3 4 5 6 7; do
     f="evidence/phase${n}/README.md"
     [[ -f "$f" ]] || { error "missing $f"; continue; }
 
@@ -44,6 +44,20 @@ for artifact in \
     phase6-summary.txt; do
     f="evidence/phase6/${artifact}"
     [[ -s "$f" ]] || error "missing or empty Phase 6 evidence artifact: $f"
+done
+
+# Phase 7 retains concise summaries plus the reviewed GUI screenshots.
+for artifact in \
+    automated-verification.txt \
+    manual-verification.txt \
+    runtime-media.txt \
+    login.png \
+    dialer.png \
+    incoming-call.png \
+    active-call.png \
+    diagnostics.png; do
+    f="evidence/phase7/${artifact}"
+    [[ -s "$f" ]] || error "missing or empty Phase 7 evidence artifact: $f"
 done
 
 for f in evidence/phase4/registration/README.md evidence/phase4/call-flow/README.md; do

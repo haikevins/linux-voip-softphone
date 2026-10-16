@@ -6,7 +6,7 @@ The repository is intentionally phase-driven: each milestone adds production cod
 
 ## Current status
 
-Completed through **Phase 6 — RTP and audio** for the documented local lab. Phase 6 release identifier: `v0.7-rtp-audio` (reserved for an annotated tag after the closure commit is verified and pushed; this document does not assert that the tag is already published).
+Completed through **Phase 7 — Qt/QML GUI** for the documented local lab. Phase 7 release identifier: `v0.8-qt-gui` (reserved for an annotated tag after the Phase 7 branch is reviewed, merged into `main`, and the closure state is verified; this document does not assert that the tag is already published).
 
 Implemented so far:
 
@@ -22,8 +22,12 @@ Implemented so far:
 - CLI incoming-call lifecycle with ringing and auto-answer support.
 - Automated PJSIP contract, regression, sanitizer, and static-analysis verification.
 - Scrubbed runtime evidence that excludes SIP credentials and keying material.
+- Optional Qt 6/QML GUI build with a QML -> ViewModel -> CallManager -> SipEngine boundary.
+- Long-lived PJSUA2 GUI backend for registration plus one active outgoing or incoming call.
+- GUI registration, dialer, incoming-call answer/hangup, active-call duration, and diagnostics screens.
+- Deterministic CallManager/ViewModel tests and an offscreen GUI startup smoke test.
 
-Phase 6 routes active PJSUA2 call audio to Linux capture/playback devices and exposes read-only media/RTP diagnostics in outgoing and incoming CLIs. Local outgoing and incoming calls passed operator-confirmed two-way audio and live RTP checks. A separate, controlled approximately 75-second outgoing call supplied a two-direction Wireshark RTP-header/timing study, documented in `docs/protocols/rtp.md` and `evidence/phase6/rtp-wireshark.txt`. The automated gate, architecture documentation, and sanitized evidence have been accepted for the stated local lab configuration; Qt/QML remains Phase 7 work.
+Phase 6 established the reusable SIP/RTP/audio path. Phase 7 layers a Qt/QML presentation on top without calling PJSIP directly from QML. The documented local GUI acceptance reached SIP registration, outgoing and incoming calls, visible call-state transitions, clear two-way audio, and diagnostics. Curated screenshots and sanitized summaries are retained under `evidence/phase7/`.
 
 ## Repository layout
 
@@ -38,7 +42,7 @@ src/            production C++ code
 tests/          unit and integration tests
 ```
 
-Detailed historical and future planning lives in [`README_roadmap.md`](README_roadmap.md).
+Detailed historical and future planning lives in [`ROADMAP.md`](ROADMAP.md).
 
 ## Build the non-PJSIP targets
 
@@ -71,11 +75,24 @@ Verify the dependency independently:
 ./scripts/phase5/verify-pjsip-dependency.sh
 ```
 
-Run the complete Phase 6 automated verification suite (which includes the Phase 5 gate):
+Run the complete Phase 7 automated verification suite (which inherits the Phase 6/5 gates and adds Qt/QML verification):
 
 ```bash
-./scripts/phase6/verify.sh
+./scripts/phase7/verify.sh
 ```
+
+## Qt/QML GUI application
+
+For the real GUI SIP backend, configure both Qt and PJSIP:
+
+```bash
+export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+cmake --preset qt-pjsip-debug
+cmake --build --preset qt-pjsip-debug -j
+./build/qt-pjsip-debug/src/gui/linux-voip-softphone-gui
+```
+
+The GUI keeps QML independent of PJSUA2 through `CallViewModel`, `CallManager`, and the `SipEngine` interface. Phase 7 architecture, verification, and evidence are documented in `docs/phase7/README.md`, `docs/architecture/qt-qml-gui.md`, and `evidence/phase7/`.
 
 ## PJSIP CLI applications
 
@@ -125,10 +142,11 @@ v0.3-linux-system      Phase 2 — Linux system programming and IPC
 v0.4-networking        Phase 3 — TCP/UDP networking
 v0.5-sip-asterisk      Phase 4 — SIP + Asterisk lab
 v0.6-pjsip-cli         Phase 5 — PJSIP CLI softphone
-v0.7-rtp-audio         Phase 6 — RTP + Audio (release identifier)
+v0.7-rtp-audio         Phase 6 — RTP + Audio
+v0.8-qt-gui            Phase 7 — Qt/QML GUI (release identifier)
 ```
 
-Phase 6 acceptance is complete based on the recorded local tests. The annotated Phase 6 tag is published separately after the closure commit is verified and pushed. Next planned phase: **Phase 7 — Qt/QML UI**.
+Phase 7 acceptance is complete for the documented local lab based on the recorded automated and live GUI tests. The annotated `v0.8-qt-gui` tag is created only after this branch is reviewed, merged into `main`, and the milestone state is verified. Next planned phase: **Phase 8 — multithreading**.
 
 ## Documentation
 
@@ -136,7 +154,7 @@ Useful entry points:
 
 ```text
 docs/README.md                     documentation taxonomy and required schemas
-README_roadmap.md                  complete project roadmap
+ROADMAP.md                         complete project roadmap
 docs/architecture/                component/system architecture and design rationale
 docs/protocols/                   protocol wire/session behavior
 docs/interview/                   phase review questions and answers
