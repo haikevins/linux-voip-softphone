@@ -43,6 +43,24 @@ gtest_discover_tests(call_manager_tests
         LABELS phase7
 )
 
+add_executable(worker_executor_tests
+    unit/test_worker_executor.cpp
+)
+
+target_link_libraries(worker_executor_tests
+    PRIVATE
+        voip::core
+        GTest::gtest_main
+)
+
+project_set_warnings(worker_executor_tests)
+project_enable_sanitizers(worker_executor_tests)
+
+gtest_discover_tests(worker_executor_tests
+    PROPERTIES
+        LABELS phase8
+)
+
 add_test(
     NAME LinuxProcessLifecycleTest
     COMMAND lab_process_lifecycle --self-test

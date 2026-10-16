@@ -27,6 +27,8 @@ include(Dependencies)
 include(Sanitizers)
 include(StaticAnalysis)
 
+find_package(Threads REQUIRED)
+
 project_enable_clang_tidy()
 
 if(ENABLE_PJSIP)
