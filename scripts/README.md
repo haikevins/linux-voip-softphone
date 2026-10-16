@@ -45,8 +45,13 @@ scripts/
 │   ├── verify.sh
 │   ├── capture-core-dump.sh
 │   └── verify-asan-use-after-free.sh
-└── phase10/
-    └── verify.sh
+├── phase10/
+│   └── verify.sh
+└── phase11/
+    ├── verify.sh
+    ├── verify-release-scope.sh
+    ├── verify-package.sh
+    └── verify-final-acceptance.sh
 ```
 ## Responsibilities
 
@@ -79,6 +84,9 @@ scripts/
 ./scripts/phase9/capture-core-dump.sh
 ./scripts/phase9/verify-asan-use-after-free.sh
 ./scripts/phase10/verify.sh
+./scripts/phase11/verify.sh
+./scripts/phase11/verify-package.sh
+./scripts/phase11/verify-final-acceptance.sh
 ```
 `phase6/verify.sh` first checks the audio environment, then reuses the Phase 5
 quality and regression gate and explicitly runs the RTP statistics and PJSUA2
@@ -112,3 +120,6 @@ Phase 10-labeled RTSP mini-lab tests. Commit 1 intentionally provides only the
 build/test scaffold; protocol and media behavior arrive in later Phase 10 commits.
 
 Phase-specific documentation under `docs/phaseN/` remains the authoritative source for each phase workflow and prerequisites.
+
+`phase11/verify.sh` inherits the complete Phase 10 gate, validates the published Phase 10 baseline, runs final packaged-system acceptance, and enforces the Phase 11 documentation/evidence closure contracts.
+`phase11/verify-package.sh` configures the canonical Release + Qt/PJSIP preset, builds and stages the install tree, checks the expected CLI/GUI/RTSP executables, and creates a TGZ package under `build/phase11-package/`. `phase11/verify-final-acceptance.sh` extracts that TGZ, audits runtime dependencies, exercises packaged CLI entry points, and performs a bounded offscreen Qt startup smoke. The package is a Linux binary artifact and intentionally relies on the host runtime dependencies documented for the project; it is not a fully self-contained application bundle.

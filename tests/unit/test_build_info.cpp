@@ -12,7 +12,7 @@ TEST(BuildInfoTest, ReportsCpp20)
     EXPECT_EQ(voip::cpp_standard(), "C++20");
 }
 
-TEST(BuildInfoTest, ReportsPhaseTen)
+TEST(BuildInfoTest, ReportsPhaseEleven)
 {
-    EXPECT_EQ(voip::current_phase(), "Phase 10 - RTSP Mini-Lab");
+    EXPECT_EQ(voip::current_phase(), "Phase 11 - Final Engineering Release");
 }

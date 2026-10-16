@@ -1,187 +1,196 @@
 # Linux VoIP Softphone
 
-A Linux SIP softphone engineering portfolio developed incrementally in C++20 with Linux system programming, TCP/UDP networking, Asterisk, PJSIP/PJSUA2, testing, sanitizers, static analysis, and protocol-focused verification.
+A Linux/C++20 engineering project that grows from systems-programming foundations into a small SIP softphone with PJSIP/PJSUA2, RTP/audio, Qt/QML, threading/lifetime hardening, diagnostics, and an RTSP/RTP mini-lab.
 
-The repository is intentionally phase-driven: each milestone adds production code, tests, documentation, and verification evidence before moving to the next subsystem.
+The repository is organized as a sequence of reviewed milestones. Each phase keeps implementation, verification, documentation, and evidence together so design claims can be traced back to code and observed behavior.
 
 ## Current status
 
-Completed through **Phase 10 — RTSP Mini-Lab** for the documented development, loopback, and CI environments. Phase 10 release identifier: `v0.10-rtsp-lab`; Git refs are authoritative for whether the annotated tag has been published.
+Phases 0–11 are complete for the documented engineering, lab, packaging, and CI scopes. Phase 11 establishes the final engineering-release workflow and release identifier `v1.0.0`.
 
-Implemented so far:
+The Phase 11 closure commit freezes the release/package verification, final architecture, portfolio/demo documentation, and sanitized evidence. Publication of the annotated `v1.0.0` tag remains a separate release operation: merge the reviewed branch to `main`, rerun the complete Phase 11 gate on synchronized `main`, then create and push the tag on that verified merge result.
 
-- C++20 project/toolchain foundation with CMake, GoogleTest, clang-format, clang-tidy, ASan, and UBSan.
-- Modern C++ call-state core and focused ownership/value-semantics labs.
-- Linux process, signal, file-descriptor RAII, and Unix-domain-socket IPC work.
-- IPv4 endpoint, TCP client/server, and UDP socket abstractions with integration tests.
-- Local Asterisk SIP lab with two endpoints and documented REGISTER/call flows.
-- PJPROJECT 2.17 / PJSUA2 integration behind `ENABLE_PJSIP`.
-- PJSIP account and endpoint configuration abstractions.
-- CLI registration client.
-- CLI outgoing-call lifecycle.
-- CLI incoming-call lifecycle with ringing and auto-answer support.
-- Automated PJSIP contract, regression, sanitizer, and static-analysis verification.
-- Scrubbed runtime evidence that excludes SIP credentials and keying material.
-- Optional Qt 6/QML GUI build with a QML -> ViewModel -> CallManager -> SipEngine boundary.
-- Long-lived PJSUA2 GUI backend for registration plus one active outgoing or incoming call.
-- GUI registration, dialer, incoming-call answer/hangup, active-call duration, and diagnostics screens.
-- Deterministic CallManager/ViewModel tests and an offscreen GUI startup smoke test.
-- Dedicated `WorkerExecutor` and `ThreadedSipEngine` boundary for serialized SIP backend work off the Qt UI thread.
-- Worker-owned SIP backend construction, command execution, and destruction with deterministic shutdown/drain behavior.
-- Reusable `ThreadSafeQueue<T>` with mutex/condition-variable close-and-drain semantics.
-- 100,000-event four-producer/four-consumer stress verification with atomic exactly-once accounting.
-- ThreadSanitizer build support plus required CI runtime coverage for Phase 8 concurrency tests.
-- Lab-only `crash_generator` scenarios for controlled native-failure and object-lifetime investigation.
-- Reproducible GDB `SIGSEGV` stop, explicit saved-core generation, and fresh-process core backtrace analysis.
-- Historical heap use-after-free reproduction followed by an explicit ownership/lifetime repair verified with ASan+UBSan.
-- Safe Phase 9 CTest regression plus a consolidated verifier and required CI coverage for the diagnostic path.
-- RTSP/1.0 request/response models with bounded parsing, `CSeq`, `Session`, and `Content-Length` handling.
-- RTSP client-session workflow over TCP for `OPTIONS`, `DESCRIBE`, `SETUP`, `PLAY`, and `TEARDOWN`.
-- SDP control-URI resolution plus RTP/AVP unicast UDP Transport parsing.
-- RTP version-2 header inspection, UDP reception, and observed sequence-gap statistics.
-- Repeated loopback end-to-end RTSP control/RTP verification integrated into the inherited regression, static-analysis, and sanitizer gates.
+The final release does not silently expand product scope. It packages and presents the already reviewed SIP, media, GUI, concurrency, diagnostics, and RTSP work.
 
-Phase 6 established the reusable SIP/RTP/audio path, Phase 7 added the Qt/QML presentation boundary, Phase 8 moved concrete SIP backend ownership and commands behind a dedicated worker executor, and Phase 9 added the debugging/core-dump laboratory. Phase 10 keeps the accepted production softphone path unchanged and adds a separate RTSP/SDP/RTP mini-lab that demonstrates the streaming control-to-media flow with deterministic loopback verification. Curated Phase 10 verification summaries are retained under `evidence/phase10/`.
+## What the project demonstrates
+
+- C++20 ownership, RAII, state modeling, and testable application boundaries.
+- Linux process, signal, IPC, TCP, UDP, and socket lifecycle work.
+- SIP registration and call flows against a local Asterisk lab.
+- PJPROJECT/PJSIP 2.17 integration through PJSUA2.
+- CLI registration, outgoing-call, and incoming-call applications.
+- Linux capture/playback with RTP/RTCP diagnostics and two-way-audio lab evidence.
+- Qt/QML presentation separated from application and PJSIP ownership.
+- Worker-thread/event-handoff design, stress testing, sanitizer coverage, and explicit shutdown/lifetime boundaries.
+- Controlled crash/core-dump/GDB diagnostics and repaired lifetime regression coverage.
+- RTSP/1.0 request/response parsing, SDP control discovery, UDP RTP reception, and loopback integration verification.
+- Reproducible Release build/install/package flow plus acceptance of the extracted package.
+
+This is an engineering/learning repository, not a claim of production certification across arbitrary SIP providers, Linux distributions, networks, or audio devices.
+
+## Architecture at a glance
+
+```text
+Qt/QML presentation
+        ↓
+application state / call control
+        ↓
+threaded SIP engine boundary
+        ↓
+PJSUA2 / SIP signaling
+        ↓
+RTP / Linux audio
+
+separate protocol-learning path:
+RTSP client → TCP RTSP control → SDP → UDP RTP receiver
+
+cross-cutting:
+ownership / shutdown policy
+sanitizers / diagnostics / regression gates
+CMake presets / install / CPack / CI
+```
+
+The RTSP mini-lab is intentionally separate from the SIP softphone runtime. See [`docs/architecture/system-overview.md`](docs/architecture/system-overview.md) for the final cross-phase architecture map.
+
+## Requirements
+
+The verified development environment uses:
+
+- Linux;
+- a C++20 compiler;
+- CMake + Ninja;
+- GoogleTest;
+- clang-format and clang-tidy;
+- Qt 6/QML for the GUI;
+- PJPROJECT/PJSIP 2.17 for SIP/media integration.
+
+For the locally installed PJSIP 2.17 prefix used by the project:
+
+```bash
+export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+```
+
+## Build and verify
+
+For the accumulated engineering regression path:
+
+```bash
+cmake --preset debug
+cmake --build --preset debug -j"$(nproc)"
+ctest --preset debug --output-on-failure
+```
+
+For the current Phase 11 aggregate gate:
+
+```bash
+export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+./scripts/phase11/verify.sh
+```
+
+That gate inherits the earlier phase verification chain and adds final-release checks. A successful run is evidence for the tested revision/environment; live SIP credentials, external peers, and audible hardware behavior remain distinct manual/runtime concerns where documented.
+
+## Release build and package
+
+Phase 11 adds a Release preset with Qt/QML and PJSIP enabled:
+
+```bash
+export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+
+cmake --preset release
+cmake --build --preset release -j"$(nproc)"
+./scripts/phase11/verify-package.sh
+```
+
+The TGZ package is produced under:
+
+```text
+build/phase11-package/
+```
+
+The final package inventory includes:
+
+```text
+linux-voip-softphone
+linux-voip-softphone-gui
+rtsp-lab
+voip-sip-register
+voip-sip-call
+voip-sip-listen
+```
+
+Package-level acceptance is run with:
+
+```bash
+./scripts/phase11/verify-final-acceptance.sh
+```
+
+This extracts the generated archive, checks archive/path safety and runtime dependencies, exercises packaged CLI entry points, and performs a bounded offscreen Qt GUI startup smoke test.
+
+## Demo path
+
+The recommended recruiter/interview demo is documented in [`docs/phase11/demo-guide.md`](docs/phase11/demo-guide.md).
+
+A compact sequence is:
+
+```text
+1. Show milestone/tag history and repository structure.
+2. Explain the Qt → application → threaded SIP engine → PJSUA2/RTP boundary.
+3. Run the final automated/package acceptance path.
+4. Demonstrate the GUI and, when the lab is available, one controlled SIP call.
+5. Show RTP/audio diagnostics and the RTSP loopback mini-lab.
+6. Finish with sanitizer/diagnostic/evidence structure and the release boundary.
+```
+
+Do not expose SIP passwords, Digest authorization material, private packet captures, SRTP keying material, or unrelated peer information during a demo.
 
 ## Repository layout
 
 ```text
-cmake/          reusable CMake modules and quality configuration
-config/         example runtime configuration, including the Asterisk lab
-docs/           documentation taxonomy, architecture, protocols, interviews, and phase guides
-evidence/       committed, scrubbed verification evidence by milestone
-labs/           focused learning/demo programs for core concepts
-scripts/        build, test, static-analysis, and phase verification helpers
-src/            production C++ code
-tests/          unit and integration tests
+cmake/          CMake helpers and dependency configuration
+src/            production/application sources
+labs/           focused learning/system-programming labs
+tests/          unit, integration, stress, Qt, and regression tests
+tools/          controlled diagnostic tools
+scripts/        setup, quality, per-phase, and release verification
+docs/           architecture, phase, protocol, and interview documentation
+evidence/       sanitized verification records by phase
 ```
 
-Detailed historical and future planning lives in [`ROADMAP.md`](ROADMAP.md).
-
-## Build the non-PJSIP targets
-
-```bash
-cmake --preset debug
-cmake --build --preset debug -j
-ctest --preset debug --output-on-failure
-```
-
-The base build does not require PJPROJECT.
-
-## Build with PJSIP
-
-PJPROJECT 2.17 is installed locally in the development environment. Point `pkg-config` at the installation first:
-
-```bash
-export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-```
-
-Then configure and build the PJSIP preset:
-
-```bash
-cmake --preset pjsip-debug
-cmake --build --preset pjsip-debug -j
-```
-
-Verify the dependency independently:
-
-```bash
-./scripts/phase5/verify-pjsip-dependency.sh
-```
-
-Run the complete Phase 10 automated verification suite (which inherits the Phase 9 gate and adds RTSP/SDP/RTP plus repeated loopback integration verification):
-
-```bash
-./scripts/phase10/verify.sh
-```
-
-## Qt/QML GUI application
-
-For the real GUI SIP backend, configure both Qt and PJSIP:
-
-```bash
-export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-cmake --preset qt-pjsip-debug
-cmake --build --preset qt-pjsip-debug -j
-./build/qt-pjsip-debug/src/gui/linux-voip-softphone-gui
-```
-
-The GUI keeps QML independent of PJSUA2 through `CallViewModel`, `CallManager`, and the `SipEngine` interface. Phase 7 architecture, verification, and evidence are documented in `docs/phase7/README.md`, `docs/architecture/qt-qml-gui.md`, and `evidence/phase7/`.
-
-## PJSIP CLI applications
-
-When `ENABLE_PJSIP=ON`, the project builds three CLI applications:
-
-```text
-voip-sip-register   one-shot SIP registration verification
-voip-sip-call       register and place one outgoing call
-voip-sip-listen     register and handle one incoming call lifecycle
-```
-
-Usage and architecture details are documented in:
-
-```text
-docs/phase5/README.md
-docs/phase6/README.md
-docs/architecture/pjsip-cli.md
-docs/architecture/audio-rtp.md
-```
-
-SIP passwords are supplied through an environment variable rather than command-line arguments. Do not commit credentials, raw Digest Authorization headers, or SDP keying material.
-
-## Verification philosophy
-
-A phase is complete only when the repository contains all four layers:
-
-```text
-source code
-    ↓
-automated tests
-    ↓
-runtime evidence
-    ↓
-written explanation
-```
-
-The current repository therefore keeps historical `docs/`, `labs/`, `scripts/`, and `evidence/` artifacts on purpose. They are part of the engineering record, not generated build output.
-
-Generated build trees are excluded from Git and can be recreated at any time.
+The repository keeps `labs/` separate from `src/`: labs prove focused concepts, while production-facing behavior belongs under `src/` with reusable tests and documented ownership/lifecycle rules.
 
 ## Milestones
 
 ```text
-v0.1-project-skeleton  Phase 0 — repository and engineering environment
-v0.2-cpp-core          Phase 1 — modern C++ foundation
-v0.3-linux-system      Phase 2 — Linux system programming and IPC
-v0.4-networking        Phase 3 — TCP/UDP networking
-v0.5-sip-asterisk      Phase 4 — SIP + Asterisk lab
-v0.6-pjsip-cli         Phase 5 — PJSIP CLI softphone
-v0.7-rtp-audio         Phase 6 — RTP + Audio
-v0.8-qt-gui            Phase 7 — Qt/QML GUI
-v0.9-diagnostics       Phase 9 — Debugging, memory diagnostics, and core dumps
-v0.10-rtsp-lab         Phase 10 — RTSP mini-lab
+v0.1-project-skeleton
+v0.2-cpp-core
+v0.3-linux-system
+v0.4-networking
+v0.5-sip-asterisk
+v0.6-pjsip-cli
+v0.7-rtp-audio
+v0.8-qt-gui
+v0.9-diagnostics
+v0.10-rtsp-lab
+v1.0.0                 Phase 11 — Final Engineering Release
 ```
 
-Phase 8 — Multithreading is an accepted internal phase between `v0.8-qt-gui` and `v0.9-diagnostics`; the current Git history does not use a standalone Phase 8 release tag.
+`v1.0.0` must identify the exact verified `main` commit. It is not published from the phase branch merely because the Release package builds.
 
-Phase 10 acceptance is complete for the documented development, loopback, and CI environments based on protocol/session/media tests, repeated end-to-end loopback verification, inherited regression gates, static analysis, sanitizers, and branch CI. The `v0.10-rtsp-lab` annotated tag is a separate release operation performed only after closure review, merge to `main`, and post-merge verification. Next planned phase: **Phase 11 — Final Engineering Release**.
+## Documentation and evidence
 
-## Documentation
+Start with:
 
-Useful entry points:
+- [`ROADMAP.md`](ROADMAP.md) — phase-by-phase engineering roadmap;
+- [`docs/phase11/README.md`](docs/phase11/README.md) — current final-release phase contract;
+- [`docs/architecture/system-overview.md`](docs/architecture/system-overview.md) — final architecture/runtime map;
+- [`docs/phase11/demo-guide.md`](docs/phase11/demo-guide.md) — final demo/reviewer walkthrough;
+- [`docs/interview/phase11-questions.md`](docs/interview/phase11-questions.md) — final engineering-release review;
+- [`evidence/`](evidence/) — sanitized historical evidence for accepted milestones.
 
-```text
-docs/README.md                     documentation taxonomy and required schemas
-ROADMAP.md                         complete project roadmap
-docs/architecture/                component/system architecture and design rationale
-docs/protocols/                   protocol wire/session behavior
-docs/interview/                   phase review questions and answers
-docs/phase*/README.md             primary phase entry points
-evidence/                         scrubbed verification evidence by milestone
-```
+Phase 11 closure evidence is retained under [`evidence/phase11/`](evidence/phase11/). The phase scope is complete at the closure commit; Git refs remain authoritative for whether the annotated `v1.0.0` release tag has actually been published after merge and post-merge verification.
 
-Architecture, protocol, interview, and primary phase README documents intentionally use category-specific common schemas. Run `./scripts/quality/verify-docs-structure.sh` to verify those conventions.
+## Release boundary
 
-## License
+The current `v1.0.0` scope is the documented engineering release of the existing project. It does not add or promise multiple simultaneous calls/accounts, conferencing, hold/mute, new codecs, SRTP/TLS deployment hardening, RTSP decode/playback inside the SIP GUI, or universal deployment support.
 
-See [`LICENSE`](LICENSE).
+Future feature work should begin from an explicit new roadmap decision after the final release rather than being appended silently to Phase 11.
