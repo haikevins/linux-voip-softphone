@@ -6,11 +6,11 @@ The repository is organized as a sequence of reviewed milestones. Each phase kee
 
 ## Current status
 
-Phases 0–10 are accepted at their published milestones through `v0.10-rtsp-lab`.
+Phases 0–11 are complete for the documented engineering, lab, packaging, and CI scopes. Phase 11 establishes the final engineering-release workflow and release identifier `v1.0.0`.
 
-Phase 11 — Final Engineering Release is **in progress** on `phase/11-final-release`. The current phase adds reproducible Release packaging, packaged-system acceptance, final architecture/operations documentation, and portfolio/demo presentation. The target release is `v1.0.0`, but that tag is intentionally **not** created until the phase is closed, merged to `main`, and the full verification gate passes again on synchronized `main`.
+The Phase 11 closure commit freezes the release/package verification, final architecture, portfolio/demo documentation, and sanitized evidence. Publication of the annotated `v1.0.0` tag remains a separate release operation: merge the reviewed branch to `main`, rerun the complete Phase 11 gate on synchronized `main`, then create and push the tag on that verified merge result.
 
-The final-release work does not silently expand product scope. It packages and presents the already reviewed SIP, media, GUI, concurrency, diagnostics, and RTSP work.
+The final release does not silently expand product scope. It packages and presents the already reviewed SIP, media, GUI, concurrency, diagnostics, and RTSP work.
 
 ## What the project demonstrates
 
@@ -171,7 +171,7 @@ v0.7-rtp-audio
 v0.8-qt-gui
 v0.9-diagnostics
 v0.10-rtsp-lab
-v1.0.0                 target after Phase 11 closure/merge/post-merge verification
+v1.0.0                 Phase 11 — Final Engineering Release
 ```
 
 `v1.0.0` must identify the exact verified `main` commit. It is not published from the phase branch merely because the Release package builds.
@@ -180,14 +180,14 @@ v1.0.0                 target after Phase 11 closure/merge/post-merge verificati
 
 Start with:
 
-- [`README_roadmap.md`](README_roadmap.md) — phase-by-phase engineering roadmap;
+- [`ROADMAP.md`](ROADMAP.md) — phase-by-phase engineering roadmap;
 - [`docs/phase11/README.md`](docs/phase11/README.md) — current final-release phase contract;
 - [`docs/architecture/system-overview.md`](docs/architecture/system-overview.md) — final architecture/runtime map;
 - [`docs/phase11/demo-guide.md`](docs/phase11/demo-guide.md) — final demo/reviewer walkthrough;
 - [`docs/interview/phase11-questions.md`](docs/interview/phase11-questions.md) — final engineering-release review;
 - [`evidence/`](evidence/) — sanitized historical evidence for accepted milestones.
 
-Phase 11 closure evidence is added in the final closure commit. Until that commit and the post-merge gate complete, current-facing Phase 11 documentation must continue to describe `v1.0.0` as a target rather than a published release.
+Phase 11 closure evidence is retained under [`evidence/phase11/`](evidence/phase11/). The phase scope is complete at the closure commit; Git refs remain authoritative for whether the annotated `v1.0.0` release tag has actually been published after merge and post-merge verification.
 
 ## Release boundary
 

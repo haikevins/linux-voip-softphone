@@ -9,7 +9,7 @@ std::string_view project_name() noexcept
 
 std::string_view current_phase() noexcept
 {
-    return "Phase 10 - RTSP Mini-Lab";
+    return "Phase 11 - Final Engineering Release";
 }
 
 std::string_view cpp_standard() noexcept

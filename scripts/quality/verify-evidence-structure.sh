@@ -19,7 +19,7 @@ expected_scenario_h2=$'## Purpose\n## Preconditions\n## Procedure\n## Observatio
 
 [[ -f evidence/README.md ]] || error "missing evidence/README.md"
 
-for n in 0 1 2 3 4 5 6 7 8 9 10; do
+for n in 0 1 2 3 4 5 6 7 8 9 10 11; do
     f="evidence/phase${n}/README.md"
     [[ -f "$f" ]] || { error "missing $f"; continue; }
 
@@ -84,6 +84,14 @@ for artifact in \
     integration-verification.txt; do
     f="evidence/phase10/${artifact}"
     [[ -s "$f" ]] || error "missing or empty Phase 10 evidence artifact: $f"
+done
+
+# Phase 11 retains final aggregate and release/package acceptance summaries.
+for artifact in \
+    automated-verification.txt \
+    release-verification.txt; do
+    f="evidence/phase11/${artifact}"
+    [[ -s "$f" ]] || error "missing or empty Phase 11 evidence artifact: $f"
 done
 
 for f in evidence/phase4/registration/README.md evidence/phase4/call-flow/README.md; do

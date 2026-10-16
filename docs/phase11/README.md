@@ -2,9 +2,9 @@
 
 ## Status
 
-**In progress** — target milestone `v1.0.0`.
+**Completed** — release identifier `v1.0.0`.
 
-Phase 11 does not add a new telephony subsystem. It turns the accepted Phase 0–10 work into one reviewable engineering release with a reproducible Release build, packaged executables, final system acceptance, consolidated architecture/operations documentation, portfolio-facing presentation, and closure evidence.
+Phase 11 closes the planned project roadmap by turning the accepted Phase 0–10 work into one reviewable engineering release with a reproducible Release build, packaged executables, final system acceptance, consolidated architecture/operations documentation, portfolio-facing presentation, and sanitized closure evidence. The annotated `v1.0.0` tag is published only after merge and post-merge verification; Git refs remain authoritative for publication state.
 
 ## Objective
 
@@ -21,7 +21,7 @@ Phase 11 covers:
 - package-level dependency and smoke verification;
 - final system acceptance that inherits the complete Phase 10 verification chain;
 - a consolidated architecture and runtime/operations view;
-- final README/demo presentation and release evidence in later commits;
+- final README/demo presentation and release evidence;
 - post-merge verification before the annotated `v1.0.0` tag is created.
 
 The phase does **not** use final-release work as an excuse to add call waiting, multiple accounts, mute/hold, new codecs, SRTP, RTCP control, RTSP decoding/playback, or other unplanned product features.
@@ -38,7 +38,7 @@ At the end of Phase 11 the repository is expected to provide:
 - `docs/architecture/system-overview.md` as the final cross-phase architecture map;
 - `docs/interview/phase11-questions.md` as the final engineering-release review;
 - [`demo-guide.md`](demo-guide.md) as the final portfolio/reviewer walkthrough;
-- `evidence/phase11/` and completed release status in Commit 6.
+- `evidence/phase11/` with the closure verification and release-package summaries.
 
 ## Architecture and design
 
@@ -97,24 +97,24 @@ Phase 11 verification is layered deliberately:
 2. **Release-scope verification** — checks the expected Phase 10 milestone baseline and repository layout before final-release work proceeds.
 3. **Release package verification** — proves that the Release configuration can build, install, and create the expected TGZ artifact.
 4. **Packaged-system acceptance** — extracts the TGZ, audits runtime dependencies, runs CLI help/smoke checks, and launches the Qt GUI through an offscreen bounded smoke test.
-5. **Closure verification** — Commit 6 will freeze sanitized evidence, update current-facing status, merge to `main`, rerun the gate, and only then publish `v1.0.0`.
+5. **Closure verification** — freezes sanitized evidence and current-facing completed status. Merge, synchronized `main` verification, and annotated `v1.0.0` publication remain explicit release operations after this commit.
 
 A green package smoke test proves the documented packaged behavior in the tested environment; it is not a substitute for live SIP credentials, external audio hardware, or arbitrary deployment certification.
 
 ## Evidence
 
-Phase 11 evidence is intentionally deferred to the closure commit. Until Commit 6, do not create final-looking evidence that claims `v1.0.0` is already published.
+The sanitized Phase 11 closure evidence is:
 
-The final evidence set should record only sanitized, reproducible outcomes such as:
+```text
+evidence/phase11/
+├── README.md
+├── automated-verification.txt
+└── release-verification.txt
+```
 
-- aggregate automated verification result;
-- release package name and package-content verification;
-- packaged CLI/GUI smoke result;
-- CI result for the closure commit;
-- post-merge verification result;
-- final Git tag/release identifier after publication.
+The summaries record the aggregate Phase 11 verification contract, Release/TGZ package inventory, packaged CLI/GUI acceptance boundary, and the last pre-closure branch CI observation without retaining build trees, credentials, raw SIP material, or private packet captures.
 
-Secrets, SIP passwords, Digest headers, private packet captures, and machine-specific credentials must not be committed.
+The closure evidence does not claim that `v1.0.0` is already published. Merge, post-merge verification, and tag publication are separate release operations checked through Git refs.
 
 ## Interview focus
 
@@ -124,22 +124,20 @@ See [`../interview/phase11-questions.md`](../interview/phase11-questions.md). Th
 
 ## Exit criteria
 
-Phase 11 is complete only when all of the following are true:
+The Phase 11 repository-scope closure criteria are satisfied when:
 
-- the six planned Phase 11 commits are reviewed and their CI checks are green;
-- the final Phase 11 aggregate verification passes;
-- a reproducible Release package is generated and passes packaged-system acceptance;
+- the six planned Phase 11 commits are present and individually verified before progression;
+- the complete Phase 11 aggregate verification passes on the closure candidate;
+- the reproducible Release package passes packaged-system acceptance;
 - final architecture, operations, portfolio/demo, and evidence documentation are complete;
-- no current-facing Phase 11 document still claims `In progress`, `PENDING`, or an unpublished target milestone;
-- the phase branch is merged to `main` without discarding the planned commit history;
-- the complete Phase 11 verification is rerun successfully on synchronized `main`;
-- annotated tag `v1.0.0` is created on that verified `main` commit and pushed.
+- current-facing Phase 11 documentation is in the completed state;
+- the closure commit passes branch CI before merge.
 
-At Commit 4, these exit criteria are intentionally **not** yet satisfied.
+Release publication then requires three explicit operations outside this closure commit: merge the reviewed history to `main`, rerun the complete Phase 11 gate on synchronized `main`, and create/push annotated tag `v1.0.0` on that verified commit. Do not move or pre-create the tag.
 
 ## References
 
-- [`../../README_roadmap.md`](../../README_roadmap.md)
+- [`../../ROADMAP.md`](../../ROADMAP.md)
 - [`../architecture/system-overview.md`](../architecture/system-overview.md)
 - [`../architecture/pjsip-cli.md`](../architecture/pjsip-cli.md)
 - [`../architecture/audio-rtp.md`](../architecture/audio-rtp.md)
@@ -153,4 +151,4 @@ At Commit 4, these exit criteria are intentionally **not** yet satisfied.
 
 ## Next phase
 
-There is no planned Phase 12 in the current roadmap. After Phase 11 closure, the repository enters maintenance/release mode at `v1.0.0`; future work should begin from a new explicit roadmap decision rather than being appended silently to the final milestone.
+There is no planned Phase 12 in the current roadmap. After the Phase 11 closure commit, the repository enters release/maintenance mode for `v1.0.0`; future work should begin from a new explicit roadmap decision rather than being appended silently to the final milestone.

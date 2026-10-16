@@ -217,9 +217,9 @@ Never convert an unavailable live/manual check into a synthetic PASS just to mak
 
 ## End-of-demo release statement
 
-Before Phase 11 closure, the correct statement is:
+At the Phase 11 closure candidate, the correct statement is:
 
-> The repository has a verified Phase 11 release-candidate workflow targeting `v1.0.0`; the final tag is created only after closure, merge, and post-merge verification.
+> The planned Phase 11 repository scope is complete and the release identifier is `v1.0.0`; publication of the annotated tag still waits for merge and post-merge verification on synchronized `main`.
 
 After the closure commit is merged, the full gate passes on synchronized `main`, and the annotated tag is actually pushed, the statement may be updated to the published `v1.0.0` milestone.
 

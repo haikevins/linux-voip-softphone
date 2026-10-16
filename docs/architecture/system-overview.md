@@ -2,9 +2,9 @@
 
 ## Status
 
-**In progress** — target milestone `v1.0.0`.
+**Completed** — release identifier `v1.0.0`.
 
-This document consolidates the architecture already implemented and verified across Phases 0–10. It is a map of the final system and release boundaries, not a new runtime layer.
+This document consolidates the architecture implemented and verified across Phases 0–11. It is the final system/release-boundary map, not a new runtime layer. Publication of the annotated `v1.0.0` tag remains a separate post-merge operation.
 
 ## Purpose
 
@@ -234,7 +234,7 @@ The intended result is a coherent engineering release of the documented project,
 
 ## References
 
-- [`../../README_roadmap.md`](../../README_roadmap.md)
+- [`../../ROADMAP.md`](../../ROADMAP.md)
 - [`../phase11/README.md`](../phase11/README.md)
 - [`networking.md`](networking.md)
 - [`sip-asterisk.md`](sip-asterisk.md)

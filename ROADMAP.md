@@ -1436,6 +1436,8 @@ v0.10-rtsp-lab
 
 # 14. Phase 11 — Final Engineering Release
 
+**Trạng thái:** đã hoàn thành phạm vi final engineering release trên branch closure với Release preset, install/CPack TGZ, packaged-system acceptance, final architecture/operations docs, portfolio/demo guide và sanitized evidence. Release identifier: `v1.0.0`; annotated tag chỉ được tạo/push sau merge và post-merge verification trên `main`.
+
 Release:
 
 ```text
@@ -1936,13 +1938,13 @@ Bạn nói:
 
 ## Tiến độ hiện tại
 
-Repository đã nghiệm thu **Phase 0 đến Phase 10** cho các môi trường đã ghi lại trong evidence. Phase 10 có release identifier:
+Repository đã hoàn thành **Phase 0 đến Phase 11** cho các phạm vi engineering/lab/release đã ghi lại trong documentation và evidence. Phase 11 có release identifier:
 
 ```text
-v0.10-rtsp-lab
+v1.0.0
 ```
 
-Chuỗi phase đã nghiệm thu:
+Chuỗi phase đã hoàn thành:
 
 ```text
 Phase 0 — Repository + engineering environment
@@ -1966,8 +1968,10 @@ Phase 8 — Multithreading
 Phase 9 — Debugging, memory và core dump
         ↓
 Phase 10 — RTSP mini-lab
+        ↓
+Phase 11 — Final Engineering Release
 ```
 
-Bước tiếp theo là **Phase 11 — Final Engineering Release**. Việc tạo/push annotated tag `v0.10-rtsp-lab` và merge branch là thao tác release riêng biệt; kiểm tra Git refs thay vì suy đoán từ roadmap.
+Không có Phase 12 trong roadmap hiện tại. Sau closure commit, bước còn lại của release là merge branch đã review vào `main`, rerun full Phase 11 verification trên `main` đã đồng bộ, rồi tạo/push annotated tag `v1.0.0`. Git refs là nguồn xác nhận trạng thái publication.
 
 Mục tiêu không phải hoàn thành softphone càng nhanh càng tốt. Mục tiêu là đến cuối project, **mỗi dòng quan trọng trong JD đều có một artifact trong GitHub để bạn chỉ thẳng cho interviewer xem**.

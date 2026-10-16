@@ -1,0 +1,37 @@
+Phase 11 — Release/package verification summary
+
+REPRODUCTION
+  export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+  ./scripts/phase11/verify-package.sh
+  ./scripts/phase11/verify-final-acceptance.sh
+
+RELEASE CONFIGURATION
+  CMake preset: release
+  Build type: Release
+  Qt/QML: enabled
+  PJSIP/PJSUA2: enabled
+  Tests in release artifact build: disabled
+  Package generator: CPack TGZ
+  Package name pattern: linux-voip-softphone-1.0.0-Linux-<arch>.tar.gz
+
+EXPECTED PACKAGED EXECUTABLES
+  linux-voip-softphone
+  linux-voip-softphone-gui
+  rtsp-lab
+  voip-sip-register
+  voip-sip-call
+  voip-sip-listen
+
+ACCEPTANCE CONTRACT
+  fresh Release configure/build: PASS before closure commit
+  staged install inventory: PASS before closure commit
+  TGZ generation and content checks: PASS before closure commit
+  archive path-safety inspection: PASS before closure commit
+  ldd dependency audit on packaged binaries: PASS before closure commit
+  packaged CLI smoke/help checks: PASS before closure commit
+  bounded QT_QPA_PLATFORM=offscreen GUI startup: PASS before closure commit
+
+BOUNDARY
+  The package is verified as a Linux artifact for the documented environment.
+  It is not claimed to be bit-for-bit reproducible across toolchains or a
+  self-contained bundle for every Linux distribution.

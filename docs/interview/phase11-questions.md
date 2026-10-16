@@ -98,26 +98,19 @@ Start with the root README after Commit 5 for the portfolio-facing overview, the
 
 ## Phase boundary
 
-Phase 11 is the final engineering-release phase, but this document does not
-declare the `v1.0.0` release complete. Commit 4 documents the final system
-architecture, operational model, and interview review surface only.
+Phase 11 repository scope is complete at the closure commit: release build/package mechanics, packaged-system acceptance, final architecture/operations documentation, portfolio/demo guidance, and sanitized evidence are all in place. The annotated `v1.0.0` tag is still a separate release operation after merge and post-merge verification.
 
-Release closure remains dependent on the remaining Phase 11 documentation,
-evidence, full verification, merge to `main`, post-merge verification, and the
-explicit annotated `v1.0.0` tag operation. No runtime behavior or protocol
-contract is changed by this documentation commit.
+The release must not be described as universally production-certified. Live SIP/audio observations, hardware/network behavior, and distribution portability remain limited to their documented evidence scopes.
 
 ## References
 
+- `README.md`
+- `ROADMAP.md`
 - `docs/phase11/README.md`
 - `docs/architecture/system-overview.md`
-- `docs/phase10/README.md`
-- `docs/architecture/rtsp.md`
-- `docs/architecture/threading-model.md`
-- `docs/architecture/qt-qml-gui.md`
-- `docs/architecture/audio-rtp.md`
+- `docs/phase11/demo-guide.md`
 - `scripts/phase11/verify.sh`
 - `scripts/phase11/verify-package.sh`
 - `scripts/phase11/verify-final-acceptance.sh`
-- `ROADMAP.md`
+- `evidence/phase11/README.md`
 
