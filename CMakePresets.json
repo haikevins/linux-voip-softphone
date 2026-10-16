@@ -70,6 +70,17 @@
       "cacheVariables": {
         "ENABLE_CLANG_TIDY": "ON"
       }
+    },
+    {
+      "name": "release",
+      "inherits": "base",
+      "displayName": "Release + Qt/QML GUI + PJSIP",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTING": "OFF",
+        "ENABLE_QT_GUI": "ON",
+        "ENABLE_PJSIP": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -100,6 +111,10 @@
     {
       "name": "clang-tidy",
       "configurePreset": "clang-tidy"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
     }
   ],
   "testPresets": [

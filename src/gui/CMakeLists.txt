@@ -29,3 +29,7 @@ endif()
 
 project_set_warnings(voip_gui)
 project_enable_sanitizers(voip_gui)
+
+install(TARGETS voip_gui
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)

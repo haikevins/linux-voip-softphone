@@ -8,11 +8,16 @@ echo '== repository scope =='
 [[ -f CMakeLists.txt ]]
 [[ -f CMakePresets.json ]]
 [[ -x scripts/phase10/verify.sh ]]
+[[ -x scripts/phase11/verify-release-scope.sh ]]
+[[ -x scripts/phase11/verify-package.sh ]]
 
 echo '== inherited Phase 10 verification =='
 bash scripts/phase10/verify.sh
 
-echo '== Phase 11 release scaffolding =='
+echo '== Phase 11 release baseline =='
 bash scripts/phase11/verify-release-scope.sh
 
-echo 'Phase 11 Commit 1 verification: PASS'
+echo '== Phase 11 release build and package =='
+bash scripts/phase11/verify-package.sh
+
+echo 'Phase 11 Commit 2 verification: PASS'

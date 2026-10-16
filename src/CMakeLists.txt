@@ -44,6 +44,10 @@ target_link_libraries(linux-voip-softphone
 project_set_warnings(linux-voip-softphone)
 project_enable_sanitizers(linux-voip-softphone)
 
+install(TARGETS linux-voip-softphone
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
 add_subdirectory(rtsp)
 
 if(ENABLE_PJSIP)
@@ -119,6 +123,13 @@ if(ENABLE_PJSIP)
 
     project_set_warnings(voip_sip_listen)
     project_enable_sanitizers(voip_sip_listen)
+
+    install(TARGETS
+        voip_sip_register
+        voip_sip_call
+        voip_sip_listen
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
 endif()
 
 if(ENABLE_QT_GUI)

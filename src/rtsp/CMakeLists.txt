@@ -37,3 +37,7 @@ target_link_libraries(rtsp_lab
 
 project_set_warnings(rtsp_lab)
 project_enable_sanitizers(rtsp_lab)
+
+install(TARGETS rtsp_lab
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
