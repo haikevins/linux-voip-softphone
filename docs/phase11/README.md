@@ -37,7 +37,7 @@ At the end of Phase 11 the repository is expected to provide:
 - a CPack TGZ release package carrying the final executable set;
 - `docs/architecture/system-overview.md` as the final cross-phase architecture map;
 - `docs/interview/phase11-questions.md` as the final engineering-release review;
-- final portfolio/demo documentation in Commit 5;
+- [`demo-guide.md`](demo-guide.md) as the final portfolio/reviewer walkthrough;
 - `evidence/phase11/` and completed release status in Commit 6.
 
 ## Architecture and design
@@ -120,7 +120,7 @@ Secrets, SIP passwords, Digest headers, private packet captures, and machine-spe
 
 Be ready to explain why a final release is more than a successful Debug build; why the packaged artifact must be exercised after extraction; why `v1.0.0` is created only after merge and post-merge verification; how the Qt/application/PJSIP/threading boundaries reduce ownership risk; and why the RTSP mini-lab remains architecturally separate from the SIP softphone runtime.
 
-See [`../interview/phase11-questions.md`](../interview/phase11-questions.md).
+See [`../interview/phase11-questions.md`](../interview/phase11-questions.md). The practical reviewer walkthrough is in [`demo-guide.md`](demo-guide.md).
 
 ## Exit criteria
 
@@ -147,6 +147,7 @@ At Commit 4, these exit criteria are intentionally **not** yet satisfied.
 - [`../architecture/threading-model.md`](../architecture/threading-model.md)
 - [`../architecture/debugging-diagnostics.md`](../architecture/debugging-diagnostics.md)
 - [`../architecture/rtsp.md`](../architecture/rtsp.md)
+- [`demo-guide.md`](demo-guide.md)
 - [`../interview/phase11-questions.md`](../interview/phase11-questions.md)
 - [`../../scripts/phase11/verify.sh`](../../scripts/phase11/verify.sh)
 
