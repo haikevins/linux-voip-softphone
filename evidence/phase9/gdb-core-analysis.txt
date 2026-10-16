@@ -1,0 +1,35 @@
+Phase 9 — saved-core GDB analysis summary
+
+SCENARIO
+  crash_generator null-deref
+
+PURPOSE
+  Verify a deterministic native-crash investigation workflow without placing
+  intentional undefined behavior in the production softphone path.
+
+WORKFLOW
+  1. Build the lab-only crash generator with debug information.
+  2. Start the null-deref scenario under GDB.
+  3. Confirm the process stops on SIGSEGV.
+  4. Use GDB generate-core-file to write a non-empty saved core under build/.
+  5. Start a fresh GDB process with the matching executable and saved core.
+  6. Validate the recovered backtrace markers.
+
+ACCEPTED OBSERVATIONS
+  Signal:
+    SIGSEGV
+
+  Required backtrace markers:
+    triggerNullDereference
+    main
+
+  Saved-core contract:
+    non-empty core generated successfully
+    fresh GDB analysis completed successfully
+
+RESULT
+  PASS
+
+RETENTION
+  The core file and raw GDB transcripts are disposable build artifacts.
+  Only this reviewed summary is retained under evidence/phase9/.

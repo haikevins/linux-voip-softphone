@@ -65,11 +65,16 @@ evidence/
 │   ├── incoming-call.png
 │   ├── active-call.png
 │   └── diagnostics.png
-└── phase8/
+├── phase8/
+│   ├── README.md
+│   ├── automated-verification.txt
+│   ├── stress-test.txt
+│   └── tsan-report.txt
+└── phase9/
     ├── README.md
     ├── automated-verification.txt
-    ├── stress-test.txt
-    └── tsan-report.txt
+    ├── gdb-core-analysis.txt
+    └── asan-report.txt
 ```
 
 A phase may contain additional artifacts or scenario directories only when they represent real verification needs. Directory symmetry is not required.

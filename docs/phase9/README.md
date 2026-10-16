@@ -2,9 +2,9 @@
 
 ## Status
 
-**In progress** — target milestone `v0.9-diagnostics`.
+**Completed** — milestone `v0.9-diagnostics`.
 
-The Phase 9 implementation and automated verification path are in place. The final sanitized evidence set and milestone-closure bookkeeping remain for the Phase 9 closure commit.
+Phase 9 closes with the lab-only crash/core workflow, repaired lifetime regression, sanitizer-backed verification, CI coverage, architecture/interview documentation, and curated sanitized evidence in place. The annotated tag is created only after review, merge to `main`, and verification of the merged closure state.
 
 ## Objective
 
@@ -135,13 +135,17 @@ The intentional null dereference is verified through GDB instead of CTest becaus
 
 ## Evidence
 
-Phase 9 evidence is finalized in the closure commit under:
+The accepted Phase 9 evidence set is:
 
 ```text
 evidence/phase9/
+├── README.md
+├── automated-verification.txt
+├── gdb-core-analysis.txt
+└── asan-report.txt
 ```
 
-The committed evidence should be concise and sanitized. It should describe the observed signal/backtrace contract, the historical ASan finding, the repaired ASan-clean result, the aggregate verification result, and the relevant commit identifiers without storing bulky or host-specific binary artifacts.
+The retained files are concise, sanitized summaries. They record the aggregate Phase 9 verifier, the saved-core GDB contract, the historical heap-use-after-free lesson, the repaired ASan/UBSan-clean result, and the branch CI outcome without committing bulky or host-specific binary artifacts.
 
 Do not commit:
 
@@ -150,7 +154,7 @@ Do not commit:
 - raw sanitizer crash transcripts containing unnecessary environment/path detail;
 - SIP credentials, Digest authorization material, media keying material, or packet captures inherited from other phases.
 
-All current GDB/core/sanitizer outputs are intentionally disposable under `build/` until the closure commit curates the final summaries.
+GDB/core/sanitizer working files remain disposable under `build/`; only the reviewed summaries above belong in committed evidence.
 
 ## Interview focus
 
@@ -170,20 +174,20 @@ Use `docs/interview/phase9-questions.md` together with the scripts and crash gen
 
 ## Exit criteria
 
-Phase 9 is ready for milestone closure when:
+Phase 9 closure requires:
 
-- the controlled crash generator remains isolated from production runtime paths;
-- the `null-deref` scenario reproducibly stops with `SIGSEGV` under GDB;
-- GDB writes a non-empty saved core and a fresh GDB process can recover the required backtrace markers;
-- the historical UAF has an explicit root-cause explanation tied to object lifetime;
-- the repaired lifetime path performs no access after owner destruction;
-- ASan+UBSan verification completes without memory/undefined-behavior diagnostics on the repaired path;
-- the safe Phase 9 CTest cases pass in normal and sanitizer-oriented configurations;
-- the complete Phase 9 verifier passes on the documented environment;
-- architecture, core-analysis, interview-review, and sanitized Phase 9 evidence are present;
-- no intentional UB, core file, or raw diagnostic dump leaks into the production/evidence boundary.
+- the controlled crash generator to remain isolated from production runtime paths;
+- the `null-deref` scenario to reproducibly stop with `SIGSEGV` under GDB;
+- GDB to write a non-empty saved core and a fresh GDB process to recover the required backtrace markers;
+- the historical UAF to have an explicit root-cause explanation tied to object lifetime;
+- the repaired lifetime path to perform no access after owner destruction;
+- ASan+UBSan verification to complete without memory/undefined-behavior diagnostics on the repaired path;
+- the safe Phase 9 CTest cases to pass in normal and sanitizer-oriented configurations;
+- the complete Phase 9 verifier to pass on the documented environment;
+- architecture, core-analysis, interview-review, and sanitized Phase 9 evidence to be present;
+- no intentional UB, core file, or raw diagnostic dump to leak into the production/evidence boundary.
 
-The target milestone identifier is `v0.9-diagnostics`; the Git tag itself is created only after review, merge to `main`, and closure verification.
+The recorded local verification, repeated repaired-lifetime regression, saved-core analysis, sanitizer verification, CI 4/4 result, documentation, and curated evidence satisfy these criteria for the tested branch state. The `v0.9-diagnostics` tag is created only after review, merge to `main`, and verification of the merged closure state.
 
 ## References
 

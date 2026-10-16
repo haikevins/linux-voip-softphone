@@ -6,7 +6,7 @@ The repository is intentionally phase-driven: each milestone adds production cod
 
 ## Current status
 
-Completed through **Phase 8 — Multithreading** for the documented development and CI environments. Phase 8 release identifier: `v0.9-threading` (reserved for an annotated tag after the Phase 8 branch is reviewed, merged into `main`, and the closure state is verified; this document does not assert that the tag is already published).
+Completed through **Phase 9 — Debugging, Memory Diagnostics, and Core Dumps** for the documented development and CI environments. Phase 9 release identifier: `v0.9-diagnostics` (reserved for an annotated tag after the Phase 9 branch is reviewed, merged into `main`, and the closure state is verified; this document does not assert that the tag is already published).
 
 Implemented so far:
 
@@ -31,8 +31,12 @@ Implemented so far:
 - Reusable `ThreadSafeQueue<T>` with mutex/condition-variable close-and-drain semantics.
 - 100,000-event four-producer/four-consumer stress verification with atomic exactly-once accounting.
 - ThreadSanitizer build support plus required CI runtime coverage for Phase 8 concurrency tests.
+- Lab-only `crash_generator` scenarios for controlled native-failure and object-lifetime investigation.
+- Reproducible GDB `SIGSEGV` stop, explicit saved-core generation, and fresh-process core backtrace analysis.
+- Historical heap use-after-free reproduction followed by an explicit ownership/lifetime repair verified with ASan+UBSan.
+- Safe Phase 9 CTest regression plus a consolidated verifier and required CI coverage for the diagnostic path.
 
-Phase 6 established the reusable SIP/RTP/audio path, and Phase 7 added the Qt/QML presentation boundary. Phase 8 keeps that boundary intact while moving concrete SIP backend ownership and commands behind a dedicated worker executor, adding a reusable producer-consumer queue, lifecycle/stress verification, and ThreadSanitizer coverage. Curated Phase 8 verification summaries are retained under `evidence/phase8/`.
+Phase 6 established the reusable SIP/RTP/audio path, Phase 7 added the Qt/QML presentation boundary, and Phase 8 moved concrete SIP backend ownership and commands behind a dedicated worker executor with stress/ThreadSanitizer verification. Phase 9 keeps those production boundaries intact while adding a separate debugging laboratory for controlled crashes, saved-core GDB analysis, sanitizer-driven lifetime diagnosis, and repaired-path regression. Curated Phase 9 verification summaries are retained under `evidence/phase9/`.
 
 ## Repository layout
 
@@ -80,10 +84,10 @@ Verify the dependency independently:
 ./scripts/phase5/verify-pjsip-dependency.sh
 ```
 
-Run the complete Phase 8 automated verification suite (which inherits the Phase 7 gate and adds threading/concurrency verification):
+Run the complete Phase 9 automated verification suite (which inherits the Phase 8 gate and adds GDB/core-dump plus sanitizer-backed lifetime verification):
 
 ```bash
-./scripts/phase8/verify.sh
+./scripts/phase9/verify.sh
 ```
 
 ## Qt/QML GUI application
@@ -150,9 +154,10 @@ v0.6-pjsip-cli         Phase 5 — PJSIP CLI softphone
 v0.7-rtp-audio         Phase 6 — RTP + Audio
 v0.8-qt-gui            Phase 7 — Qt/QML GUI (release identifier)
 v0.9-threading         Phase 8 — Multithreading (release identifier)
+v0.9-diagnostics       Phase 9 — Debugging, memory diagnostics, and core dumps (release identifier)
 ```
 
-Phase 8 acceptance is complete for the documented development and CI environments based on the recorded automated, stress, lifecycle, and ThreadSanitizer checks. The annotated `v0.9-threading` tag is created only after this branch is reviewed, merged into `main`, and the milestone state is verified. Next planned phase: **Phase 9 — debugging, memory diagnostics, and core dumps**.
+Phase 9 acceptance is complete for the documented development and CI environments based on the recorded saved-core GDB workflow, repaired lifetime regression, sanitizer verification, inherited regression gate, and CI checks. The annotated `v0.9-diagnostics` tag is created only after this branch is reviewed, merged into `main`, and the milestone state is verified. Next planned phase: **Phase 10 — RTSP mini-lab**.
 
 ## Documentation
 

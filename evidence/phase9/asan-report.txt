@@ -1,0 +1,38 @@
+Phase 9 — AddressSanitizer lifetime analysis summary
+
+HISTORICAL DEFECT
+  The debugging lab previously reproduced a heap use-after-free by retaining a
+  non-owning raw pointer after the std::unique_ptr owner released the object,
+  then dereferencing the dangling pointer.
+
+ROOT CAUSE
+  Ownership and observation lifetime were inconsistent. Smart-pointer ownership
+  did not make a raw alias safe after owner destruction.
+
+REPAIR
+  The repaired path:
+    - reads the observed value only while the std::unique_ptr owner is alive;
+    - resets the owner only after the final valid access;
+    - clears the non-owning pointer;
+    - performs no post-destruction dereference.
+
+VERIFICATION
+  command:
+    ./scripts/phase9/verify-asan-use-after-free.sh
+
+  build policy:
+    fresh ASan+UBSan build to avoid stale-object results
+
+  accepted observations:
+    repaired lifetime path exits successfully
+    no AddressSanitizer error marker
+    no UndefinedBehaviorSanitizer runtime-error marker
+    safe Phase 9 regression passes in the sanitizer configuration
+
+RESULT
+  PASS
+
+BOUNDARY
+  The historical faulty behavior remains a debugging-history lesson only.
+  The committed production path contains no intentional use-after-free.
+  Raw sanitizer crash transcripts are not retained as milestone evidence.
