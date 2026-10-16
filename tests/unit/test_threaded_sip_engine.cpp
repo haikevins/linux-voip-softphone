@@ -10,6 +10,7 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 namespace {
 
@@ -25,7 +26,9 @@ struct BackendState
     std::thread::id destruction_thread;
     std::thread::id register_thread;
     std::thread::id make_call_thread;
+    std::thread::id hangup_thread;
     std::string destination;
+    std::vector<std::string> lifecycle;
     bool throw_on_register{false};
     bool throw_on_make_call{false};
 };
@@ -43,6 +46,7 @@ class RecordingSipEngine final : public SipEngine
     {
         const std::lock_guard lock{state_.mutex};
         state_.destruction_thread = std::this_thread::get_id();
+        state_.lifecycle.emplace_back("destroy");
     }
 
     void set_observer(SipEngineObserver *observer) noexcept override
@@ -82,7 +86,13 @@ class RecordingSipEngine final : public SipEngine
     }
 
     void answer_call() override {}
-    void hangup_call() override {}
+
+    void hangup_call() override
+    {
+        const std::lock_guard lock{state_.mutex};
+        state_.hangup_thread = std::this_thread::get_id();
+        state_.lifecycle.emplace_back("hangup");
+    }
 
   private:
     BackendState &state_;
@@ -197,6 +207,23 @@ TEST(ThreadedSipEngineTest, ConvertsCallExceptionIntoObserverFailure)
     EXPECT_NO_THROW(engine.make_call("1002"));
     ASSERT_EQ(failed.wait_for(1s), std::future_status::ready);
     EXPECT_EQ(failed.get(), "make call: call setup failed");
+}
+
+TEST(ThreadedSipEngineTest, DrainsQueuedCommandBeforeDestroyingBackend)
+{
+    BackendState state;
+    std::thread::id worker_thread;
+
+    {
+        auto engine = make_engine(state);
+        worker_thread = engine.worker_thread_id();
+        engine.hangup_call();
+    }
+
+    const std::lock_guard lock{state.mutex};
+    EXPECT_EQ(state.hangup_thread, worker_thread);
+    EXPECT_EQ(state.destruction_thread, worker_thread);
+    EXPECT_EQ(state.lifecycle, (std::vector<std::string>{"hangup", "destroy"}));
 }
 
 TEST(ThreadedSipEngineTest, RejectsEmptyFactory)

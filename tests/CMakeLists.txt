@@ -79,6 +79,42 @@ gtest_discover_tests(threaded_sip_engine_tests
         LABELS phase8
 )
 
+add_executable(thread_safe_queue_tests
+    unit/test_thread_safe_queue.cpp
+)
+
+target_link_libraries(thread_safe_queue_tests
+    PRIVATE
+        voip::core
+        GTest::gtest_main
+)
+
+project_set_warnings(thread_safe_queue_tests)
+project_enable_sanitizers(thread_safe_queue_tests)
+
+gtest_discover_tests(thread_safe_queue_tests
+    PROPERTIES
+        LABELS phase8
+)
+
+add_executable(threading_stress_tests
+    stress/thread_safe_queue_stress.cpp
+)
+
+target_link_libraries(threading_stress_tests
+    PRIVATE
+        voip::core
+        GTest::gtest_main
+)
+
+project_set_warnings(threading_stress_tests)
+project_enable_sanitizers(threading_stress_tests)
+
+gtest_discover_tests(threading_stress_tests
+    PROPERTIES
+        LABELS phase8
+)
+
 add_test(
     NAME LinuxProcessLifecycleTest
     COMMAND lab_process_lifecycle --self-test
