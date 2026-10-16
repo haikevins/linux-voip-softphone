@@ -1,8 +1,16 @@
 # Phase 10 Interview Review — RTSP, SDP, and RTP Mini-Lab
 
+Use the repository implementation, documentation, tests, and evidence as the basis for the answers. Explain the protocol flow, framing decisions, state transitions, and verification boundaries rather than memorizing isolated RTSP or RTP definitions.
+
 ## Review scope
 
-This review covers the Phase 10 implementation boundaries: RTSP/1.0 control over TCP, `CSeq` and `Session`, SDP media/control discovery, RTP/AVP UDP Transport negotiation, RTP header parsing, simple sequence-gap statistics, and the loopback verification strategy.
+- RTSP/1.0 control flow over TCP
+- `CSeq` transaction matching and `Session` lifecycle
+- SDP media discovery and control-URI resolution
+- RTP/AVP unicast UDP Transport negotiation
+- RTP header parsing and sequence-gap statistics
+- TCP message framing versus UDP datagram boundaries
+- loopback integration verification and mini-lab boundaries
 
 ## Questions and answers
 
@@ -117,6 +125,9 @@ Phase 10 is complete only when the documented RTSP/RTP path and verification evi
 - `docs/phase10/README.md`
 - `docs/architecture/rtsp.md`
 - `src/rtsp/`
-- `tests/phase10/`
+- `tests/unit/test_rtsp_protocol.cpp`
+- `tests/unit/test_rtsp_client_session.cpp`
+- `tests/integration/test_rtsp_media.cpp`
+- `tests/integration/test_rtsp_end_to_end.cpp`
 - `scripts/phase10/verify.sh`
 - `scripts/phase10/verify-integration.sh`

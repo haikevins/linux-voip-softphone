@@ -1346,46 +1346,62 @@ v0.9-diagnostics
 
 # 13. Phase 10 — RTSP mini-lab
 
-Softphone chủ yếu cần:
+**Trạng thái:** đã nghiệm thu cho mini-lab nội bộ với RTSP control qua TCP, SDP/Transport parsing, RTP receive qua UDP, unit/integration tests và full inherited quality gate. Release identifier: `v0.10-rtsp-lab`; việc tạo/push annotated tag là bước release riêng sau merge và post-merge verification.
+
+Softphone chủ yếu cần SIP/SDP/RTP, nhưng RTSP vẫn có giá trị để chứng minh khả năng đọc và hiện thực một protocol control/media khác mà không nhét nó vào production softphone một cách gượng ép.
+
+As-built scope:
 
 ```text
-SIP
-SDP
-RTP
+src/rtsp/
+├── RtspMessage.*
+├── RtspParser.*
+├── RtspConnection.hpp
+├── RtspTcpConnection.*
+├── RtspClientSession.*
+├── SdpDescription.*
+├── RtspTransport.*
+├── RtpPacket.*
+└── RtpReceiver.*
+
+tests/
+├── unit/
+│   ├── test_rtsp_protocol.cpp
+│   └── test_rtsp_client_session.cpp
+└── integration/
+    ├── test_rtsp_media.cpp
+    └── test_rtsp_end_to_end.cpp
+scripts/phase10/
+docs/phase10/README.md
+docs/architecture/rtsp.md
+docs/interview/phase10-questions.md
+evidence/phase10/
 ```
 
-nhưng JD trong ảnh còn có **RTSP**.
-
-Đừng cố nhét RTSP vào softphone một cách gượng ép.
-
-Tạo:
+Control/media flow đã nghiệm thu:
 
 ```text
-labs/rtsp/rtsp-probe
+TCP connect
+    ↓
+OPTIONS
+    ↓
+DESCRIBE
+    ↓
+SDP -> media/control URI
+    ↓
+SETUP -> Session + RTP/AVP UDP Transport
+    ↓
+PLAY
+    ↓
+RTP/UDP receive + header/sequence observation
+    ↓
+TEARDOWN
 ```
 
-Mục tiêu:
+Điểm cần hiểu rõ:
 
 ```text
-RTSP OPTIONS
-RTSP DESCRIBE
-SDP
-RTSP SETUP
-RTSP PLAY
-```
-
-Bạn có thể chạy local RTSP server rồi dùng probe/client để quan sát protocol.
-
-Viết:
-
-```text
-docs/protocols/rtsp.md
-```
-
-Trong đó giải thích rõ:
-
-```text
-SIP ≠ RTSP
+SIP != RTSP
 
 SIP:
 session signaling cho communication
@@ -1397,9 +1413,20 @@ RTP:
 media transport
 ```
 
-Đây là câu interviewer rất dễ hỏi.
+Phase này có unit tests cho protocol/parser/session/media và loopback end-to-end tests cho RTSP TCP + RTP UDP. `scripts/phase10/verify-integration.sh` lặp lại bộ integration để bắt hành vi không ổn định; `scripts/phase10/verify.sh` kế thừa toàn bộ gate Phase 9 rồi chạy Phase 10 verification.
 
-Git tag:
+Các giới hạn chủ động giữ ngoài scope: authentication, TLS, redirect/proxy, RTP interleaved over RTSP TCP, RTCP, codec depacketization/decoding, multicast, seek/range đầy đủ và production integration với Qt/PJSIP softphone.
+
+Evidence chính:
+
+```text
+evidence/phase10/
+├── README.md
+├── automated-verification.txt
+└── integration-verification.txt
+```
+
+Git tag/release identifier:
 
 ```text
 v0.10-rtsp-lab
@@ -1909,13 +1936,13 @@ Bạn nói:
 
 ## Tiến độ hiện tại
 
-Repository đã nghiệm thu **Phase 0 đến Phase 9** cho các môi trường đã ghi lại trong evidence. Phase 9 có release identifier:
+Repository đã nghiệm thu **Phase 0 đến Phase 10** cho các môi trường đã ghi lại trong evidence. Phase 10 có release identifier:
 
 ```text
-v0.9-diagnostics
+v0.10-rtsp-lab
 ```
 
-Chuỗi milestone đã nghiệm thu:
+Chuỗi phase đã nghiệm thu:
 
 ```text
 Phase 0 — Repository + engineering environment
@@ -1937,8 +1964,10 @@ Phase 7 — Qt/QML GUI
 Phase 8 — Multithreading
         ↓
 Phase 9 — Debugging, memory và core dump
+        ↓
+Phase 10 — RTSP mini-lab
 ```
 
-Bước tiếp theo là **Phase 10 — RTSP mini-lab**. Việc tạo/push annotated tag `v0.9-diagnostics` và merge branch là thao tác release riêng biệt; kiểm tra Git refs thay vì suy đoán từ roadmap.
+Bước tiếp theo là **Phase 11 — Final Engineering Release**. Việc tạo/push annotated tag `v0.10-rtsp-lab` và merge branch là thao tác release riêng biệt; kiểm tra Git refs thay vì suy đoán từ roadmap.
 
 Mục tiêu không phải hoàn thành softphone càng nhanh càng tốt. Mục tiêu là đến cuối project, **mỗi dòng quan trọng trong JD đều có một artifact trong GitHub để bạn chỉ thẳng cho interviewer xem**.

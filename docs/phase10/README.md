@@ -2,9 +2,9 @@
 
 ## Status
 
-**In progress** — target milestone `v0.10-rtsp-lab`.
+**Completed** — release identifier `v0.10-rtsp-lab`.
 
-The RTSP/RTP implementation and automated verification path are in place. Final sanitized evidence and milestone-closure bookkeeping remain for the Phase 10 closure commit.
+Phase 10 closes with the RTSP/SDP/RTP mini-lab, repeated loopback end-to-end verification, inherited quality gates, architecture/interview documentation, and concise sanitized evidence in place. The annotated tag is created only after closure review, merge to `main`, and post-merge verification; Git refs remain authoritative for publication state.
 
 ## Objective
 
@@ -46,7 +46,7 @@ Deliberately excluded:
 | Session workflow | Enforce RTSP method ordering and session state | `src/rtsp/RtspClientSession.*` |
 | SDP/Transport | Discover media control URI and UDP port information | `src/rtsp/SdpDescription.*`, `src/rtsp/RtspTransport.*` |
 | RTP inspection | Parse RTP headers and track observed sequence gaps | `src/rtsp/RtpPacket.*`, `src/rtsp/RtpReceiver.*` |
-| Verification | Unit, loopback integration, inherited regressions, static analysis, sanitizers | `tests/phase10/`, `scripts/phase10/` |
+| Verification | Unit, loopback integration, inherited regressions, static analysis, sanitizers | `tests/unit/test_rtsp_*.cpp`, `tests/integration/test_rtsp_*.cpp`, `scripts/phase10/` |
 | Architecture note | Explain control/media separation and state flow | `docs/architecture/rtsp.md` |
 | Interview review | Review protocol, transport, RTP, and design boundaries | `docs/interview/phase10-questions.md` |
 
@@ -105,13 +105,16 @@ Observed full-suite and label counts are build observations rather than permanen
 
 ## Evidence
 
-Final sanitized evidence is added by the closure commit under:
+The accepted sanitized evidence set is:
 
 ```text
 evidence/phase10/
+├── README.md
+├── automated-verification.txt
+└── integration-verification.txt
 ```
 
-Evidence should retain concise automated/integration results and architecture-relevant observations, not raw packet captures or host-specific build trees.
+The retained summaries record the aggregate Phase 10 verifier, the loopback end-to-end RTSP/RTP contract, and the accepted branch CI outcome without retaining raw packet captures or host-specific build trees.
 
 Do not commit credentials, authorization headers, private media, raw packet captures, or transient build artifacts.
 
@@ -131,7 +134,7 @@ Be ready to explain:
 
 ## Exit criteria
 
-Phase 10 is ready for milestone closure when:
+Phase 10 closure satisfies these criteria:
 
 - RTSP request/response parsing and serialization are covered by tests;
 - the TCP client validates complete responses, `CSeq`, and successful status codes;
@@ -145,14 +148,17 @@ Phase 10 is ready for milestone closure when:
 - architecture, phase, interview, and sanitized evidence documents are present;
 - no unsupported production-readiness claim is made beyond this mini-lab scope.
 
-The target milestone identifier is `v0.10-rtsp-lab`. The tag is created only after closure review and merge to `main`.
+The release identifier is `v0.10-rtsp-lab`. The annotated tag is created only after closure review, merge to `main`, and post-merge verification.
 
 ## References
 
 - `docs/architecture/rtsp.md`
 - `docs/interview/phase10-questions.md`
 - `src/rtsp/`
-- `tests/phase10/`
+- `tests/unit/test_rtsp_protocol.cpp`
+- `tests/unit/test_rtsp_client_session.cpp`
+- `tests/integration/test_rtsp_media.cpp`
+- `tests/integration/test_rtsp_end_to_end.cpp`
 - `scripts/phase10/verify.sh`
 - `scripts/phase10/verify-integration.sh`
 

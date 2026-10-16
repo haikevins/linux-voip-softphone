@@ -1,0 +1,36 @@
+Phase 10 loopback integration verification — accepted summary
+
+RESULT: PASS
+
+Environment
+-----------
+- Linux loopback networking only
+- RTSP control over local TCP
+- RTP media over local UDP
+- No public RTSP service required
+
+Discovered integration scenarios
+--------------------------------
+1. RtspEndToEndTest.ExecutesCompleteControlFlowAcrossLoopbackTcp
+2. RtspEndToEndTest.ReceivesRtpOnPortAdvertisedDuringSetup
+3. RtspEndToEndTest.SetupFailureDoesNotAdvanceClientState
+
+Verification contract
+---------------------
+- scripts/phase10/verify-integration.sh discovers exactly 3
+  `phase10-integration` tests.
+- The integration set is repeated 3 times to expose unstable loopback behavior.
+- The accepted closure preparation completed the repeated integration gate.
+
+Observed behavior
+-----------------
+- OPTIONS/DESCRIBE/SETUP/PLAY/TEARDOWN control flow completed on loopback TCP.
+- DESCRIBE/SDP and SETUP Transport information led to the RTP UDP receive path.
+- RTP was received on the client port advertised during SETUP.
+- A failed SETUP did not advance the RTSP client state.
+
+Boundary
+--------
+This evidence validates the repository mini-lab. It does not claim RTSP
+authentication, TLS, redirects, interleaved RTP, RTCP, codec decoding, or broad
+third-party server interoperability.

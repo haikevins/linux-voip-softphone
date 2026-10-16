@@ -2,7 +2,7 @@
 
 ## Status
 
-In progress — target milestone `v0.10-rtsp-lab`.
+Completed — release identifier `v0.10-rtsp-lab`.
 
 ## Purpose
 
@@ -122,4 +122,7 @@ Production-grade RTSP features such as authentication, TLS, redirects, proxy beh
 - `src/rtsp/RtspTransport.hpp`
 - `src/rtsp/RtpPacket.hpp`
 - `src/rtsp/RtpReceiver.hpp`
-- `tests/phase10/`
+- `tests/unit/test_rtsp_protocol.cpp`
+- `tests/unit/test_rtsp_client_session.cpp`
+- `tests/integration/test_rtsp_media.cpp`
+- `tests/integration/test_rtsp_end_to_end.cpp`

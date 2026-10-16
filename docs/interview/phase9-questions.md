@@ -1,8 +1,16 @@
 # Phase 9 Interview Review — Debugging and Memory Diagnostics
 
+Use the repository implementation, documentation, tests, and evidence as the basis for the answers. Explain the debugging decision, observed failure mode, and repaired behavior; do not memorize isolated tool definitions.
+
 ## Review scope
 
-This review covers the Phase 9 debugging workflow: controlled lab-only crashes, Linux core dumps, GDB post-mortem analysis, heap use-after-free diagnosis, `std::unique_ptr` ownership versus raw aliases, AddressSanitizer/UndefinedBehaviorSanitizer, safe regression design, stale-build risks, and the boundary between disposable diagnostics and committed evidence.
+- controlled lab-only crashes and failure isolation
+- Linux core dumps and GDB post-mortem analysis
+- heap use-after-free diagnosis and lifetime repair
+- `std::unique_ptr` ownership versus raw non-owning aliases
+- AddressSanitizer and UndefinedBehaviorSanitizer
+- safe regression design and stale-build risks
+- disposable diagnostics versus committed evidence
 
 ## Questions and answers
 

@@ -1,8 +1,16 @@
 # Phase 8 Interview Review — Multithreading and Concurrency
 
+Use the repository implementation, documentation, tests, and evidence as the basis for the answers. Explain the engineering decision and the observed behavior; do not memorize isolated one-line definitions.
+
 ## Review scope
 
-This review covers the Phase 8 execution model: moving SIP backend ownership off the Qt UI thread, serialized worker dispatch, callback handoff, mutex/condition-variable usage, generic producer-consumer queues, deterministic shutdown, stress testing, atomics, and ThreadSanitizer.
+- SIP backend ownership and dedicated worker-thread execution
+- serialized worker dispatch and deterministic shutdown
+- callback handoff back toward the Qt UI thread
+- mutex, condition-variable, and atomic synchronization
+- generic producer-consumer queue semantics
+- stress testing and ThreadSanitizer interpretation
+- production-versus-lab verification boundaries
 
 ## Questions and answers
 
