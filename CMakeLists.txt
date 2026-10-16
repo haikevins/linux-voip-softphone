@@ -14,6 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
+option(ENABLE_TSAN "Enable ThreadSanitizer" OFF)
 option(ENABLE_CLANG_TIDY "Run clang-tidy during compilation" OFF)
 option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 option(ENABLE_PJSIP "Enable PJSIP/PJSUA2 integration" OFF)

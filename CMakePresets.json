@@ -55,6 +55,15 @@
       }
     },
     {
+      "name": "thread-sanitizer",
+      "inherits": "debug",
+      "displayName": "Debug + ThreadSanitizer",
+      "cacheVariables": {
+        "ENABLE_TSAN": "ON",
+        "CMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE": "PRE_TEST"
+      }
+    },
+    {
       "name": "clang-tidy",
       "inherits": "debug",
       "displayName": "Debug + clang-tidy",
@@ -85,6 +94,10 @@
       "configurePreset": "sanitizers"
     },
     {
+      "name": "thread-sanitizer",
+      "configurePreset": "thread-sanitizer"
+    },
+    {
       "name": "clang-tidy",
       "configurePreset": "clang-tidy"
     }
@@ -100,6 +113,13 @@
     {
       "name": "sanitizers",
       "configurePreset": "sanitizers",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "thread-sanitizer",
+      "configurePreset": "thread-sanitizer",
       "output": {
         "outputOnFailure": true
       }
