@@ -1,5 +1,7 @@
 #include "gui/CallViewModel.hpp"
 
+#include "application/ThreadedSipEngine.hpp"
+
 #ifdef VOIP_GUI_WITH_PJSIP
 #include "pjsip/Pjsua2SipEngine.hpp"
 #include "pjsip/SipAccountConfig.hpp"
@@ -51,7 +53,7 @@ class UnavailableSipEngine final : public voip::application::SipEngine
 #endif
 
 [[nodiscard]] std::unique_ptr<voip::application::SipEngine>
-create_sip_engine(const voip::gui::SipConnectionSettings &settings)
+create_sip_backend(const voip::gui::SipConnectionSettings &settings)
 {
 #ifdef VOIP_GUI_WITH_PJSIP
     const auto transport =
@@ -75,6 +77,13 @@ create_sip_engine(const voip::gui::SipConnectionSettings &settings)
     static_cast<void>(settings);
     return std::make_unique<UnavailableSipEngine>();
 #endif
+}
+
+[[nodiscard]] std::unique_ptr<voip::application::SipEngine>
+create_sip_engine(const voip::gui::SipConnectionSettings &settings)
+{
+    auto backend_factory = [settings]() { return create_sip_backend(settings); };
+    return std::make_unique<voip::application::ThreadedSipEngine>(std::move(backend_factory));
 }
 
 } // namespace
