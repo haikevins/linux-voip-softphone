@@ -11,7 +11,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
 option(ENABLE_TSAN "Enable ThreadSanitizer" OFF)
@@ -21,7 +20,6 @@ option(ENABLE_PJSIP "Enable PJSIP/PJSUA2 integration" OFF)
 option(ENABLE_QT_GUI "Enable the Qt 6/QML desktop application" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 include(CompilerWarnings)
 include(Dependencies)
 include(Sanitizers)
@@ -42,9 +40,28 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(labs)
+add_subdirectory(tools)
 
 include(CTest)
 if(BUILD_TESTING)
+    add_test(
+        NAME Phase9CrashGeneratorHelpTest
+        COMMAND $<TARGET_FILE:crash_generator> --help
+    )
+    set_tests_properties(Phase9CrashGeneratorHelpTest PROPERTIES
+        LABELS "debugging;phase9"
+    )
+
+    # Re-run the fixed lifetime path in every normal/sanitizer/TSan CTest job.
+    # The intentionally crashing null-deref path is verified separately by GDB.
+    add_test(
+        NAME Phase9RepairedLifetimeRegressionTest
+        COMMAND $<TARGET_FILE:crash_generator> use-after-free
+    )
+    set_tests_properties(Phase9RepairedLifetimeRegressionTest PROPERTIES
+        LABELS "debugging;phase9;regression"
+    )
+
     project_setup_test_dependencies()
     add_subdirectory(tests)
 endif()

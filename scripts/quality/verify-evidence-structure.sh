@@ -19,7 +19,7 @@ expected_scenario_h2=$'## Purpose\n## Preconditions\n## Procedure\n## Observatio
 
 [[ -f evidence/README.md ]] || error "missing evidence/README.md"
 
-for n in 0 1 2 3 4 5 6 7 8; do
+for n in 0 1 2 3 4 5 6 7 8 9; do
     f="evidence/phase${n}/README.md"
     [[ -f "$f" ]] || { error "missing $f"; continue; }
 
@@ -67,6 +67,15 @@ for artifact in \
     tsan-report.txt; do
     f="evidence/phase8/${artifact}"
     [[ -s "$f" ]] || error "missing or empty Phase 8 evidence artifact: $f"
+done
+
+# Phase 9 retains concise debugging/core/sanitizer summaries.
+for artifact in \
+    automated-verification.txt \
+    gdb-core-analysis.txt \
+    asan-report.txt; do
+    f="evidence/phase9/${artifact}"
+    [[ -s "$f" ]] || error "missing or empty Phase 9 evidence artifact: $f"
 done
 
 for f in evidence/phase4/registration/README.md evidence/phase4/call-flow/README.md; do

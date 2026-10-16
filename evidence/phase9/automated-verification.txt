@@ -1,0 +1,41 @@
+Phase 9 — accepted automated verification summary
+
+BRANCH
+  phase/9-debugging
+
+LOCAL AGGREGATE GATE
+  command:
+    export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    ./scripts/phase9/verify.sh
+  result:
+    Phase 9 automated verification: PASS
+
+SAFE PHASE 9 CTEST
+  result:
+    2/2 PASS
+  tests:
+    Phase9CrashGeneratorHelpTest
+    Phase9RepairedLifetimeRegressionTest
+
+FULL PJSIP DEBUG REGRESSION
+  observed result:
+    141/141 PASS
+
+REPAIRED LIFETIME STABILITY CHECK
+  command:
+    ctest --test-dir build/pjsip-debug \
+      -R '^Phase9RepairedLifetimeRegressionTest$' \
+      --repeat until-fail:20 \
+      --output-on-failure
+  observed result:
+    20/20 PASS
+
+CI
+  accepted pre-closure revision:
+    Phase 9 Commit 6 — docs(debugging): document phase 9 architecture and review
+  required branch jobs:
+    4/4 SUCCESS
+
+BOUNDARY
+  Intentional crashing behavior is lab-only.
+  Core files and raw diagnostic transcripts are not retained as committed evidence.

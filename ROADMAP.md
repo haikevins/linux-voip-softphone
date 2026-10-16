@@ -1253,6 +1253,8 @@ Mà là:
 
 # 12. Phase 9 — Debugging, memory và core dump
 
+**Trạng thái:** đã nghiệm thu cho lab nội bộ. Phase 9 giữ nguyên production/threading boundary của Phase 8, bổ sung crash generator cô lập, saved-core GDB analysis, sanitizer-driven lifetime debugging và repaired-path regression. Release identifier: `v0.9-diagnostics` (chỉ tạo/push annotated tag sau khi closure commit được xác minh và merge theo release workflow).
+
 Thời gian:
 
 ```text
@@ -1305,7 +1307,7 @@ ASan clean after fix.
 Tạo:
 
 ```text
-docs/debugging/core-dump-analysis.md
+docs/phase9/core-dump-analysis.md
 ```
 
 Sau đó tạo một lỗi memory riêng:
@@ -1325,12 +1327,11 @@ Không giữ bug đó trong production path; dùng lab hoặc commit lịch sử
 ### Evidence
 
 ```text
-evidence/08-debugging/
-├── crash-backtrace.txt
-├── asan-before.txt
-├── asan-after.txt
-├── core-analysis.md
-└── fix-commit.txt
+evidence/phase9/
+├── README.md
+├── automated-verification.txt
+├── gdb-core-analysis.txt
+└── asan-report.txt
 ```
 
 Một recruiter C++ nhìn phần này sẽ biết ngay bạn đã động tới debugging thực tế.
@@ -1908,10 +1909,10 @@ Bạn nói:
 
 ## Tiến độ hiện tại
 
-Repository đã nghiệm thu **Phase 0 đến Phase 8** cho các môi trường đã ghi lại trong evidence. Phase 8 có release identifier:
+Repository đã nghiệm thu **Phase 0 đến Phase 9** cho các môi trường đã ghi lại trong evidence. Phase 9 có release identifier:
 
 ```text
-v0.9-threading
+v0.9-diagnostics
 ```
 
 Chuỗi milestone đã nghiệm thu:
@@ -1934,8 +1935,10 @@ Phase 6 — RTP + Audio
 Phase 7 — Qt/QML GUI
         ↓
 Phase 8 — Multithreading
+        ↓
+Phase 9 — Debugging, memory và core dump
 ```
 
-Bước tiếp theo là **Phase 9 — Debugging, memory và core dump**, giữ nguyên worker/threading boundary đã nghiệm thu ở Phase 8. Việc tạo/push annotated tag `v0.9-threading` và merge branch là thao tác release riêng biệt; kiểm tra Git refs thay vì suy đoán từ roadmap.
+Bước tiếp theo là **Phase 10 — RTSP mini-lab**. Việc tạo/push annotated tag `v0.9-diagnostics` và merge branch là thao tác release riêng biệt; kiểm tra Git refs thay vì suy đoán từ roadmap.
 
 Mục tiêu không phải hoàn thành softphone càng nhanh càng tốt. Mục tiêu là đến cuối project, **mỗi dòng quan trọng trong JD đều có một artifact trong GitHub để bạn chỉ thẳng cho interviewer xem**.
