@@ -2,7 +2,7 @@
 
 ## Status
 
-In progress — target milestone `v0.9-diagnostics`.
+Completed — milestone `v0.9-diagnostics`.
 
 ## Purpose
 
