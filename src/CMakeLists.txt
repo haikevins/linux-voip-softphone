@@ -1,5 +1,6 @@
 add_library(voip_core
     application/CallManager.cpp
+    application/ThreadedSipEngine.cpp
     audio/AudioDeviceSelection.cpp
     core/BuildInfo.cpp
     core/CallState.cpp
@@ -13,6 +14,7 @@ add_library(voip_core
     network/TcpServerSocket.cpp
     network/UdpSocket.cpp
     platform/linux/UniqueFd.cpp
+    threading/WorkerExecutor.cpp
 )
 
 add_library(voip::core ALIAS voip_core)
@@ -20,6 +22,11 @@ add_library(voip::core ALIAS voip_core)
 target_include_directories(voip_core
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(voip_core
+    PUBLIC
+        Threads::Threads
 )
 
 project_set_warnings(voip_core)

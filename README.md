@@ -6,7 +6,7 @@ The repository is intentionally phase-driven: each milestone adds production cod
 
 ## Current status
 
-Completed through **Phase 7 — Qt/QML GUI** for the documented local lab. Phase 7 release identifier: `v0.8-qt-gui` (reserved for an annotated tag after the Phase 7 branch is reviewed, merged into `main`, and the closure state is verified; this document does not assert that the tag is already published).
+Completed through **Phase 8 — Multithreading** for the documented development and CI environments. Phase 8 release identifier: `v0.9-threading` (reserved for an annotated tag after the Phase 8 branch is reviewed, merged into `main`, and the closure state is verified; this document does not assert that the tag is already published).
 
 Implemented so far:
 
@@ -26,8 +26,13 @@ Implemented so far:
 - Long-lived PJSUA2 GUI backend for registration plus one active outgoing or incoming call.
 - GUI registration, dialer, incoming-call answer/hangup, active-call duration, and diagnostics screens.
 - Deterministic CallManager/ViewModel tests and an offscreen GUI startup smoke test.
+- Dedicated `WorkerExecutor` and `ThreadedSipEngine` boundary for serialized SIP backend work off the Qt UI thread.
+- Worker-owned SIP backend construction, command execution, and destruction with deterministic shutdown/drain behavior.
+- Reusable `ThreadSafeQueue<T>` with mutex/condition-variable close-and-drain semantics.
+- 100,000-event four-producer/four-consumer stress verification with atomic exactly-once accounting.
+- ThreadSanitizer build support plus required CI runtime coverage for Phase 8 concurrency tests.
 
-Phase 6 established the reusable SIP/RTP/audio path. Phase 7 layers a Qt/QML presentation on top without calling PJSIP directly from QML. The documented local GUI acceptance reached SIP registration, outgoing and incoming calls, visible call-state transitions, clear two-way audio, and diagnostics. Curated screenshots and sanitized summaries are retained under `evidence/phase7/`.
+Phase 6 established the reusable SIP/RTP/audio path, and Phase 7 added the Qt/QML presentation boundary. Phase 8 keeps that boundary intact while moving concrete SIP backend ownership and commands behind a dedicated worker executor, adding a reusable producer-consumer queue, lifecycle/stress verification, and ThreadSanitizer coverage. Curated Phase 8 verification summaries are retained under `evidence/phase8/`.
 
 ## Repository layout
 
@@ -75,10 +80,10 @@ Verify the dependency independently:
 ./scripts/phase5/verify-pjsip-dependency.sh
 ```
 
-Run the complete Phase 7 automated verification suite (which inherits the Phase 6/5 gates and adds Qt/QML verification):
+Run the complete Phase 8 automated verification suite (which inherits the Phase 7 gate and adds threading/concurrency verification):
 
 ```bash
-./scripts/phase7/verify.sh
+./scripts/phase8/verify.sh
 ```
 
 ## Qt/QML GUI application
@@ -144,9 +149,10 @@ v0.5-sip-asterisk      Phase 4 — SIP + Asterisk lab
 v0.6-pjsip-cli         Phase 5 — PJSIP CLI softphone
 v0.7-rtp-audio         Phase 6 — RTP + Audio
 v0.8-qt-gui            Phase 7 — Qt/QML GUI (release identifier)
+v0.9-threading         Phase 8 — Multithreading (release identifier)
 ```
 
-Phase 7 acceptance is complete for the documented local lab based on the recorded automated and live GUI tests. The annotated `v0.8-qt-gui` tag is created only after this branch is reviewed, merged into `main`, and the milestone state is verified. Next planned phase: **Phase 8 — multithreading**.
+Phase 8 acceptance is complete for the documented development and CI environments based on the recorded automated, stress, lifecycle, and ThreadSanitizer checks. The annotated `v0.9-threading` tag is created only after this branch is reviewed, merged into `main`, and the milestone state is verified. Next planned phase: **Phase 9 — debugging, memory diagnostics, and core dumps**.
 
 ## Documentation
 

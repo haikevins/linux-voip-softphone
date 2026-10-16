@@ -21,3 +21,26 @@ jobs:
 
       - name: Test
         run: ctest --preset sanitizers
+
+  thread-sanitizer:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y ninja-build libgtest-dev
+
+      - name: Prepare ThreadSanitizer runtime
+        run: |
+          if [ "$(sysctl -n vm.mmap_rnd_bits)" -gt 28 ]; then
+            sudo sysctl -w vm.mmap_rnd_bits=28
+          fi
+
+      - name: Configure ThreadSanitizer build
+        run: cmake --preset thread-sanitizer
+
+      - name: Build
+        run: cmake --build --preset thread-sanitizer -j 2
+
+      - name: Test
+        run: ctest --preset thread-sanitizer

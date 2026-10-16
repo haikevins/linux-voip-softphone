@@ -55,16 +55,21 @@ evidence/
 │   ├── live-outgoing-call.txt
 │   ├── live-incoming-call.txt
 │   └── phase6-summary.txt
-└── phase7/
+├── phase7/
+│   ├── README.md
+│   ├── automated-verification.txt
+│   ├── manual-verification.txt
+│   ├── runtime-media.txt
+│   ├── login.png
+│   ├── dialer.png
+│   ├── incoming-call.png
+│   ├── active-call.png
+│   └── diagnostics.png
+└── phase8/
     ├── README.md
     ├── automated-verification.txt
-    ├── manual-verification.txt
-    ├── runtime-media.txt
-    ├── login.png
-    ├── dialer.png
-    ├── incoming-call.png
-    ├── active-call.png
-    └── diagnostics.png
+    ├── stress-test.txt
+    └── tsan-report.txt
 ```
 
 A phase may contain additional artifacts or scenario directories only when they represent real verification needs. Directory symmetry is not required.

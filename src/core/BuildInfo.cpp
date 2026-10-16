@@ -9,7 +9,7 @@ std::string_view project_name() noexcept
 
 std::string_view current_phase() noexcept
 {
-    return "Phase 7 - Qt/QML GUI";
+    return "Phase 8 - Multithreading";
 }
 
 std::string_view cpp_standard() noexcept

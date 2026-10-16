@@ -1,0 +1,19 @@
+Phase 8 automated verification summary
+=====================================
+
+Accepted pre-closure revision: 38217be
+
+Local Phase 8 verifier:
+- scripts/phase8/verify.sh: PASS
+- Phase 8 labeled tests: 17/17 PASS
+- full non-PJSIP regression: 94/94 PASS
+- fresh ThreadSanitizer build: PASS
+- local TSan runtime: SKIPPED on this host
+- verifier final result: PASS
+
+Branch CI:
+- required jobs: 4/4 PASS
+- revision: 38217be
+- CI remains authoritative for runtime ThreadSanitizer coverage on this host.
+
+This is a curated result summary, not a raw terminal log.
