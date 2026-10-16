@@ -44,6 +44,8 @@ target_link_libraries(linux-voip-softphone
 project_set_warnings(linux-voip-softphone)
 project_enable_sanitizers(linux-voip-softphone)
 
+add_subdirectory(rtsp)
+
 if(ENABLE_PJSIP)
     add_library(voip_pjsip
         pjsip/SipAccountConfig.cpp

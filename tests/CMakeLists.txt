@@ -187,6 +187,8 @@ gtest_discover_tests(udp_network_integration_tests
         LABELS "network;udp;integration;linux"
 )
 
+add_subdirectory(phase10)
+
 if(ENABLE_PJSIP)
     add_executable(pjsip_config_tests
         unit/test_pjsua2_audio_device_manager.cpp

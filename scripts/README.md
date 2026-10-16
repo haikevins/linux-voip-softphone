@@ -41,10 +41,12 @@ scripts/
 │   └── verify-gui-smoke.sh
 ├── phase8/
 │   └── verify.sh
-└── phase9/
-    ├── verify.sh
-    ├── capture-core-dump.sh
-    └── verify-asan-use-after-free.sh
+├── phase9/
+│   ├── verify.sh
+│   ├── capture-core-dump.sh
+│   └── verify-asan-use-after-free.sh
+└── phase10/
+    └── verify.sh
 ```
 ## Responsibilities
 
@@ -76,6 +78,7 @@ scripts/
 ./scripts/phase9/verify.sh
 ./scripts/phase9/capture-core-dump.sh
 ./scripts/phase9/verify-asan-use-after-free.sh
+./scripts/phase10/verify.sh
 ```
 `phase6/verify.sh` first checks the audio environment, then reuses the Phase 5
 quality and regression gate and explicitly runs the RTP statistics and PJSUA2
@@ -103,5 +106,9 @@ lifetime path with AddressSanitizer/UndefinedBehaviorSanitizer. Core files and
 sanitizer transcripts remain disposable artifacts under `build/`.
 `phase9/verify-asan-use-after-free.sh` forces a fresh sanitizer build, avoiding
 stale objects after checksum-mode rsync with preserved timestamps.
+
+`phase10/verify.sh` inherits the complete Phase 9 gate and then runs the
+Phase 10-labeled RTSP mini-lab tests. Commit 1 intentionally provides only the
+build/test scaffold; protocol and media behavior arrive in later Phase 10 commits.
 
 Phase-specific documentation under `docs/phaseN/` remains the authoritative source for each phase workflow and prerequisites.
