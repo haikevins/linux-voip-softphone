@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation, automated verification, and live SIP/audio GUI acceptance are complete for the documented local lab. The accepted live runtime source revision was `090c278`; the closure commit records evidence and repository bookkeeping. Target milestone: `v0.8-qt-gui`, created only after branch review and merge into `main`.
+Completed — milestone `v0.8-qt-gui`.
 
 ## Purpose
 

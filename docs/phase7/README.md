@@ -2,11 +2,9 @@
 
 ## Status
 
-**Completed for the documented local lab.**
+**Completed** — milestone `v0.8-qt-gui`.
 
-Target milestone: `v0.8-qt-gui`. The annotated tag is created only after the Phase 7 branch is reviewed, merged into `main`, and the merged milestone state is verified.
-
-Phase 7 adds a Qt 6/QML front end to the SIP/audio runtime built in Phases 5 and 6. The Phase 7 automated verifier passed the Qt-only build, Qt+PJSIP build, labeled controller/ViewModel tests, headless GUI launch smoke test, inherited regression/quality gates, and documentation/evidence structure checks. Manual GUI acceptance then confirmed registration, outgoing and incoming calls, visible state changes, clear two-way audio, call duration, and diagnostics against the controlled local lab. The accepted live runtime source revision was `090c278`; the closure commit changes evidence, documentation, metadata, and structure checks rather than the GUI call path.
+Phase 7 adds a Qt 6/QML front end to the SIP/audio runtime built in Phases 5 and 6. Registration, outgoing and incoming calls, visible state transitions, call duration, diagnostics, and clear two-way audio passed the documented local lab's automated and manual checks.
 
 ## Objective
 
