@@ -42,7 +42,9 @@ scripts/
 ├── phase8/
 │   └── verify.sh
 └── phase9/
-    └── capture-core-dump.sh
+    ├── verify.sh
+    ├── capture-core-dump.sh
+    └── verify-asan-use-after-free.sh
 ```
 ## Responsibilities
 
@@ -71,7 +73,9 @@ scripts/
 ./scripts/phase6/verify.sh
 ./scripts/phase7/verify.sh
 ./scripts/phase8/verify.sh
+./scripts/phase9/verify.sh
 ./scripts/phase9/capture-core-dump.sh
+./scripts/phase9/verify-asan-use-after-free.sh
 ```
 `phase6/verify.sh` first checks the audio environment, then reuses the Phase 5
 quality and regression gate and explicitly runs the RTP statistics and PJSUA2
@@ -92,5 +96,12 @@ on SIGSEGV under GDB, writes a reproducible core file under `build/`, then
 opens that saved core in a fresh GDB session and validates the backtrace. GDB
 generates the core explicitly so host-specific `core_pattern` handlers do not
 change the workflow.
+
+`phase9/verify.sh` inherits the Phase 8 gate, requires both safe Phase 9
+CTest cases to pass, runs saved-core GDB analysis, and verifies the repaired
+lifetime path with AddressSanitizer/UndefinedBehaviorSanitizer. Core files and
+sanitizer transcripts remain disposable artifacts under `build/`.
+`phase9/verify-asan-use-after-free.sh` forces a fresh sanitizer build, avoiding
+stale objects after checksum-mode rsync with preserved timestamps.
 
 Phase-specific documentation under `docs/phaseN/` remains the authoritative source for each phase workflow and prerequisites.

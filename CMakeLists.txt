@@ -52,6 +52,16 @@ if(BUILD_TESTING)
         LABELS "debugging;phase9"
     )
 
+    # Re-run the fixed lifetime path in every normal/sanitizer/TSan CTest job.
+    # The intentionally crashing null-deref path is verified separately by GDB.
+    add_test(
+        NAME Phase9RepairedLifetimeRegressionTest
+        COMMAND $<TARGET_FILE:crash_generator> use-after-free
+    )
+    set_tests_properties(Phase9RepairedLifetimeRegressionTest PROPERTIES
+        LABELS "debugging;phase9;regression"
+    )
+
     project_setup_test_dependencies()
     add_subdirectory(tests)
 endif()
