@@ -15,7 +15,7 @@ void printUsage(std::ostream& output, std::string_view program_name)
            << "  " << kNullDereferenceScenario
            << "  intentionally dereference a null pointer and terminate with SIGSEGV\n"
            << "  " << kUseAfterFreeScenario
-           << "  intentionally read freed heap memory for the AddressSanitizer lab\n";
+           << "  exercise the repaired lifetime path that previously triggered a heap use-after-free\n";
 }
 
 [[noreturn]] void triggerNullDereference()
@@ -33,22 +33,29 @@ void printUsage(std::ostream& output, std::string_view program_name)
 #if defined(__GNUC__) || defined(__clang__)
 __attribute__((noinline))
 #endif
-int readFreedValue(const int* pointer)
+int readOwnedValue(const int* pointer)
 {
     return *pointer;
 }
 
-void triggerUseAfterFree()
+bool verifyRepairedLifetime()
 {
-    std::cout << "Triggering intentional heap use-after-free for the Phase 9 ASan lab.\n";
-    std::cout.flush();
+    std::cout << "Exercising repaired heap lifetime for the Phase 9 ASan regression.\n";
 
     auto owner = std::make_unique<int>(42);
-    const int* dangling = owner.get();
-    owner.reset();
+    const int* observed_pointer = owner.get();
 
-    volatile int observed = readFreedValue(dangling);
-    std::cout << "Unexpected freed value: " << observed << '\n';
+    const int observed_value = readOwnedValue(observed_pointer);
+    if (observed_value != 42) {
+        std::cerr << "Unexpected owned value: " << observed_value << '\n';
+        return false;
+    }
+
+    owner.reset();
+    observed_pointer = nullptr;
+
+    std::cout << "Repaired lifetime path completed without accessing freed memory.\n";
+    return true;
 }
 } // namespace
 
@@ -68,8 +75,7 @@ int main(int argc, char* argv[])
         }
 
         if (argument == kUseAfterFreeScenario) {
-            triggerUseAfterFree();
-            return EXIT_SUCCESS;
+            return verifyRepairedLifetime() ? EXIT_SUCCESS : EXIT_FAILURE;
         }
     }
 

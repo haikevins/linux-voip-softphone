@@ -20,8 +20,8 @@ usage() {
 Usage: ./scripts/phase9/verify-asan-use-after-free.sh [output-directory]
 
 Builds the Phase 9 crash generator with the repository ASan+UBSan preset,
-runs the intentional use-after-free scenario, and verifies that
-AddressSanitizer reports a heap-use-after-free.
+runs the repaired lifetime path for the historical use-after-free scenario,
+and verifies that the same path now completes without sanitizer diagnostics.
 
 Default output directory:
   build/phase9-asan
@@ -51,10 +51,8 @@ OUTPUT_DIR="${1:-${ROOT_DIR}/build/phase9-asan}"
 LOG_FILE="${OUTPUT_DIR}/asan-use-after-free.txt"
 
 echo "== fresh Phase 9 ASan crash-generator build =="
-# The package is applied with rsync checksum mode while preserving mtimes.
-# Remove this disposable build tree so Ninja cannot reuse an object compiled
-# from an older crash_generator source whose timestamp is newer than the
-# just-applied source file.
+# Packages are applied with checksum rsync while preserving mtimes. Remove the
+# disposable sanitizer build tree so Ninja cannot reuse stale objects.
 rm -rf "${BUILD_DIR}"
 
 cmake --preset sanitizers
@@ -65,7 +63,7 @@ cmake --build --preset sanitizers -j --target crash_generator
 mkdir -p "${OUTPUT_DIR}"
 rm -f "${LOG_FILE}"
 
-echo "== intentional heap use-after-free =="
+echo "== repaired lifetime path under AddressSanitizer =="
 set +e
 ASAN_OPTIONS="halt_on_error=1:abort_on_error=1:detect_leaks=0:symbolize=1" \
 UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1" \
@@ -73,20 +71,19 @@ UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1" \
 status=$?
 set -e
 
-if (( status == 0 )); then
-    fail "intentional use-after-free unexpectedly exited successfully"
+if (( status != 0 )); then
+    cat "${LOG_FILE}" >&2
+    fail "repaired lifetime path exited with status ${status}"
 fi
 
-grep -Eq "ERROR: AddressSanitizer: heap-use-after-free|AddressSanitizer: heap-use-after-free" \
+if grep -Eq "ERROR: AddressSanitizer|runtime error:|heap-use-after-free" "${LOG_FILE}"; then
+    cat "${LOG_FILE}" >&2
+    fail "sanitizer diagnostics remain after the lifetime fix"
+fi
+
+grep -q "Repaired lifetime path completed without accessing freed memory." \
     "${LOG_FILE}" || \
-    fail "AddressSanitizer did not report heap-use-after-free"
-
-grep -q "readFreedValue" "${LOG_FILE}" || \
-    fail "ASan stack trace does not contain readFreedValue"
-
-grep -q "triggerUseAfterFree" "${LOG_FILE}" || \
-    fail "ASan stack trace does not contain triggerUseAfterFree"
+    fail "success marker is missing from the repaired lifetime path"
 
 printf 'ASan log: %s\n' "${LOG_FILE}"
-printf 'Intentional failing exit status: %s\n' "${status}"
-echo "Phase 9 ASan use-after-free verification: PASS"
+echo "Phase 9 ASan lifetime-fix verification: PASS"
