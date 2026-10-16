@@ -20,9 +20,8 @@ usage() {
 Usage: ./scripts/phase10/verify.sh
 
 Runs inherited Phase 9 verification and the currently available Phase 10 RTSP
-mini-lab tests. Commit 4 adds SDP/control-URI parsing, RTSP Transport port negotiation helpers,
-RTP header parsing, UDP RTP reception, and packet-gap statistics while preserving inherited
-quality, sanitizer, and regression gates. Later commits broaden end-to-end verification.
+mini-lab tests. Commit 5 adds repeatable loopback RTSP control-flow and RTP media integration tests while
+preserving inherited quality, sanitizer, and regression gates.
 USAGE
 }
 
@@ -40,6 +39,8 @@ for command_name in bash git ctest awk; do
 done
 
 [[ -x scripts/phase9/verify.sh ]] || fail "scripts/phase9/verify.sh is missing or not executable"
+[[ -x scripts/phase10/verify-integration.sh ]] || \
+    fail "scripts/phase10/verify-integration.sh is missing or not executable"
 
 verify_phase10_ctest() {
     local build_dir="$1"
@@ -51,7 +52,7 @@ verify_phase10_ctest() {
     count="$(printf '%s\n' "${listing}" | awk '$1 == "Total" && $2 == "Tests:" { print $3 }')"
 
     [[ "${count}" =~ ^[0-9]+$ ]] || fail "cannot count Phase 10 tests in ${build_dir}"
-    (( count >= 29 )) || fail "expected at least 29 Phase 10 tests, found ${count} in ${build_dir}"
+    (( count >= 32 )) || fail "expected at least 32 Phase 10 tests, found ${count} in ${build_dir}"
 
     printf 'Phase 10 discovered tests in %s: %s\n' "${build_dir}" "${count}"
     ctest --test-dir "${build_dir}" -L phase10 --no-tests=error --output-on-failure
@@ -66,5 +67,8 @@ echo "== inherited Phase 9 verification =="
 
 echo "== Phase 10 RTSP protocol, session, and media verification =="
 verify_phase10_ctest build/debug
+
+echo "== Phase 10 repeated loopback integration verification =="
+./scripts/phase10/verify-integration.sh
 
 echo "Phase 10 automated verification: PASS"

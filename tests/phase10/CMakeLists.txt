@@ -59,3 +59,21 @@ gtest_discover_tests(phase10_rtsp_media_tests
     PROPERTIES
         LABELS "phase10;rtsp;media"
 )
+
+add_executable(phase10_rtsp_end_to_end_tests
+    test_rtsp_end_to_end.cpp
+)
+
+target_link_libraries(phase10_rtsp_end_to_end_tests
+    PRIVATE
+        voip::rtsp_protocol
+        GTest::gtest_main
+)
+
+project_set_warnings(phase10_rtsp_end_to_end_tests)
+project_enable_sanitizers(phase10_rtsp_end_to_end_tests)
+
+gtest_discover_tests(phase10_rtsp_end_to_end_tests
+    PROPERTIES
+        LABELS "phase10-integration"
+)
