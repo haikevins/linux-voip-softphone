@@ -20,9 +20,10 @@ usage() {
 Usage: ./scripts/phase10/verify.sh
 
 Runs inherited Phase 9 verification and the currently available Phase 10 RTSP
-mini-lab tests. Commit 2 adds RTSP/1.0 message primitives plus strict request and
-response parsing; later commits add the live session workflow, RTP integration, and
-broader end-to-end verification.
+mini-lab tests. Commit 3 adds the TCP-backed RTSP session workflow for OPTIONS,
+DESCRIBE, SETUP, PLAY, and TEARDOWN while preserving inherited quality, sanitizer,
+and regression gates. Later commits add RTP media integration and broader end-to-end
+verification.
 USAGE
 }
 
@@ -51,7 +52,7 @@ verify_phase10_ctest() {
     count="$(printf '%s\n' "${listing}" | awk '$1 == "Total" && $2 == "Tests:" { print $3 }')"
 
     [[ "${count}" =~ ^[0-9]+$ ]] || fail "cannot count Phase 10 tests in ${build_dir}"
-    (( count >= 2 )) || fail "expected at least 2 Phase 10 tests, found ${count} in ${build_dir}"
+    (( count >= 16 )) || fail "expected at least 16 Phase 10 tests, found ${count} in ${build_dir}"
 
     printf 'Phase 10 discovered tests in %s: %s\n' "${build_dir}" "${count}"
     ctest --test-dir "${build_dir}" -L phase10 --no-tests=error --output-on-failure
@@ -64,7 +65,7 @@ git diff --cached --check
 echo "== inherited Phase 9 verification =="
 ./scripts/phase9/verify.sh
 
-echo "== Phase 10 RTSP protocol verification =="
+echo "== Phase 10 RTSP protocol and session verification =="
 verify_phase10_ctest build/debug
 
 echo "Phase 10 automated verification: PASS"
