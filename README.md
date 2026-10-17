@@ -128,35 +128,10 @@ are not stored in repository evidence.
 
 ## Verification
 
-Verification is treated as part of the implementation rather than as a final
-manual check.
+Build, tests, sanitizers, static analysis, and release acceptance are automated
+through the repository CI and verification scripts.
 
-The repository includes:
-
-- GoogleTest unit and integration tests;
-- protocol and socket integration tests;
-- SIP/PJSUA2 regression coverage;
-- Qt/QML startup and application-state tests;
-- AddressSanitizer and UndefinedBehaviorSanitizer coverage;
-- ThreadSanitizer-focused concurrency verification where supported;
-- clang-format and clang-tidy quality gates;
-- RTSP end-to-end verification;
-- release installation and TGZ package validation;
-- extracted-package dependency and executable smoke tests.
-
-The final release verification entry point is:
-
-```bash
-export PKG_CONFIG_PATH="$HOME/.local/pjproject-2.17/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-
-./scripts/phase11/verify.sh
-```
-
-Release verification details are documented in
-[`docs/phase11/README.md`](docs/phase11/README.md).
-
-Sanitized verification records are retained under
-[`evidence/`](evidence/).
+**[Verification evidence → `evidence/`](evidence/)**
 
 ## Engineering scope
 
