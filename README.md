@@ -29,11 +29,30 @@ milestones and is released as **v1.0.0**.
 
 ## Architecture
 
-<p align="center">
-  <img src="docs/assets/architecture/system-architecture.png"
-       alt="Linux VoIP Softphone system architecture"
-       width="1000">
-</p>
+```mermaid
+flowchart TD
+    UI["QML UI<br/>Main.qml"]
+    VM["GuiViewModel<br/>Qt adapter"]
+    CM["CallManager<br/>Qt-free application core"]
+    TE["ThreadedSipEngine<br/>worker-thread ownership"]
+    PJ["PJSIP / PJSUA2<br/>account · call · media"]
+    AST["Asterisk<br/>SIP PBX"]
+    AUDIO["Linux Audio<br/>ALSA / PulseAudio"]
+
+    UI -->|"UI actions"| VM
+    VM -->|"commands / state"| CM
+    CM -->|"SIP operations"| TE
+    TE -->|"commands"| PJ
+
+    PJ -->|"callbacks / state"| TE
+    TE -->|"events"| CM
+    CM -->|"state updates"| VM
+    VM -->|"UI updates"| UI
+
+    PJ -->|"SIP / UDP"| AST
+    PJ -->|"RTP / RTCP"| AST
+    PJ -->|"capture / playback"| AUDIO
+```
 
 The detailed system boundaries, runtime lifecycle, release architecture, and
 verification strategy are documented in
