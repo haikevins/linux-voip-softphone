@@ -29,37 +29,11 @@ milestones and is released as **v1.0.0**.
 
 ## Architecture
 
-```text
-                         Linux VoIP Softphone
-
- ┌──────────────────────────────────────────────────────────────┐
- │                        Qt / QML UI                           │
- │            registration · calls · diagnostics               │
- └──────────────────────────────┬───────────────────────────────┘
-                                │
-                                ▼
- ┌──────────────────────────────────────────────────────────────┐
- │                    Application Layer                         │
- │                CallManager / view models                     │
- │          state · ownership · thread handoff                  │
- └──────────────────────────────┬───────────────────────────────┘
-                                │
-                                ▼
- ┌──────────────────────────────────────────────────────────────┐
- │                     PJSIP / PJSUA2                           │
- │       REGISTER · INVITE · incoming/outgoing lifecycle        │
- └───────────────────────┬─────────────────┬────────────────────┘
-                         │                 │
-                    SIP signaling      RTP / RTCP
-                         │                 │
-                         ▼                 ▼
-                    ┌─────────┐       Linux audio
-                    │Asterisk │       capture/playback
-                    └─────────┘
-
- Separate protocol lab:
- RTSP client → SDP parsing → RTP/AVP UDP media receiver
-```
+<p align="center">
+  <img src="docs/assets/architecture/system-architecture.png"
+       alt="Linux VoIP Softphone system architecture"
+       width="1000">
+</p>
 
 The detailed system boundaries, runtime lifecycle, release architecture, and
 verification strategy are documented in
