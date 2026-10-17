@@ -1,5 +1,11 @@
 # Linux VoIP Softphone
 
+[![Build](https://github.com/haikevins/linux-voip-softphone/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/haikevins/linux-voip-softphone/actions/workflows/build.yml)
+[![Tests](https://github.com/haikevins/linux-voip-softphone/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/haikevins/linux-voip-softphone/actions/workflows/test.yml)
+[![Static Analysis](https://github.com/haikevins/linux-voip-softphone/actions/workflows/static-analysis.yml/badge.svg?branch=main)](https://github.com/haikevins/linux-voip-softphone/actions/workflows/static-analysis.yml)
+![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C?logo=cplusplus&logoColor=white)
+[![Release](https://img.shields.io/github/v/release/haikevins/linux-voip-softphone?label=release)](https://github.com/haikevins/linux-voip-softphone/releases/tag/v1.0.0)
+
 A C++20/Linux engineering project that builds a SIP softphone from networking
 and SIP fundamentals through PJSUA2 integration, RTP/audio, a Qt/QML desktop
 interface, multithreading and lifetime analysis, diagnostics, and an RTSP/RTP
